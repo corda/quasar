@@ -33,17 +33,17 @@ public final class Classes {
     }));
 
     // Don't load the classes
-    static final String STACK_NAME       = "co.paralleluniverse.fibers.Stack".replace('.', '/');
-    static final String FIBER_CLASS_NAME = "co.paralleluniverse.fibers.Fiber".replace('.', '/');
-    static final String STRAND_NAME      = "co.paralleluniverse.strands.Strand".replace('.', '/');
+    static final String STACK_NAME       = "co/paralleluniverse/fibers/Stack";
+    static final String FIBER_CLASS_NAME = "co/paralleluniverse/fibers/Fiber";
+    static final String STRAND_NAME      = "co/paralleluniverse/strands/Strand";
 
-    static final String THROWABLE_NAME         = "java.lang.Throwable".replace('.', '/');
-    static final String EXCEPTION_NAME         = "java.lang.Exception".replace('.', '/');
-    static final String RUNTIME_EXCEPTION_NAME = "java.lang.RuntimeException".replace('.', '/');
+    static final String THROWABLE_NAME         = "java/lang/Throwable";
+    static final String EXCEPTION_NAME         = "java/lang/Exception";
+    static final String RUNTIME_EXCEPTION_NAME = "java/lang/RuntimeException";
 
-    static final String RUNTIME_SUSPEND_EXECUTION_NAME = "co.paralleluniverse.fibers.RuntimeSuspendExecution".replace('.', '/');
-    static final String UNDECLARED_THROWABLE_NAME      = "java.lang.reflect.UndeclaredThrowableException".replace('.', '/');
-    static final String SUSPEND_EXECUTION_NAME         = "co.paralleluniverse.fibers.SuspendExecution".replace('.', '/');
+    static final String RUNTIME_SUSPEND_EXECUTION_NAME = "co/paralleluniverse/fibers/RuntimeSuspendExecution";
+    static final String UNDECLARED_THROWABLE_NAME      = "java/lang/reflect/UndeclaredThrowableException";
+    static final String SUSPEND_EXECUTION_NAME         = "co/paralleluniverse/fibers/SuspendExecution";
     
     // computed
     // static final String EXCEPTION_DESC = "L" + SUSPEND_EXECUTION_NAME + ";";
