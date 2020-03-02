@@ -13,15 +13,9 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.fibers.*;
-
-import java.lang.reflect.UndeclaredThrowableException;
-import java.util.*;
-
-import co.paralleluniverse.fibers.Stack;
-import co.paralleluniverse.strands.Strand;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
+
+import java.util.*;
 
 /**
  * This class contains hard-coded values with the names of the classes and methods relevant for instrumentation.
@@ -39,23 +33,23 @@ public final class Classes {
     }));
 
     // Don't load the classes
-    static final String STACK_NAME       = /*Stack.class.getName()*/ "co.paralleluniverse.fibers.Stack".replace('.', '/');
-    static final String FIBER_CLASS_NAME = /*Fiber.class.getName()*/ "co.paralleluniverse.fibers.Fiber".replace('.', '/');
-    static final String STRAND_NAME      = /*Strand.class.getName()*/"co.paralleluniverse.strands.Strand".replace('.', '/');
+    static final String STACK_NAME       = "co.paralleluniverse.fibers.Stack".replace('.', '/');
+    static final String FIBER_CLASS_NAME = "co.paralleluniverse.fibers.Fiber".replace('.', '/');
+    static final String STRAND_NAME      = "co.paralleluniverse.strands.Strand".replace('.', '/');
 
-    static final String THROWABLE_NAME         = Throwable.class.getName().replace('.', '/');
-    static final String EXCEPTION_NAME         = Exception.class.getName().replace('.', '/');
-    static final String RUNTIME_EXCEPTION_NAME = RuntimeException.class.getName().replace('.', '/');
+    static final String THROWABLE_NAME         = "java.lang.Throwable".replace('.', '/');
+    static final String EXCEPTION_NAME         = "java.lang.Exception".replace('.', '/');
+    static final String RUNTIME_EXCEPTION_NAME = "java.lang.RuntimeException".replace('.', '/');
 
-    static final String RUNTIME_SUSPEND_EXECUTION_NAME = RuntimeSuspendExecution.class.getName().replace('.', '/');
-    static final String UNDECLARED_THROWABLE_NAME      = UndeclaredThrowableException.class.getName().replace('.', '/');
-    static final String SUSPEND_EXECUTION_NAME         = SuspendExecution.class.getName().replace('.', '/');
+    static final String RUNTIME_SUSPEND_EXECUTION_NAME = "co.paralleluniverse.fibers.RuntimeSuspendExecution".replace('.', '/');
+    static final String UNDECLARED_THROWABLE_NAME      = "java.lang.reflect.UndeclaredThrowableException".replace('.', '/');
+    static final String SUSPEND_EXECUTION_NAME         = "co.paralleluniverse.fibers.SuspendExecution".replace('.', '/');
     
     // computed
     // static final String EXCEPTION_DESC = "L" + SUSPEND_EXECUTION_NAME + ";";
-    static final String SUSPENDABLE_DESC = Type.getDescriptor(Suspendable.class);
-    static final String DONT_INSTRUMENT_DESC = Type.getDescriptor(DontInstrument.class);
-    static final String INSTRUMENTED_DESC = Type.getDescriptor(Instrumented.class);
+    static final String SUSPENDABLE_DESC     = "Lco/paralleluniverse/fibers/Suspendable;";               // Type.getDescriptor(Suspendable.class);
+    static final String DONT_INSTRUMENT_DESC = "Lco/paralleluniverse/fibers/instrument/DontInstrument;"; // Type.getDescriptor(DontInstrument.class);
+    static final String INSTRUMENTED_DESC    = "Lco/paralleluniverse/fibers/Instrumented;";              // Type.getDescriptor(Instrumented.class);
     static final String LAMBDA_METHOD_PREFIX = "lambda$";
 
     static boolean isYieldMethod(String className, String methodName) {
