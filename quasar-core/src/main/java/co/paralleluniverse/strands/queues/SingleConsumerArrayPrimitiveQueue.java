@@ -13,6 +13,10 @@
  */
 package co.paralleluniverse.strands.queues;
 
+import co.paralleluniverse.common.reflection.GetDeclaredField;
+
+import static java.security.AccessController.doPrivileged;
+
 /**
  *
  * @author pron
@@ -61,7 +65,7 @@ abstract class SingleConsumerArrayPrimitiveQueue<E> extends SingleConsumerArrayQ
 
     static {
         try {
-            maxReadIndexOffset = UNSAFE.objectFieldOffset(SingleConsumerArrayPrimitiveQueue.class.getDeclaredField("maxReadIndex"));
+            maxReadIndexOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(SingleConsumerArrayPrimitiveQueue.class, "maxReadIndex")));
         } catch (Exception ex) {
             throw new Error(ex);
         }

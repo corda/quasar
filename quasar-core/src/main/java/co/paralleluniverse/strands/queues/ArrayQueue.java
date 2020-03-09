@@ -13,8 +13,11 @@
  */
 package co.paralleluniverse.strands.queues;
 
+import co.paralleluniverse.common.reflection.GetDeclaredField;
 import co.paralleluniverse.common.util.UtilUnsafe;
 import sun.misc.Unsafe;
+
+import static java.security.AccessController.doPrivileged;
 
 /**
  *
@@ -121,8 +124,8 @@ public class ArrayQueue<E> implements BasicQueue<E> {
 
     static {
         try {
-            headOffset = UNSAFE.objectFieldOffset(ArrayQueue.class.getDeclaredField("head"));
-            tailOffset = UNSAFE.objectFieldOffset(ArrayQueue.class.getDeclaredField("tail"));
+            headOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(ArrayQueue.class, "head")));
+            tailOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(ArrayQueue.class, "tail")));
 
             base = UNSAFE.arrayBaseOffset(Object[].class);
             int scale = UNSAFE.arrayIndexScale(Object[].class);

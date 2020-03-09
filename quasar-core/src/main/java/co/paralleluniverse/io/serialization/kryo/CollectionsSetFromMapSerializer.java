@@ -12,6 +12,7 @@
  */
 package co.paralleluniverse.io.serialization.kryo;
 
+import co.paralleluniverse.common.reflection.GetAccessDeclaredField;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
@@ -21,6 +22,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import static java.security.AccessController.doPrivileged;
 
 /**
  *
@@ -33,10 +36,8 @@ class CollectionsSetFromMapSerializer extends Serializer<Set> {
     static {
         try {
             final Class<?> cl = Collections.newSetFromMap(new HashMap()).getClass();
-            mf = cl.getDeclaredField("m");
-            mf.setAccessible(true);
-            sf = cl.getDeclaredField("s");
-            sf.setAccessible(true);
+            mf = doPrivileged(new GetAccessDeclaredField(cl, "m"));
+            sf = doPrivileged(new GetAccessDeclaredField(cl, "s"));
         } catch (Exception e) {
             throw new AssertionError(e);
         }

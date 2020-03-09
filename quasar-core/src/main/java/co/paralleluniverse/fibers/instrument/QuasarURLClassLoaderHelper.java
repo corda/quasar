@@ -13,6 +13,8 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
+import co.paralleluniverse.common.reflection.GetAccessDeclaredField;
+import co.paralleluniverse.common.reflection.GetAccessDeclaredMethod;
 import com.google.common.io.ByteStreams;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -23,15 +25,14 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
-import java.security.AccessControlContext;
-import java.security.AccessController;
-import java.security.CodeSigner;
-import java.security.PrivilegedExceptionAction;
+import java.security.*;
 import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.jar.Manifest;
 import sun.misc.Resource;
 import sun.misc.URLClassPath;
+
+import static java.security.AccessController.doPrivileged;
 
 /**
  *
@@ -192,14 +193,12 @@ public final class QuasarURLClassLoaderHelper {
 
     static {
         try {
-            ucpField = URLClassLoader.class.getDeclaredField("ucp");
-            accField = URLClassLoader.class.getDeclaredField("acc");
-            defineClassMethod = URLClassLoader.class.getDeclaredMethod("defineClass", String.class, Resource.class);
-            ucpField.setAccessible(true);
-            accField.setAccessible(true);
-            defineClassMethod.setAccessible(true);
-        } catch (NoSuchFieldException | NoSuchMethodException | SecurityException e) {
-            throw new RuntimeException(e);
+            ucpField = doPrivileged(new GetAccessDeclaredField(URLClassLoader.class, "ucp"));
+            accField = doPrivileged(new GetAccessDeclaredField(URLClassLoader.class, "acc"));
+            defineClassMethod = doPrivileged(new GetAccessDeclaredMethod(URLClassLoader.class, "defineClass", String.class, Resource.class));
+        } catch (PrivilegedActionException e) {
+            Throwable t = e.getCause();
+            throw (t instanceof RuntimeException) ? (RuntimeException) t : new RuntimeException(t);
         }
     }
 

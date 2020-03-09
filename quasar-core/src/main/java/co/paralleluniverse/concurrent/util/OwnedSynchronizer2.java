@@ -12,11 +12,14 @@
  */
 package co.paralleluniverse.concurrent.util;
 
+import co.paralleluniverse.common.reflection.GetDeclaredField;
 import co.paralleluniverse.common.util.UtilUnsafe;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import sun.misc.Unsafe;
+
+import static java.security.AccessController.doPrivileged;
 
 /**
  *
@@ -104,7 +107,7 @@ class OwnedSynchronizer2 extends OwnedSynchronizer {
 
     static {
         try {
-            waiterOffset = UNSAFE.objectFieldOffset(OwnedSynchronizer2.class.getDeclaredField("waiter"));
+            waiterOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(OwnedSynchronizer2.class, "waiter")));
         } catch (Exception ex) {
             throw new Error(ex);
         }

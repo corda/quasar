@@ -13,9 +13,12 @@
  */
 package co.paralleluniverse.strands;
 
+import co.paralleluniverse.common.reflection.GetDeclaredField;
 import co.paralleluniverse.common.util.UtilUnsafe;
 import co.paralleluniverse.fibers.SuspendExecution;
 import sun.misc.Unsafe;
+
+import static java.security.AccessController.doPrivileged;
 
 /**
  *
@@ -71,7 +74,7 @@ public class OwnedSynchronizer extends ConditionSynchronizer implements Conditio
 
     static {
         try {
-            waiterOffset = UNSAFE.objectFieldOffset(OwnedSynchronizer.class.getDeclaredField("waiter"));
+            waiterOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(OwnedSynchronizer.class, "waiter")));
         } catch (Exception ex) {
             throw new Error(ex);
         }

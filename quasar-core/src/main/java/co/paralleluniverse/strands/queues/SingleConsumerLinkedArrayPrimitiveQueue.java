@@ -13,7 +13,11 @@
  */
 package co.paralleluniverse.strands.queues;
 
+import co.paralleluniverse.common.reflection.GetDeclaredField;
+
 import java.util.NoSuchElementException;
+
+import static java.security.AccessController.doPrivileged;
 
 /**
  *
@@ -114,8 +118,8 @@ public abstract class SingleConsumerLinkedArrayPrimitiveQueue<E> extends SingleC
 
     static {
         try {
-            tailIndexOffset = UNSAFE.objectFieldOffset(PrimitiveNode.class.getDeclaredField("tailIndex"));
-            maxReadIndexOffset = UNSAFE.objectFieldOffset(PrimitiveNode.class.getDeclaredField("maxReadIndex"));
+            tailIndexOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(PrimitiveNode.class, "tailIndex")));
+            maxReadIndexOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(PrimitiveNode.class, "maxReadIndex")));
         } catch (Exception ex) {
             throw new Error(ex);
         }

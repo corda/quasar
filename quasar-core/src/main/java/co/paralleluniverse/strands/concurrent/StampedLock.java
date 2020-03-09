@@ -21,6 +21,7 @@
  */
 package co.paralleluniverse.strands.concurrent;
 
+import co.paralleluniverse.common.reflection.GetDeclaredField;
 import co.paralleluniverse.common.util.UtilUnsafe;
 import co.paralleluniverse.fibers.SuspendExecution;
 import co.paralleluniverse.fibers.Suspendable;
@@ -30,6 +31,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+
+import static java.security.AccessController.doPrivileged;
 
 /**
  * A capability-based lock with three modes for controlling read/write
@@ -1373,12 +1376,12 @@ public class StampedLock implements java.io.Serializable {
             U = UtilUnsafe.getUnsafe();
             Class<?> k = StampedLock.class;
             Class<?> wk = WNode.class;
-            STATE = U.objectFieldOffset(k.getDeclaredField("state"));
-            WHEAD = U.objectFieldOffset(k.getDeclaredField("whead"));
-            WTAIL = U.objectFieldOffset(k.getDeclaredField("wtail"));
-            WSTATUS = U.objectFieldOffset(wk.getDeclaredField("status"));
-            WNEXT = U.objectFieldOffset(wk.getDeclaredField("next"));
-            WCOWAIT = U.objectFieldOffset(wk.getDeclaredField("cowait"));
+            STATE = U.objectFieldOffset(doPrivileged(new GetDeclaredField(k, "state")));
+            WHEAD = U.objectFieldOffset(doPrivileged(new GetDeclaredField(k, "whead")));
+            WTAIL = U.objectFieldOffset(doPrivileged(new GetDeclaredField(k, "wtail")));
+            WSTATUS = U.objectFieldOffset(doPrivileged(new GetDeclaredField(wk, "status")));
+            WNEXT = U.objectFieldOffset(doPrivileged(new GetDeclaredField(wk, "next")));
+            WCOWAIT = U.objectFieldOffset(doPrivileged(new GetDeclaredField(wk, "cowait")));
 
         } catch (Exception e) {
             throw new Error(e);
