@@ -26,6 +26,7 @@ import co.paralleluniverse.common.util.UtilUnsafe;
 import co.paralleluniverse.fibers.SuspendExecution;
 import co.paralleluniverse.fibers.Suspendable;
 import co.paralleluniverse.strands.Strand;
+import java.security.PrivilegedActionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1174,6 +1175,8 @@ public class Phaser {
         try {
             UNSAFE = UtilUnsafe.getUnsafe();
             stateOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(Phaser.class, "state")));
+        } catch (PrivilegedActionException e) {
+            throw new Error(e.getCause());
         } catch (Exception e) {
             throw new Error(e);
         }

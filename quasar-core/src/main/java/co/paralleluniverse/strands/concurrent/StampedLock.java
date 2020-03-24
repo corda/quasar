@@ -26,6 +26,7 @@ import co.paralleluniverse.common.util.UtilUnsafe;
 import co.paralleluniverse.fibers.SuspendExecution;
 import co.paralleluniverse.fibers.Suspendable;
 import co.paralleluniverse.strands.Strand;
+import java.security.PrivilegedActionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -1382,7 +1383,8 @@ public class StampedLock implements java.io.Serializable {
             WSTATUS = U.objectFieldOffset(doPrivileged(new GetDeclaredField(wk, "status")));
             WNEXT = U.objectFieldOffset(doPrivileged(new GetDeclaredField(wk, "next")));
             WCOWAIT = U.objectFieldOffset(doPrivileged(new GetDeclaredField(wk, "cowait")));
-
+        } catch (PrivilegedActionException e) {
+            throw new Error(e.getCause());
         } catch (Exception e) {
             throw new Error(e);
         }

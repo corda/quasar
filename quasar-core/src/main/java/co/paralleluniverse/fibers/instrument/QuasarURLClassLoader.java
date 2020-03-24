@@ -26,7 +26,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLStreamHandlerFactory;
 import java.nio.ByteBuffer;
-import java.security.*;
+import java.security.AccessControlContext;
+import java.security.CodeSigner;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.jar.Manifest;
@@ -209,8 +212,7 @@ public class QuasarURLClassLoader extends URLClassLoader {
             accField = doPrivileged(new GetAccessDeclaredField(URLClassLoader.class, "acc"));
             defineClassMethod = doPrivileged(new GetAccessDeclaredMethod(URLClassLoader.class, "defineClass", String.class, Resource.class));
         } catch (PrivilegedActionException e) {
-            Throwable t = e.getCause();
-            throw (t instanceof RuntimeException) ? (RuntimeException) t : new RuntimeException(t);
+            throw new RuntimeException(e.getCause());
         }
     }
 

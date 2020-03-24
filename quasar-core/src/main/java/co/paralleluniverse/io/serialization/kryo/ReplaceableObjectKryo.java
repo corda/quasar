@@ -146,7 +146,7 @@ public class ReplaceableObjectKryo extends Kryo {
             if (t instanceof NoSuchMethodException) {
                 throw (NoSuchMethodException) t;
             }
-            throw (t instanceof RuntimeException) ? (RuntimeException) t : new RuntimeException(t);
+            throw new RuntimeException(t);
         }
     }
 

@@ -60,8 +60,8 @@ public class ThreadAccess {
                 _inheritedAccessControlContextOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(Thread.class, "inheritedAccessControlContext")));
             } catch (PrivilegedActionException e) {
                 Throwable t = e.getCause();
-                if (!(t instanceof NoSuchMethodException)) {
-                    throw (t instanceof RuntimeException) ? (RuntimeException) t : new RuntimeException(t);
+                if (!(t instanceof NoSuchFieldException)) {
+                    throw new RuntimeException(t);
                 }
             }
             inheritedAccessControlContextOffset = _inheritedAccessControlContextOffset;
@@ -78,6 +78,8 @@ public class ThreadAccess {
             threadLocalMapEntryClass = Class.forName("java.lang.ThreadLocal$ThreadLocalMap$Entry");
             threadLocalMapEntryConstructor = doPrivileged(new GetAccessDeclaredConstructor<>(threadLocalMapEntryClass, ThreadLocal.class, Object.class));
             threadLocalMapEntryValueField = doPrivileged(new GetAccessDeclaredField(threadLocalMapEntryClass, "value"));
+        } catch (PrivilegedActionException ex) {
+            throw new AssertionError(ex.getCause());
         } catch (Exception ex) {
             throw new AssertionError(ex);
         }

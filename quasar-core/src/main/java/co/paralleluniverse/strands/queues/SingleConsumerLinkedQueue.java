@@ -16,6 +16,7 @@ package co.paralleluniverse.strands.queues;
 import co.paralleluniverse.common.reflection.GetDeclaredField;
 import co.paralleluniverse.common.util.UtilUnsafe;
 import com.google.common.collect.Lists;
+import java.security.PrivilegedActionException;
 import java.util.ArrayList;
 import java.util.List;
 import sun.misc.Unsafe;
@@ -275,6 +276,8 @@ abstract class SingleConsumerLinkedQueue<E> extends SingleConsumerQueue<E> {
             tailOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(SingleConsumerLinkedQueue.class, "tail")));
             nextOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(Node.class, "next")));
             prevOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(Node.class, "prev")));
+        } catch (PrivilegedActionException ex) {
+            throw new Error(ex.getCause());
         } catch (Exception ex) {
             throw new Error(ex);
         }

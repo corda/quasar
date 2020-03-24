@@ -300,7 +300,7 @@ public class OldSuspendablesScanner extends Task {
             } catch (PrivilegedActionException e) {
                 Throwable t = e.getCause();
                 if (!(t instanceof NoSuchMethodException)) {
-                    throw (t instanceof RuntimeException) ? (RuntimeException) t : new RuntimeException(t);
+                    throw new RuntimeException(t);
                 }
             }
         }

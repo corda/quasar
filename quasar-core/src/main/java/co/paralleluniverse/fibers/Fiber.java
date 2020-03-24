@@ -47,6 +47,7 @@ import java.lang.reflect.Method;
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.security.PrivilegedActionException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -1864,6 +1865,8 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
     static {
         try {
             stateOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(Fiber.class, "state")));
+        } catch (PrivilegedActionException ex) {
+            throw new AssertionError(ex.getCause());
         } catch (Exception ex) {
             throw new AssertionError(ex);
         }

@@ -52,7 +52,7 @@ class ReplacableObjectSerializer extends FieldSerializer<Object> {
             if (t instanceof NoSuchMethodException) {
                 throw (NoSuchMethodException) t;
             }
-            throw (t instanceof RuntimeException) ? (RuntimeException) t : new RuntimeException(t);
+            throw new RuntimeException(t);
         }
     }
 

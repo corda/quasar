@@ -28,6 +28,7 @@ import co.paralleluniverse.fibers.SuspendExecution;
 import co.paralleluniverse.strands.Strand;
 import co.paralleluniverse.strands.Synchronization;
 import co.paralleluniverse.strands.Timeout;
+import java.security.PrivilegedActionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -421,6 +422,8 @@ public class TransferChannel<Message> implements StandardChannel<Message>, Selec
                 saOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(k, "sa")));
                 nextOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(k, "next")));
                 waiterOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(k, "waiter")));
+            } catch (PrivilegedActionException e) {
+                throw new Error(e.getCause());
             } catch (Exception e) {
                 throw new Error(e);
             }
@@ -912,6 +915,8 @@ public class TransferChannel<Message> implements StandardChannel<Message>, Selec
             headOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(k, "head")));
             tailOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(k, "tail")));
             sweepVotesOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(k, "sweepVotes")));
+        } catch (PrivilegedActionException e) {
+            throw new Error(e.getCause());
         } catch (Exception e) {
             throw new Error(e);
         }

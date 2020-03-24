@@ -18,6 +18,7 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import java.lang.reflect.Field;
+import java.security.PrivilegedActionException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +39,8 @@ class CollectionsSetFromMapSerializer extends Serializer<Set> {
             final Class<?> cl = Collections.newSetFromMap(new HashMap()).getClass();
             mf = doPrivileged(new GetAccessDeclaredField(cl, "m"));
             sf = doPrivileged(new GetAccessDeclaredField(cl, "s"));
+        } catch (PrivilegedActionException e) {
+            throw new AssertionError(e.getCause());
         } catch (Exception e) {
             throw new AssertionError(e);
         }

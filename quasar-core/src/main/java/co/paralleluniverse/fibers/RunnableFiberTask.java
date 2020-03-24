@@ -19,11 +19,10 @@ import co.paralleluniverse.common.util.Debug;
 import co.paralleluniverse.common.util.Exceptions;
 import co.paralleluniverse.common.util.SystemProperties;
 import co.paralleluniverse.common.util.UtilUnsafe;
-import static co.paralleluniverse.fibers.FiberTask.*;
 import static java.security.AccessController.doPrivileged;
-
 import co.paralleluniverse.fibers.instrument.DontInstrument;
 import co.paralleluniverse.strands.SettableFuture;
+import java.security.PrivilegedActionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -357,6 +356,8 @@ class RunnableFiberTask<V> implements Runnable, FiberTask {
     static {
         try {
             stateOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(RunnableFiberTask.class, "state")));
+        } catch (PrivilegedActionException ex) {
+            throw new AssertionError(ex.getCause());
         } catch (Exception ex) {
             throw new AssertionError(ex);
         }

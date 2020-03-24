@@ -22,6 +22,7 @@ import co.paralleluniverse.fibers.SuspendExecution;
 import co.paralleluniverse.strands.Strand;
 import co.paralleluniverse.strands.Synchronization;
 import co.paralleluniverse.strands.Timeout;
+import java.security.PrivilegedActionException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -524,6 +525,8 @@ public class Selector<Message> implements Synchronization {
     static {
         try {
             winnerOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(Selector.class, "winner")));
+        } catch (PrivilegedActionException ex) {
+            throw new Error(ex.getCause());
         } catch (Exception ex) {
             throw new Error(ex);
         }

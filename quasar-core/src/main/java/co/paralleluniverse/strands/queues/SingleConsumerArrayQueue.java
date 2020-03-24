@@ -16,6 +16,7 @@ package co.paralleluniverse.strands.queues;
 import co.paralleluniverse.common.reflection.GetDeclaredField;
 import co.paralleluniverse.common.util.UtilUnsafe;
 import com.google.common.collect.Lists;
+import java.security.PrivilegedActionException;
 import java.util.ArrayList;
 import java.util.List;
 import sun.misc.Unsafe;
@@ -246,6 +247,8 @@ abstract class SingleConsumerArrayQueue<E> extends SingleConsumerQueue<E> {
         try {
             headOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(SingleConsumerArrayQueue.class, "head")));
             tailOffset = UNSAFE.objectFieldOffset(doPrivileged(new GetDeclaredField(SingleConsumerArrayQueue.class, "tail")));
+        } catch (PrivilegedActionException ex) {
+            throw new Error(ex.getCause());
         } catch (Exception ex) {
             throw new Error(ex);
         }

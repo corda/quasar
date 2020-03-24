@@ -16,6 +16,7 @@ package co.paralleluniverse.strands.queues;
 import co.paralleluniverse.common.reflection.GetDeclaredField;
 import co.paralleluniverse.common.util.UtilUnsafe;
 import sun.misc.Unsafe;
+import java.security.PrivilegedActionException;
 
 import static java.security.AccessController.doPrivileged;
 
@@ -83,6 +84,8 @@ public class BoxQueue<E> implements BasicQueue<E> {
     static {
         try {
             valueOffset = unsafe.objectFieldOffset(doPrivileged(new GetDeclaredField(BoxQueue.class, "value")));
+        } catch (PrivilegedActionException ex) {
+            throw new Error(ex.getCause());
         } catch (Exception ex) {
             throw new Error(ex);
         }

@@ -38,6 +38,7 @@ import co.paralleluniverse.common.util.UtilUnsafe;
 import co.paralleluniverse.fibers.SuspendExecution;
 import co.paralleluniverse.fibers.Suspendable;
 import co.paralleluniverse.strands.Strand;
+import java.security.PrivilegedActionException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -2339,7 +2340,8 @@ public abstract class AbstractQueuedSynchronizer
                 (doPrivileged(new GetDeclaredField(Node.class, "waitStatus")));
             nextOffset = unsafe.objectFieldOffset
                 (doPrivileged(new GetDeclaredField(Node.class, "next")));
-
+        } catch (PrivilegedActionException ex) {
+            throw new Error(ex.getCause());
         } catch (Exception ex) { throw new Error(ex); }
     }
 

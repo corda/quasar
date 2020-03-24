@@ -16,6 +16,7 @@ package co.paralleluniverse.strands.queues;
 import co.paralleluniverse.common.reflection.GetDeclaredField;
 import co.paralleluniverse.common.util.UtilUnsafe;
 import sun.misc.Unsafe;
+import java.security.PrivilegedActionException;
 
 import static java.security.AccessController.doPrivileged;
 
@@ -132,6 +133,8 @@ public class ArrayQueue<E> implements BasicQueue<E> {
             if ((scale & (scale - 1)) != 0)
                 throw new Error("data type scale not a power of two");
             shift = 31 - Integer.numberOfLeadingZeros(scale);
+        } catch (PrivilegedActionException ex) {
+            throw new Error(ex.getCause());
         } catch (Exception ex) {
             throw new Error(ex);
         }

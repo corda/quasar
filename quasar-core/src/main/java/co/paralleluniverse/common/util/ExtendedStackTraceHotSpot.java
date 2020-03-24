@@ -21,6 +21,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.security.PrivilegedAction;
+import java.security.PrivilegedActionException;
 import java.util.Iterator;
 
 import static co.paralleluniverse.common.util.Exceptions.rethrow;
@@ -243,6 +244,8 @@ class ExtendedStackTraceHotSpot extends ExtendedStackTrace {
             BACKTRACE_FIELD_OFFSET = doPrivileged(new GuessBacktraceFieldOffset());
 
             sanityCheck();
+        } catch (PrivilegedActionException e) {
+            throw new AssertionError(e.getCause());
         } catch (Exception e) {
             throw new AssertionError(e);
         }
