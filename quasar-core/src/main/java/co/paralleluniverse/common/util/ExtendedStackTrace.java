@@ -82,8 +82,9 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
         Member[] ms = getMethods(este.getDeclaringClass());
         Member method = null;
 
+        final String methodName = este.getMethodName();
         for (Member m : ms) {
-            if (este.getMethodName().equals(m.getName())) {
+            if (methodName.equals(m.getName())) {
                 if (method == null)
                     method = m;
                 else {
@@ -92,14 +93,17 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
                 }
             }
         }
-        if (method == null && este.getLineNumber() >= 0) {
+
+        final int lineNumber = este.getLineNumber();
+        if (method == null && lineNumber >= 0) {
             try {
+                final AtomicReference<String> exactMatch = new AtomicReference<>();
                 final AtomicReference<String> descriptor = new AtomicReference<>();
                 ASMUtil.accept(este.getDeclaringClass(), ClassReader.SKIP_FRAMES, new ClassVisitor(Opcodes.ASM5) {
                     @Override
                     public MethodVisitor visitMethod(int access, String name, final String desc, String signature, String[] exceptions) {
                         MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
-                        if (descriptor.get() == null && este.getMethodName().equals(name)) {
+                        if (exactMatch.get() == null && methodName.equals(name)) {
                             mv = new MethodVisitor(api, mv) {
                                 int minLine = Integer.MAX_VALUE, maxLine = Integer.MIN_VALUE;
 
@@ -109,11 +113,13 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
                                         minLine = line;
                                     if (line > maxLine)
                                         maxLine = line;
+                                    if (lineNumber == line)
+                                        exactMatch.set(desc);
                                 }
 
                                 @Override
                                 public void visitEnd() {
-                                    if (minLine <= este.getLineNumber() && maxLine >= este.getLineNumber())
+                                    if (minLine <= lineNumber && maxLine >= lineNumber)
                                         descriptor.set(desc);
                                     super.visitEnd();
                                 }
@@ -123,14 +129,11 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
                     }
                 });
 
-                if (descriptor.get() != null) {
-                    final String desc = descriptor.get();
-                    for (Member m : ms) {
-                        if (este.getMethodName().equals(getName(m)) && desc.equals(getDescriptor(m))) {
-                            method = m;
-                            break;
-                        }
-                    }
+                if (exactMatch.get() != null){
+                    method = getMatchingMethod(ms, methodName, exactMatch.get());
+                }
+                else if (descriptor.get() != null) {
+                    method = getMatchingMethod(ms, methodName, descriptor.get());
                 }
             } catch (Exception e) {
                 if (!(e instanceof UnsupportedOperationException))
@@ -139,6 +142,15 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
         }
 
         return method;
+    }
+
+    private Member getMatchingMethod(Member[] methods, String methodName, String desc) {
+        for (Member m : methods) {
+            if (methodName.equals(getName(m)) && desc.equals(getDescriptor(m))) {
+                return m;
+            }
+        }
+        return null;
     }
 
     protected static final String getName(Member m) {
