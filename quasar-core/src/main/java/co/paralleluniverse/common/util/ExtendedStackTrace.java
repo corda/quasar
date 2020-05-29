@@ -119,7 +119,7 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
 
                                 @Override
                                 public void visitEnd() {
-                                    if (minLine <= lineNumber && maxLine >= lineNumber)
+                                    if (minLine <= lineNumber && maxLine >= lineNumber && descriptor.get() == null)
                                         descriptor.set(desc);
                                     super.visitEnd();
                                 }
