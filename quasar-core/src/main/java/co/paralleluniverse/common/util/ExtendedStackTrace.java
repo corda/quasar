@@ -82,9 +82,9 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
         Member[] ms = getMethods(este.getDeclaringClass());
         Member method = null;
 
-        final String methodName = este.getMethodName();
+        final String targetMethodName = este.getMethodName();
         for (Member m : ms) {
-            if (methodName.equals(m.getName())) {
+            if (targetMethodName.equals(m.getName())) {
                 if (method == null)
                     method = m;
                 else {
@@ -94,8 +94,8 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
             }
         }
 
-        final int lineNumber = este.getLineNumber();
-        if (method == null && lineNumber >= 0) {
+        final int targetLineNumber = este.getLineNumber();
+        if (method == null && targetLineNumber >= 0) {
             try {
                 final AtomicReference<String> exactMatch = new AtomicReference<>();
                 final AtomicReference<String> descriptor = new AtomicReference<>();
@@ -103,7 +103,7 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
                     @Override
                     public MethodVisitor visitMethod(int access, String name, final String desc, String signature, String[] exceptions) {
                         MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
-                        if (exactMatch.get() == null && methodName.equals(name)) {
+                        if (exactMatch.get() == null && targetMethodName.equals(name)) {
                             mv = new MethodVisitor(api, mv) {
                                 int minLine = Integer.MAX_VALUE, maxLine = Integer.MIN_VALUE;
 
@@ -113,13 +113,13 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
                                         minLine = line;
                                     if (line > maxLine)
                                         maxLine = line;
-                                    if (lineNumber == line)
+                                    if (targetLineNumber == line)
                                         exactMatch.set(desc);
                                 }
 
                                 @Override
                                 public void visitEnd() {
-                                    if (minLine <= lineNumber && maxLine >= lineNumber && descriptor.get() == null)
+                                    if (minLine <= targetLineNumber && maxLine >= targetLineNumber && descriptor.get() == null)
                                         descriptor.set(desc);
                                     super.visitEnd();
                                 }
@@ -130,10 +130,10 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
                 });
 
                 if (exactMatch.get() != null){
-                    method = getMatchingMethod(ms, methodName, exactMatch.get());
+                    method = getMatchingMethod(ms, targetMethodName, exactMatch.get());
                 }
                 else if (descriptor.get() != null) {
-                    method = getMatchingMethod(ms, methodName, descriptor.get());
+                    method = getMatchingMethod(ms, targetMethodName, descriptor.get());
                 }
             } catch (Exception e) {
                 if (!(e instanceof UnsupportedOperationException))
