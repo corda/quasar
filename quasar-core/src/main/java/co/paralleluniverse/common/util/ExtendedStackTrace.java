@@ -119,8 +119,8 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
 
                                 @Override
                                 public void visitEnd() {
-                                    if (minLine <= targetLineNumber && maxLine >= targetLineNumber && descriptor.get() == null)
-                                        descriptor.set(desc);
+                                    if (minLine <= targetLineNumber && maxLine >= targetLineNumber)
+                                        descriptor.compareAndSet(null, desc);
                                     super.visitEnd();
                                 }
                             };
@@ -129,11 +129,13 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
                     }
                 });
 
-                if (exactMatch.get() != null){
-                    method = getMatchingMethod(ms, targetMethodName, exactMatch.get());
+                String exactMatchValue = exactMatch.get();
+                String descriptorValue = descriptor.get();
+                if (exactMatchValue != null){
+                    method = getMatchingMethod(ms, targetMethodName, exactMatchValue);
                 }
-                else if (descriptor.get() != null) {
-                    method = getMatchingMethod(ms, targetMethodName, descriptor.get());
+                else if (descriptorValue != null) {
+                    method = getMatchingMethod(ms, targetMethodName, descriptorValue);
                 }
             } catch (Exception e) {
                 if (!(e instanceof UnsupportedOperationException))
