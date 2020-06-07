@@ -13,9 +13,14 @@ pipeline {
   }
 
   stages {
-    stage('JDK 8 Compile') {
+    stage('Compile') {
         steps {
             sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true clean quasar-core:assemble"
+        }
+    }
+    stage('Test') {
+        steps {
+            sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true quasar-core:test"
         }
     }
   }
