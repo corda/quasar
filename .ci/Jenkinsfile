@@ -15,7 +15,7 @@ pipeline {
   stages {
     stage('JDK 8 Compile') {
         steps {
-            sh "cd CorDapp && ./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true clean quasar-core:assemble"
+            sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true clean quasar-core:assemble"
         }
     }
   }
