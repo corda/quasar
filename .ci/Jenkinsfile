@@ -1,0 +1,28 @@
+pipeline {
+  agent {
+    dockerfile {
+      // label 'k8s' -- where to run the image.
+      additionalBuildArgs "--build-arg USER=tester --build-arg UID=\$(id -u) --build-arg GID=\$(id -g)"
+      filename '.ci/Dockerfile'
+    }
+  }
+
+  options {
+      timestamps()
+      timeout(time: 1, unit: 'HOURS')
+  }
+
+  stages {
+    stage('JDK 8 Compile') {
+        steps {
+            sh "cd CorDapp && ./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true clean quasar-core:assemble"
+        }
+    }
+  }
+
+  post {
+    cleanup {
+      deleteDir()
+    }
+  }
+}
