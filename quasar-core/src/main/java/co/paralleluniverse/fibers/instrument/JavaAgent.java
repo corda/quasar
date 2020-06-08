@@ -101,11 +101,6 @@ public class JavaAgent {
 
     public static void premain(String agentArguments, Instrumentation instrumentation) {
 
-        // CORDA-3666: Access Classes now so we don't deadlock while
-        // loading it later.
-        //noinspection ResultOfMethodCallIgnored
-        Classes.SUSPEND_EXECUTION_NAME.isEmpty();
-
         if (!instrumentation.isRetransformClassesSupported())
             System.err.println("Retransforming classes is not supported!");
 
@@ -188,6 +183,12 @@ public class JavaAgent {
                 exc.printStackTrace(System.err);
             }
         });
+
+        // CORDA-3666: Access Classes now so we don't deadlock while
+        // loading it later.
+        // We expect this call to isYieldMethod to return true.
+        // Prints "Classes ready: true"
+        instrumentor.log(LogLevel.DEBUG, "Classes ready: %s", Classes.isYieldMethod(Classes.FIBER_CLASS_NAME, "park"));
 
         Retransform.instrumentation = instrumentation;
         Retransform.instrumentor = instrumentor;
