@@ -1,7 +1,12 @@
+@Library('corda-shared-build-pipeline-steps')
+import static com.r3.build.BuildControl.killAllExistingBuildsForJob
+
+killAllExistingBuildsForJob(env.JOB_NAME, env.BUILD_NUMBER.toInteger())
+
 pipeline {
   agent {
     dockerfile {
-      // label 'k8s' -- where to run the image.
+      label 'k8s'
       additionalBuildArgs "--build-arg USER=tester --build-arg UID=\$(id -u) --build-arg GID=\$(id -g)"
       filename '.ci/Dockerfile'
     }
