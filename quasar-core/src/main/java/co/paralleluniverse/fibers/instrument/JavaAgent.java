@@ -100,7 +100,6 @@ public class JavaAgent {
     private static final Set<WeakReference<ClassLoader>> classLoaders = Collections.newSetFromMap(MapUtil.<WeakReference<ClassLoader>, Boolean>newConcurrentHashMap());
 
     public static void premain(String agentArguments, Instrumentation instrumentation) {
-
         if (!instrumentation.isRetransformClassesSupported())
             System.err.println("Retransforming classes is not supported!");
 
