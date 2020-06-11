@@ -13,6 +13,7 @@ buildscript {
 
 plugins {
     id 'com.gradle.plugin-publish' version '0.10.0' apply false
+    id 'com.dorongold.task-tree' version '1.5'
 }
 
 
@@ -333,8 +334,6 @@ project (':quasar-core') {
         }
     }
 
-
-
     [compileJava, compileTestJava, classes, jar]*.enabled = false
 
     sourceSets {
@@ -487,7 +486,7 @@ project (':quasar-core') {
         }
 
         assemble.dependsOn shadowJarTask
-        check.dependsOn testTask
+        test.dependsOn testTask
     }
 
     compileJdk7Java {
@@ -598,8 +597,6 @@ project (':quasar-core') {
             }
         }
     }
-
-
 }
 
 project (':quasar-actors') {
