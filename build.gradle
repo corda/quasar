@@ -473,9 +473,8 @@ project (':quasar-core') {
         }
 
         def testTask = task("${set.name}Test", type: Test, dependsOn: [shadowJarTask, compileClassloadertestJava]) {
-            testClassesDir = project.sourceSets["${set.name}test"].output.classesDir
+            testClassesDirs = project.sourceSets["${set.name}test"].output.classesDirs
             classpath = project.sourceSets["${set.name}test"].runtimeClasspath
-
             project.afterEvaluate {
                 jvmArgs "-javaagent:${shadowJarTask.archivePath}" // =vdc
             }
@@ -708,8 +707,10 @@ task javadoc(type: Javadoc, dependsOn: subprojects.javadoc) {
     ]
 }
 
-task clean(dependsOn: subprojects.clean) << {
-    delete 'docs/javadoc'
+task clean(dependsOn: subprojects.clean) {
+    doLast {
+        delete 'docs/javadoc'
+    }
 }
 
 def capitalize(s) { s[0].toUpperCase() + s[1..-1].toLowerCase() }
