@@ -25,7 +25,7 @@ pipeline {
     }
     stage('Test') {
         steps {
-            sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true test"
+            sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true testClasses test"
         }
     }
   }

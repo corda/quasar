@@ -6,3 +6,6 @@ gradle.ext.java8 = System.properties['java.version'].startsWith('1.8')
 if (gradle.ext.java8) {
     include 'quasar-kotlin'
 }
+
+// To remove gradle deprecation wwarning.
+enableFeaturePreview('STABLE_PUBLISHING')

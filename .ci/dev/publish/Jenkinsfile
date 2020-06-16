@@ -25,12 +25,27 @@ pipeline {
     }
     stage('Test') {
         steps {
-            sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true test"
+            sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true testClasses test"
+        }
+    }
+    // Keep build and test stages as they only take a few minutes. Also we don't want to publish with failing tests.
+    stage('Publish') {
+        // Only publish if no test failures.
+        when {
+            expression {
+                currentBuild.result == null || currentBuild.result == 'SUCCESS' 
+             }
+        }
+        steps {
+            sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true artifactoryPublish"
         }
     }
   }
 
   post {
+    always {
+        junit '**/build/test-results/**/*.xml'
+    }
     cleanup {
       deleteDir()
     }
