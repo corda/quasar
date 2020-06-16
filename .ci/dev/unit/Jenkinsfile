@@ -8,7 +8,7 @@ pipeline {
     dockerfile {
       label 'k8s'
       additionalBuildArgs "--build-arg USER=tester --build-arg UID=\$(id -u) --build-arg GID=\$(id -g)"
-      filename '.ci/Dockerfile'
+      filename '.ci/dev/Dockerfile'
     }
   }
 
@@ -20,17 +20,20 @@ pipeline {
   stages {
     stage('Compile') {
         steps {
-            sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true clean quasar-core:assemble"
+            sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true clean assemble"
         }
     }
     stage('Test') {
         steps {
-            sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true quasar-core:test"
+            sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true testClasses test"
         }
     }
   }
 
   post {
+    always {
+        junit '**/build/test-results/**/*.xml'
+    }
     cleanup {
       deleteDir()
     }
