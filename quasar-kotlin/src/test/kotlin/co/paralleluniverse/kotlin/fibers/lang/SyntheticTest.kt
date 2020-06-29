@@ -16,25 +16,43 @@ package co.paralleluniverse.kotlin.fibers.lang
 import co.paralleluniverse.common.util.SystemProperties
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.Suspendable
-import co.paralleluniverse.kotlin.fibers.StaticPropertiesTest
 
 import org.junit.Assume
 import org.junit.Test
-import kotlin.test.assertNotNull
+import kotlin.test.assertEquals
 
-class MethodOverloadTest {
+import co.paralleluniverse.kotlin.fibers.StaticPropertiesTest
+
+class SyntheticTest {
+
+    private val aa = 5
 
     @Suspendable
-    fun function() {
-        function(arrayOf(0))
-    }
-
-    @Suspendable
-    fun function(m: Any) {
+    private fun defFun1(a : Int = 0) : Int {
         Fiber.yield()
+        return a + aa
     }
 
-    @Test fun methodOverloadTest() {
+    @Suspendable
+    private fun defFun2(a : Int, b: Int = 0) : Int {
+       Fiber.yield()
+       return if (a > 0) a else b
+    }
+
+    @Suspendable
+    private fun defFun3(a : Int=0, b: Int = 0) : Int {
+        Fiber.yield()
+        return if (a > 0) a else b
+    }
+
+    @Suspendable
+    private fun defFun() : Int {
+        return  defFun1() + defFun1(10) +
+                defFun2(4) + defFun2(4,2) +
+                defFun3() + defFun3(4) + defFun3(6,1);
+    }
+
+    @Test fun syntheticTest() {
 
         StaticPropertiesTest.withVerifyInstrumentationOn {
             Assume.assumeTrue(SystemProperties.isEmptyOrTrue(StaticPropertiesTest.verifyInstrumentationKey))
@@ -42,12 +60,12 @@ class MethodOverloadTest {
             val fiber = object : Fiber<Any>() {
                 @Suspendable
                 override fun run(): Any {
-                    return function(object {})
+                    return defFun();
                 }
             }
 
             val actual = fiber.start().get()
-            assertNotNull(actual)
+            assertEquals(38, actual)
         }
     }
 }
