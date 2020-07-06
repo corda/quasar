@@ -108,6 +108,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
 
     public static void readSystemProperties() {
         // ENT-5444 To facilitate testing make reading of system properties public.
+        // Only to be called from test for the purposes of re reading the static members. So no need for volatile.
         traceInterrupt = SystemProperties.isEmptyOrTrue("co.paralleluniverse.fibers.traceInterrupt");
         disableAgentWarning = SystemProperties.isEmptyOrTrue("co.paralleluniverse.fibers.disableAgentWarning");
         verifyInstrumentation = SystemProperties.isEmptyOrTrue("co.paralleluniverse.fibers.verifyInstrumentation");
