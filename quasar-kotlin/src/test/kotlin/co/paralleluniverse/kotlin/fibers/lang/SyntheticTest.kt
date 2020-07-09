@@ -16,12 +16,12 @@ package co.paralleluniverse.kotlin.fibers.lang
 import co.paralleluniverse.common.util.SystemProperties
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.Suspendable
-
 import org.junit.Assume
 import org.junit.Test
 import kotlin.test.assertEquals
 
 import co.paralleluniverse.kotlin.fibers.StaticPropertiesTest
+import kotlin.test.assertNotNull
 
 class SyntheticTest {
 
@@ -36,13 +36,13 @@ class SyntheticTest {
     @Suspendable
     private fun defFun2(a : Int, b: Int = 0) : Int {
        Fiber.yield()
-       return if (a > 0) a else b
+       return a + b
     }
 
     @Suspendable
     private fun defFun3(a : Int=0, b: Int = 0) : Int {
         Fiber.yield()
-        return if (a > 0) a else b
+        return a + b
     }
 
     @Suspendable
@@ -55,17 +55,18 @@ class SyntheticTest {
     @Test fun syntheticTest() {
 
         StaticPropertiesTest.withVerifyInstrumentationOn {
+
             Assume.assumeTrue(SystemProperties.isEmptyOrTrue(StaticPropertiesTest.verifyInstrumentationKey))
 
             val fiber = object : Fiber<Any>() {
                 @Suspendable
                 override fun run(): Any {
-                    return defFun();
+                    return defFun()
                 }
             }
 
             val actual = fiber.start().get()
-            assertEquals(38, actual)
+            assertEquals(41, actual)
         }
     }
 }
