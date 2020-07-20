@@ -43,6 +43,9 @@ package co.paralleluniverse.fibers.instrument;
 
 import static co.paralleluniverse.fibers.instrument.Classes.*;
 import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
+
+import co.paralleluniverse.fibers.Fiber;
+import co.paralleluniverse.fibers.Suspendable;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.ClassEntry;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import java.util.ArrayList;
@@ -317,22 +320,39 @@ class InstrumentClass extends ClassVisitor {
         super.visitEnd();
     }
 
-    private boolean compareSuspendableArgs(Type[] expectedMethodTypes, MethodNode mns) {
-        final Type[] candidateMethodTypes = Type.getArgumentTypes(mns.desc);
-        for (int i = 0; i < candidateMethodTypes.length; i++) {
-            if (!Objects.equals(candidateMethodTypes[i], expectedMethodTypes[i + 1])) {
+    private boolean compareSuspendableArgs(MethodNode mns, Type[] staticMethodTypes) {
+        final Type[] suspendableMethodTypes = Type.getArgumentTypes(mns.desc);
+
+        // Double check the length of method arguments array. Should be larger than suspendableMethodTypes.
+        if (staticMethodTypes.length <= suspendableMethodTypes.length) {
+            return false;
+        }
+
+        // Now check the arguments match, just in case method is overloaded.
+        // Kotlin compiler generates static counterpart as below. First argument is this, then
+        // list of arguments that must match then a bitmask for setting defaults.
+        //
+        // @Suspendable
+        // private final int defFun1(int a)
+        //
+        // $FF: synthetic method
+        // static int defFun1$default(SyntheticTest var0, int var1, int var2, Object var3)
+
+        for (int i = 0; i < suspendableMethodTypes.length; i++) {
+            if (!Objects.equals(suspendableMethodTypes[i], staticMethodTypes[i + 1])) {
                 return false;
             }
         }
+
         return true;
     }
 
     private boolean searchSuspendables(MethodNode mn) {
         // Go through suspendable methods and try to find a match for mn.
-        final Type[] expectedMethodTypes = Type.getArgumentTypes(mn.desc);
+        final Type[] staticMethodTypes = Type.getArgumentTypes(mn.desc);
         for (MethodNode mns : methodsSuspendable) {
             if (Objects.equals(mns.name + "$default", mn.name) &&
-                compareSuspendableArgs(expectedMethodTypes, mns)) {
+                compareSuspendableArgs(mns, staticMethodTypes)) {
                 return true;
             }
         }
