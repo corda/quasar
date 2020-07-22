@@ -166,7 +166,7 @@ subprojects {
         systemProperty 'co.paralleluniverse.monitoring.flightRecorderSize', '200000'
 
         if (project.name != 'quasar-core') {
-            jvmArgs "-javaagent:${quasarJar}" // vdc (verbose, debug, allow monitors, check class)
+            jvmArgs "-javaagent:${quasarJar}" // =vdmc (verbose, debug, allow monitors, check class)
         }
 
         if (project.name != 'quasar-kotlin') { // TODO investigate why kotlin-plugin 1.1.2+ doesn't like it

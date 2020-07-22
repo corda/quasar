@@ -44,8 +44,6 @@ package co.paralleluniverse.fibers.instrument;
 import static co.paralleluniverse.fibers.instrument.Classes.*;
 import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
 
-import co.paralleluniverse.fibers.Fiber;
-import co.paralleluniverse.fibers.Suspendable;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.ClassEntry;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import java.util.ArrayList;
@@ -228,10 +226,10 @@ class InstrumentClass extends ClassVisitor {
                         methodsSuspendable.add(mn);
                     } else {
 
+                        final int ACC_STATIC_SYNTHETIC = Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC;
+
                         // If we may have a synthesized default method then save it for later processing.
-                        if (((access & Opcodes.ACC_STATIC) == Opcodes.ACC_STATIC) &&
-                            ((access & Opcodes.ACC_SYNTHETIC) == Opcodes.ACC_SYNTHETIC) &&
-                              name.endsWith("$default")) {
+                        if (((access & ACC_STATIC_SYNTHETIC) == ACC_STATIC_SYNTHETIC) && name.endsWith("$default")) {
                             methodsSyntheticStatic.add(mn);
                         } else {
                             MethodVisitor _mv = makeOutMV(mn);
