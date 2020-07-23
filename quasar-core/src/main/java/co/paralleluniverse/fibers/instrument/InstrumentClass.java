@@ -132,7 +132,7 @@ class InstrumentClass extends ClassVisitor {
     boolean hasSuspendableMethods() {
         return methodsSuspendable != null && !methodsSuspendable.isEmpty();
     }
-    boolean hasNonSuspendableMethods() {
+    boolean hasSyntheticStaticMethods() {
         return methodsSyntheticStatic != null && !methodsSyntheticStatic.isEmpty();
     }
 
@@ -256,7 +256,7 @@ class InstrumentClass extends ClassVisitor {
             throw exception;
         }
 
-        if (hasNonSuspendableMethods()) {
+        if (hasSyntheticStaticMethods()) {
 
             // Go through methods that are not suspendable and check for $default methods that have associated suspendable counterparts.
             for (MethodNode mn : methodsSyntheticStatic) {
