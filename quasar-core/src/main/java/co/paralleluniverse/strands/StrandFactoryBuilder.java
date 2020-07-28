@@ -176,12 +176,13 @@ public class StrandFactoryBuilder {
                 if (_fiber) {
                     s = _fs != null ? new Fiber<>(name, _fs, _stackSize, target) : new Fiber<>(name, _stackSize, target);
                 } else {
+                    // ENT-5489, replace thread gymnastics with use of public API to set name.
                     final Thread t = new Thread(null, Strand.toRunnable(target), "", _stackSize);
                     t.setName(name != null ? name : "Thread-" + String.valueOf(t.getId()));
                     t.setDaemon(_daemon);
-                    if (_priority != null){
+                    if (_priority != null) {
                         t.setPriority(_priority);
-		    }
+                    }
                     s = Strand.of(t);
                 }
                 if (_ueh != null)
