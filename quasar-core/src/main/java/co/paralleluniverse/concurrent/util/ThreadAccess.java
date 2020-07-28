@@ -50,17 +50,14 @@ public class ThreadAccess {
         try {
             MethodHandles.Lookup l = MethodHandles.lookup();
             l = MethodHandles.privateLookupIn(Thread.class, l);
-            {
-                // ENT-5489, try name "target" first then try name "runnable".
-                // runnable is the name used in openj9.
-                VarHandle target;
-                try {
-                    target = l.findVarHandle(Thread.class, "target", Runnable.class);
-                } catch (NoSuchFieldException ex) {
-                    target = l.findVarHandle(Thread.class, "runnable", Runnable.class);
-                }
-                TARGET = target;
+
+            // ENT-5489, For openj9 vm name is runnable.
+            if (System.getProperty("java.vm.name").toLowerCase().contains("openj9")) {
+                TARGET = l.findVarHandle(Thread.class, "runnable", Runnable.class);
+            } else {
+                TARGET = l.findVarHandle(Thread.class, "target", Runnable.class);
             }
+
             THREAD_LOCALS = l.unreflectVarHandle(doPrivileged(new GetDeclaredField(Thread.class, "threadLocals")));
             INHERITABLE_THREAD_LOCALS = l.unreflectVarHandle(doPrivileged(new GetDeclaredField(Thread.class, "inheritableThreadLocals")));
             CONTEXT_CLASS_LOADER = l.unreflectVarHandle(doPrivileged(new GetDeclaredField(Thread.class, "contextClassLoader")));
@@ -132,23 +129,7 @@ public class ThreadAccess {
             throw new AssertionError(ex);
         }
     }
-
-//    public static void set(Thread t, ThreadLocal tl, Object value) {
-//        Object map = getThreadLocals(t);
-//        if (map != null)
-//            set(map, tl, value);
-//        else
-//            setThreadLocals(t, createThreadLocalMap(tl, value));
-//    }
-//
-//    private static void set(Object map, ThreadLocal tl, Object value) {
-//        try {
-//            threadLocalMapSet.invoke(map, tl, value);
-//        } catch (ReflectiveOperationException e) {
-//            throw new AssertionError(e);
-//        }
-//    }
-
+    
     // createInheritedMap works only for InheritableThreadLocals
     public static Object cloneThreadLocalMap(Object orig) {
         try {
