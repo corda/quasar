@@ -495,6 +495,12 @@ project (':quasar-core') {
         }
 
         assemble.dependsOn shadowJarTask
+        build.dependsOn shadowJarTask
+        install.dependsOn shadowJarTask
+        signArchives.dependsOn shadowJarTask
+        artifactoryPublish.dependsOn shadowJarTask
+
+        assemble.dependsOn shadowJarTask
         test.dependsOn testTask
     }
 
@@ -557,20 +563,8 @@ project (':quasar-core') {
         }
     }
 
-    task("shadowJars") {
-        dependsOn tasks.withType(com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar)
-    }
-
-    assemble.dependsOn shadowJars
-    build.dependsOn shadowJars
-    install.dependsOn shadowJars
-    signArchives.dependsOn shadowJars
-    artifactoryPublish.dependsOn shadowJars
-//    uploadArchives.dependsOn shadowJars
-
     def installer = install.repositories.mavenInstaller
-//    def deployer = uploadArchives.repositories.mavenDeployer
-//
+
     [installer]*.pom*.whenConfigured {
         it.dependencies.removeAll { dep ->
             dep.artifactId.startsWith('jsr166e') ||
