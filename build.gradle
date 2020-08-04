@@ -16,7 +16,6 @@ plugins {
     id 'com.dorongold.task-tree' version '1.5'
 }
 
-
 ext.java8 = gradle.ext.java8 // See settings.gradle
 
 subprojects {
@@ -294,23 +293,34 @@ subprojects {
 }
 
 def scanAndInstrument(sset, configs) {
-    def cp = '' + sset.output.classesDir + ':' + sset.output.resourcesDir + ':' + configs*.asPath.join(':')
+
+    def cp = sset.output.classesDirs.getAsPath() + ':' + sset.output.resourcesDir + ':' + configs*.asPath.join(':')
+
+    // ENT-5598 quasar-kotlin has two output directories, java and kotlin.
+    // So we have to cope with multiple directories in classesDirs.
 
     ant.taskdef(
-        name:'scanSuspendables', classname:'co.paralleluniverse.fibers.instrument.SuspendablesScanner',
+        name:'scanSuspendables',
+        classname:'co.paralleluniverse.fibers.instrument.SuspendablesScanner',
         classpath: cp)
     ant.scanSuspendables(
         auto: false,
         supersFile:"$sset.output.resourcesDir/META-INF/suspendable-supers",
         append: true) {
-        fileset(dir: sset.output.classesDir)
+        for (File f : sset.output.classesDirs) {
+            fileset(dir: f)
+        }
     }
 
-    ant.taskdef(name:'instrumentation', classname:'co.paralleluniverse.fibers.instrument.InstrumentationTask',
+    ant.taskdef(
+        name:'instrumentation',
+        classname:'co.paralleluniverse.fibers.instrument.InstrumentationTask',
         classpath: cp)
     ant.instrumentation(verbose:'true', check:'true', debug:'true') {
-        fileset(dir: sset.output.classesDir) {
-            exclude(name: 'co/paralleluniverse/fibers/instrument/*.class')
+        for (File f : sset.output.classesDirs) {
+            fileset(dir: f) {
+                exclude(name: 'co/paralleluniverse/fibers/instrument/*.class')
+            }
         }
     }
 }
@@ -547,15 +557,16 @@ project (':quasar-core') {
         }
     }
 
-    task shadowJar(dependsOn: tasks.withType(com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar), overwrite: true) {
+    task("shadowJars") {
+        dependsOn tasks.withType(com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar)
     }
 
-    assemble.dependsOn shadowJar
-    build.dependsOn shadowJar
-    install.dependsOn shadowJar
-    signArchives.dependsOn shadowJar
-    artifactoryPublish.dependsOn shadowJar
-//    uploadArchives.dependsOn shadowJar
+    assemble.dependsOn shadowJars
+    build.dependsOn shadowJars
+    install.dependsOn shadowJars
+    signArchives.dependsOn shadowJars
+    artifactoryPublish.dependsOn shadowJars
+//    uploadArchives.dependsOn shadowJars
 
     def installer = install.repositories.mavenInstaller
 //    def deployer = uploadArchives.repositories.mavenDeployer
