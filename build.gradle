@@ -22,8 +22,8 @@ subprojects {
     apply plugin: 'com.jfrog.artifactory'
     apply plugin: 'org.javamodularity.moduleplugin'
 
-    sourceCompatibility = '10'
-    targetCompatibility = '10' // gradle 4.10.2 does not support JDK 11 targets
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
 
     tasks.withType(JavaCompile) {
         options.encoding = 'UTF-8'
