@@ -1,19 +1,9 @@
-buildscript {
-    repositories {
-        mavenCentral()
-        jcenter()
-    }
-    dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.2'
-        classpath 'net.saliman:gradle-cobertura-plugin:2.5.4'
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
-        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.9.6"
-        classpath 'gradle.plugin.org.javamodularity:moduleplugin:1.0.1'
-    }
-}
 
 plugins {
-  id "com.dorongold.task-tree" version "1.3.1"
+    id 'com.jfrog.artifactory'
+    id 'org.javamodularity.moduleplugin'
+    id 'com.github.johnrengelman.shadow'
+    id 'com.dorongold.task-tree'
 }
 
 subprojects {
@@ -589,7 +579,7 @@ project (':quasar-disruptor') {
     }
 }
 
-task javadoc(type: Javadoc, dependsOn: subprojects.javadoc) {
+javadoc {
     title = "Quasar ${project(':quasar-core').version}"
     destinationDir = file("docs/javadoc")
 
@@ -647,7 +637,7 @@ task javadoc(type: Javadoc, dependsOn: subprojects.javadoc) {
     ]
 }
 
-task clean(dependsOn: subprojects.clean) {
+clean {
     doLast() {
         delete 'docs/javadoc'
     }
