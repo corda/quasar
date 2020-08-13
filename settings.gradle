@@ -4,10 +4,11 @@ pluginManagement {
     }
 
     plugins {
-        id 'com.dorongold.task-tree' version "${taskTreeVersion}"
-        id 'com.github.johnrengelman.shadow' version "${shadowVersion}"
-        id 'com.jfrog.artifactory' version "${artifactoryVersion}"
-        id 'org.javamodularity.moduleplugin' version "${modulepluginVersion}"
+        id 'org.jetbrains.kotlin.jvm' version kotlinVersion
+        id 'com.dorongold.task-tree' version taskTreeVersion
+        id 'com.github.johnrengelman.shadow' version shadowVersion
+        id 'com.jfrog.artifactory' version artifactoryVersion
+        id 'org.javamodularity.moduleplugin' version modulepluginVersion
     }
 }
 
