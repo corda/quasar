@@ -35,9 +35,8 @@ subprojects {
     ext.baselib         = "${rootProject.projectDir}/baselib"
     ext.quasarJar = "${rootProject.projectDir}/quasar-core/build/libs/quasar-core-${version}.jar" // project(':quasar-core').jar.archivePath
 
-    ext.guavaVer  = '26.0-jre'
+    ext.guavaVer  = '29.0-jre'
     ext.asmVer    = '7.0'
-    ext.kotlinVer = kotlinVersion
 
     if (!project.hasProperty('mainClass')) { // must use project.hasProperty() rather than hasProperty in subprojects (gradle bug)
         ext.mainClass = ''
