@@ -1,7 +1,9 @@
+import aQute.bnd.gradle.Bundle
 
 plugins {
     id 'com.jfrog.artifactory'
-    id 'com.github.johnrengelman.shadow'
+    id 'com.github.johnrengelman.shadow' apply false
+    id 'biz.aQute.bnd.builder' apply false
     id 'com.dorongold.task-tree'
 }
 
@@ -40,13 +42,14 @@ subprojects {
 
     ext.asmVer    = '5.2'
     ext.kotlinVer = kotlinVersion
+    ext.osgiVer   = '7.0.0'
 
     if (!project.hasProperty('mainClass')) { // must use project.hasProperty() rather than hasProperty in subprojects (gradle bug)
         ext.mainClass = ''
     }
 
 
-        repositories {
+    repositories {
         flatDir {
             dirs baselib
         }
@@ -136,7 +139,7 @@ subprojects {
 
     test.dependsOn jar
 
-    tasks.withType(Test) {
+    tasks.withType(Test).configureEach {
         useJUnit()
         // systemProperty 'co.paralleluniverse.fibers.verifyInstrumentation', 'true'
 
@@ -213,7 +216,7 @@ subprojects {
     debug.debug = true
 
     project.afterEvaluate {
-        run.dependsOn project(':quasar-core').tasks["jdk${project.ext.jdkVer}ShadowJar"]
+        run.dependsOn project(':quasar-core').tasks["jdk${project.ext.jdkVer}Bundle"]
     }
 
     tasks.withType(JavaExec) {
@@ -270,7 +273,6 @@ subprojects {
     apply plugin: 'signing'
 
     artifacts {
-        archives jar
         archives sourcesJar
         archives javadocJar
     }
@@ -323,8 +325,6 @@ project (':quasar-core') {
      *   http://stackoverflow.com/questions/18190614/compiling-a-project-with-different-java-source-compatibility
      *   https://softnoise.wordpress.com/2014/09/07/gradle-sub-project-test-dependencies-in-multi-project-builds/
      */
-
-    apply plugin: 'com.github.johnrengelman.shadow'
 
     // remove default artifact
     configurations.runtime.artifacts.with { archives ->
@@ -427,6 +427,8 @@ project (':quasar-core') {
             exclude group: "com.esotericsoftware.kryo", module: '*'
         }
         provided 'junit:junit:4.12'
+
+        compileOnly "org.osgi:osgi.annotation:$osgiVer"
     }
 
     def ssets = [sourceSets.jdk7]
@@ -441,9 +443,10 @@ project (':quasar-core') {
             }
         }
 
-        def shadowJarTask = task("${set.name}ShadowJar", type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar, dependsOn: classes) {
-            classifier = '' // overwrite jar
+        Jar shadowJarTask = task("${set.name}ShadowJar", type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar, dependsOn: classes) {
             destinationDir = file("$buildDir/libs")
+            archiveAppendix = 'shadow'
+            archiveClassifier = ''
 
             from set.output
 
@@ -471,27 +474,39 @@ project (':quasar-core') {
             }
         }
 
-        def testTask = task("${set.name}Test", type: Test, dependsOn: [shadowJarTask, compileClassloadertestJava]) {
+        def bundleTask = tasks.register("${set.name}Bundle", Bundle) {
+            dependsOn shadowJarTask
+            from zipTree(shadowJarTask.archiveFile)
+            archiveClassifier = shadowJarTask.archiveClassifier
+
+            manifest {
+                attributes('-include': "jar:${shadowJarTask.archiveFile.map { it.asFile.toURI() }.get()}!/META-INF/MANIFEST.MF")
+                attributes('Bundle-SymbolicName': 'co.paralleluniverse.quasar-core')
+                attributes('Bundle-Name': 'Quasar Agent')
+                attributes('Bundle-Version': version)
+            }
+        }
+
+        def testTask = task("${set.name}Test", type: Test, dependsOn: [bundleTask, compileClassloadertestJava]) {
             testClassesDirs = project.sourceSets["${set.name}test"].output.classesDirs
             classpath = project.sourceSets["${set.name}test"].runtimeClasspath
             project.afterEvaluate {
-                jvmArgs "-javaagent:${shadowJarTask.archivePath}" // =vdc
+                jvmArgs "-javaagent:${bundleTask.flatMap { it.archiveFile }.get()}" // =vdc
             }
         }
 
         artifacts {
-            archives shadowJarTask
+            archives bundleTask.flatMap { it.archiveFile }
         }
 
-        assemble.dependsOn shadowJarTask
-        build.dependsOn shadowJarTask
-        install.dependsOn shadowJarTask
-        signArchives.dependsOn shadowJarTask
-        artifactoryPublish.dependsOn shadowJarTask
+        signArchives.dependsOn bundleTask
+        artifactoryPublish.dependsOn bundleTask
 
-        assemble.dependsOn shadowJarTask
         test.dependsOn testTask
     }
+
+    def jdk7Bundle = tasks.named('jdk7Bundle', Bundle)
+    def jdk8Bundle = tasks.named('jdk8Bundle', Bundle)
 
     compileJdk7Java {
         sourceCompatibility = '1.7'
@@ -510,7 +525,7 @@ project (':quasar-core') {
     }
 
     artifacts {
-        jdk7Archives jdk7ShadowJar
+        jdk7Archives jdk7Bundle.flatMap { it.archiveFile }
     }
 
     if (ext.java8) {
@@ -529,15 +544,15 @@ project (':quasar-core') {
         //        }
 
         artifacts {
-            jdk8Archives jdk8ShadowJar
+            jdk8Archives jdk8Bundle.flatMap { it.archiveFile }
         }
 
-        tasks.withType(JavaExec) {
+        tasks.withType(JavaExec).configureEach {
             classpath += sourceSets.jdk8test.runtimeClasspath + sourceSets.jdk8test.output
         }
         run.dependsOn compileJdk8Java, jdk8testClasses
     } else {
-        tasks.withType(JavaExec) {
+        tasks.withType(JavaExec).configureEach {
             classpath += sourceSets.jdk7test.runtimeClasspath + sourceSets.jdk7test.output
         }
         run.dependsOn compileJdk7Java, jdk7testClasses
@@ -570,8 +585,8 @@ project (':quasar-core') {
     }
     ext {
         mavenArtifacts = {
-            it.artifact jdk7ShadowJar
-            it.artifact jdk8ShadowJar
+            it.artifact jdk7Bundle.flatMap { it.archiveFile }
+            it.artifact jdk8Bundle.flatMap { it.archiveFile }
 
             it.pom{ pom->
                 pom.withXml{ xml ->

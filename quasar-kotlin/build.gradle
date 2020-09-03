@@ -2,13 +2,11 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
 }
 
-apply plugin: 'kotlin'
-
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
 dependencies {
-    compile project(':quasar-core')
+    compile project(path: ':quasar-core', configuration: 'jdk8Archives')
     compile project(':quasar-actors')
 
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVer"
@@ -18,7 +16,7 @@ dependencies {
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVer"
 }
 
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     kotlinOptions {
         jvmTarget = "1.8"
     }
