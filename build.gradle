@@ -17,7 +17,7 @@ subprojects {
     sourceCompatibility = '1.7'
     targetCompatibility = '1.7'
 
-    tasks.withType(JavaCompile) {
+    tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
     }
 
@@ -64,6 +64,10 @@ subprojects {
 
     configurations.all {
         resolutionStrategy {
+            // The substitution is needed to get ASM 5.2 whilst Kryo still depends on 5.0.4
+            dependencySubstitution {
+                substitute module("org.ow2.asm:asm") with module("org.ow2.asm:asm:$asmVer")
+            }
             failOnVersionConflict()
         }
     }
@@ -418,14 +422,8 @@ project (':quasar-core') {
         compile "org.ow2.asm:asm-commons:$asmVer"
         compile "org.ow2.asm:asm-util:$asmVer"
 
-        // The exclusions are needed to get asm 5.0.4 whilst Kryo still depends on 5.0.3
-        compile("com.esotericsoftware:kryo:4.0.0") {
-            exclude group: "org.ow2.asm", module: '*'
-        }
-        compile("de.javakaffee:kryo-serializers:0.42") {
-            exclude group: "com.esotericsoftware", module: '*'
-            exclude group: "com.esotericsoftware.kryo", module: '*'
-        }
+        compile "com.esotericsoftware:kryo:4.0.2"
+        compile "de.javakaffee:kryo-serializers:0.43"
         provided 'junit:junit:4.12'
 
         compileOnly "org.osgi:osgi.annotation:$osgiVer"
@@ -479,12 +477,19 @@ project (':quasar-core') {
             from zipTree(shadowJarTask.archiveFile)
             archiveClassifier = shadowJarTask.archiveClassifier
 
-            manifest {
-                attributes('-include': "jar:${shadowJarTask.archiveFile.map { it.asFile.toURI() }.get()}!/META-INF/MANIFEST.MF")
-                attributes('Bundle-SymbolicName': 'co.paralleluniverse.quasar-core')
-                attributes('Bundle-Name': 'Quasar Agent')
-                attributes('Bundle-Version': version)
-            }
+            bnd """
+-include: "jar:${shadowJarTask.archiveFile.map { it.asFile.toURI() }.get()}!/META-INF/MANIFEST.MF"
+Bundle-SymbolicName: co.paralleluniverse.quasar-core
+Bundle-Name: Quasar Agent
+Bundle-Version: $version
+Import-Package: org.LatencyUtils.*;resolution:=optional,\
+ com.codahale.metrics.*;resolution:=optional,\
+ org.apache.tools.ant.*;resolution:=optional,\
+ sun.management.*;resolution:=optional,\
+ sun.misc.*;resolution:=optional,\
+ !org.junit.*,\
+ *
+"""
         }
 
         def testTask = task("${set.name}Test", type: Test, dependsOn: [bundleTask, compileClassloadertestJava]) {
