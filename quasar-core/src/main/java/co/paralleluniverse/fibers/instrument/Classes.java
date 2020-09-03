@@ -13,13 +13,15 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.fibers.*;
-
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.*;
 
+import co.paralleluniverse.fibers.DontInstrument;
+import co.paralleluniverse.fibers.Instrumented;
+import co.paralleluniverse.fibers.RuntimeSuspendExecution;
 import co.paralleluniverse.fibers.Stack;
-import co.paralleluniverse.strands.Strand;
+import co.paralleluniverse.fibers.Suspendable;
+import co.paralleluniverse.fibers.SuspendExecution;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 

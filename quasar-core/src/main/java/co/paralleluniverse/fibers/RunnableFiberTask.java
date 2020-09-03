@@ -20,7 +20,6 @@ import co.paralleluniverse.common.util.Exceptions;
 import co.paralleluniverse.common.util.SystemProperties;
 import co.paralleluniverse.common.util.UtilUnsafe;
 import static java.security.AccessController.doPrivileged;
-import co.paralleluniverse.fibers.instrument.DontInstrument;
 import co.paralleluniverse.strands.SettableFuture;
 import java.security.PrivilegedActionException;
 import java.util.concurrent.ExecutionException;

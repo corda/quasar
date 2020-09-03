@@ -21,7 +21,6 @@ import co.paralleluniverse.concurrent.forkjoin.ExtendedForkJoinWorkerFactory;
 import co.paralleluniverse.concurrent.forkjoin.ExtendedForkJoinWorkerThread;
 import co.paralleluniverse.concurrent.forkjoin.MonitoredForkJoinPool;
 import co.paralleluniverse.concurrent.forkjoin.ParkableForkJoinTask;
-import co.paralleluniverse.fibers.instrument.DontInstrument;
 import co.paralleluniverse.strands.Strand;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.lang.Thread.UncaughtExceptionHandler;
