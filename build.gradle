@@ -80,11 +80,11 @@ subprojects {
 
     sourceSets {
         main {
-            compileClasspath += configurations.compileOnly + configurations.provided
+            compileClasspath += configurations.provided
         }
 
         test {
-            compileClasspath += configurations.compileOnly + configurations.provided
+            compileClasspath += configurations.provided
             runtimeClasspath += configurations.provided
         }
 
@@ -135,7 +135,7 @@ subprojects {
     compileJava {
         if (project.name != 'quasar-kotlin') {
             doLast {
-                scanAndInstrument(sourceSets.main, [configurations.provided, configurations.runtime])
+                scanAndInstrument(sourceSets.main, [configurations.provided, configurations.runtimeClasspath])
             }
         }
     }
@@ -222,7 +222,7 @@ subprojects {
         run.dependsOn project(':quasar-core').tasks["jdk${project.ext.jdkVer}Bundle"]
     }
 
-    tasks.withType(JavaExec) {
+    tasks.withType(JavaExec).configureEach {
         classpath += sourceSets.test.runtimeClasspath + sourceSets.test.output + sourceSets.jmh.runtimeClasspath + sourceSets.jmh.output
     }
 
@@ -405,24 +405,25 @@ project (':quasar-core') {
     }
 
     configurations {
-        jdk7Archives.extendsFrom runtime
-        jdk8Archives.extendsFrom runtime
+        compileClasspath.extendsFrom provided
+        jdk7Archives.extendsFrom runtimeClasspath
+        jdk8Archives.extendsFrom runtimeClasspath
     }
 
     dependencies {
         jdk7Compile ":jsr166e"
-        compile ":high-scale-lib"
-        compile "org.hdrhistogram:HdrHistogram:2.1.9"
-        compile("org.latencyutils:LatencyUtils:2.0.3") {
+        implementation ":high-scale-lib"
+        implementation "org.hdrhistogram:HdrHistogram:2.1.9"
+        implementation("org.latencyutils:LatencyUtils:2.0.3") {
             exclude group: "org.hdrhistogram", module: '*'
         }
-        compile "org.ow2.asm:asm:$asmVer"
-        compile "org.ow2.asm:asm-analysis:$asmVer"
-        compile "org.ow2.asm:asm-commons:$asmVer"
-        compile "org.ow2.asm:asm-util:$asmVer"
+        provided "org.ow2.asm:asm:$asmVer"
+        provided "org.ow2.asm:asm-analysis:$asmVer"
+        provided "org.ow2.asm:asm-commons:$asmVer"
+        provided "org.ow2.asm:asm-util:$asmVer"
 
-        compile "com.esotericsoftware:kryo:4.0.2"
-        compile "de.javakaffee:kryo-serializers:0.43"
+        implementation "com.esotericsoftware:kryo:4.0.2"
+        implementation "de.javakaffee:kryo-serializers:0.43"
         provided 'junit:junit:4.12'
 
         compileOnly "org.osgi:osgi.annotation:$osgiVer"
@@ -436,7 +437,7 @@ project (':quasar-core') {
     ssets.each { set ->
         configure(project.tasks["compile${capitalize(set.name)}Java"]) {
             doLast {
-                rootProject.scanAndInstrument(set, [configurations["${set.name}Runtime"], configurations.provided, configurations.runtime])
+                rootProject.scanAndInstrument(set, [configurations["${set.name}Runtime"], configurations.provided, configurations.runtimeClasspath])
             }
         }
 
@@ -447,7 +448,10 @@ project (':quasar-core') {
 
             from set.output
 
-            configurations = [project.configurations.runtime, project.configurations["${set.name}Runtime"]]
+            configurations = [
+                project.configurations.compileClasspath,
+                project.configurations["${set.name}Runtime"]
+            ]
             dependencies {
                 include(dependency('org.ow2.asm:.*:.*'))
                 include(dependency(':high-scale-lib'))
@@ -617,14 +621,14 @@ project (':quasar-actors') {
     dependencies {
         provided project(path: ':quasar-core', configuration: "jdk${jdkVer}Archives")
         // compile 'org.mutabilitydetector:MutabilityDetector:0.9.2'
-        compile "org.slf4j:slf4j-api:1.7.25"
-        compile "net.bytebuddy:byte-buddy:1.7.1"
-        testRuntime("org.apache.logging.log4j:log4j-slf4j-impl:2.8.2") {
+        implementation "org.slf4j:slf4j-api:1.7.25"
+        implementation "net.bytebuddy:byte-buddy:1.7.1"
+        testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.8.2") {
             exclude group: "org.slf4j", module: '*'
         }
-        testRuntime "org.apache.logging.log4j:log4j-api:2.8.2"
-        testRuntime "org.apache.logging.log4j:log4j-core:2.8.2"
-        testRuntime "com.lmax:disruptor:3.3.6" // required for log4j
+        testRuntimeOnly "org.apache.logging.log4j:log4j-api:2.8.2"
+        testRuntimeOnly "org.apache.logging.log4j:log4j-core:2.8.2"
+        testRuntimeOnly "com.lmax:disruptor:3.3.6" // required for log4j
     }
 }
 
