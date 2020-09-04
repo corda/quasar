@@ -63,7 +63,7 @@ public class FiberForkJoinScheduler extends FiberScheduler {
     /**
      * Creates a new fiber scheduler using a default {@link UncaughtExceptionHandler UncaughtExceptionHandler}.
      *
-     * @param name         the scheuler's name. This name is used in naming the scheduler's threads.
+     * @param name         the scheduler's name. This name is used in naming the scheduler's threads.
      * @param parallelism  the number of threads in the pool
      * @param monitorType  the {@link MonitorType} type to use for the {@code ForkJoinPool}.
      * @param detailedInfo whether detailed information about the fibers is collected by the fibers monitor.

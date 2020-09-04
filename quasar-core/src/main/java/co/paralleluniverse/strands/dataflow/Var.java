@@ -78,7 +78,7 @@ public class Var<T> {
         this.f = f;
 
         if (f != null)
-            new VarFiber<T>(scheduler != null ? scheduler : DefaultFiberScheduler.getInstance(), this).start();
+            new VarFiber<>(scheduler != null ? scheduler : DefaultFiberScheduler.getInstance(), this).start();
     }
 
     /**

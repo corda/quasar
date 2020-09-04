@@ -64,8 +64,8 @@ subprojects {
 
     configurations.all {
         resolutionStrategy {
-            // The substitution is needed to get ASM 5.2 whilst Kryo still depends on 5.0.4
             dependencySubstitution {
+                // The substitution is needed to get ASM 5.2 whilst Kryo still depends on 5.0.4
                 substitute module("org.ow2.asm:asm") with module("org.ow2.asm:asm:$asmVer")
             }
             failOnVersionConflict()
@@ -73,7 +73,6 @@ subprojects {
     }
 
     configurations {
-        compileOnly
         provided
         timewarp
         // markdownDoclet
