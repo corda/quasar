@@ -35,7 +35,7 @@ import org.objectweb.asm.util.TraceClassVisitor;
 public class Retransform {
     static volatile Instrumentation instrumentation;
     static volatile QuasarInstrumentor instrumentor;
-    static volatile Set<WeakReference<ClassLoader>> classLoaders = Collections.newSetFromMap(MapUtil.<WeakReference<ClassLoader>, Boolean>newConcurrentHashMap());
+    static volatile Set<WeakReference<ClassLoader>> classLoaders = Collections.newSetFromMap(MapUtil.newConcurrentHashMap());
     
     private static final CopyOnWriteArrayList<ClassLoadListener> listeners = new CopyOnWriteArrayList<>();
 
@@ -59,7 +59,7 @@ public class Retransform {
         return instrumentor;
     }
 
-    public static boolean isInstrumented(Class clazz) {
+    public static boolean isInstrumented(Class<?> clazz) {
         return SuspendableHelper.isInstrumented(clazz);
     }
 
@@ -94,12 +94,12 @@ public class Retransform {
         return ce.isSuspendable(methodName);
     }
 
-    static void beforeTransform(String className, Class clazz, byte[] data) {
+    static void beforeTransform(String className, Class<?> clazz, byte[] data) {
         for (ClassLoadListener listener : listeners)
             listener.beforeTransform(className, clazz, data);
     }
 
-    static void afterTransform(String className, Class clazz, byte[] data) {
+    static void afterTransform(String className, Class<?> clazz, byte[] data) {
         for (ClassLoadListener listener : listeners)
             listener.afterTransform(className, clazz, data);
     }
@@ -117,8 +117,8 @@ public class Retransform {
     }
 
     public interface ClassLoadListener {
-        void beforeTransform(String className, Class clazz, byte[] data);
+        void beforeTransform(String className, Class<?> clazz, byte[] data);
 
-        void afterTransform(String className, Class clazz, byte[] data);
+        void afterTransform(String className, Class<?> clazz, byte[] data);
     }
 }

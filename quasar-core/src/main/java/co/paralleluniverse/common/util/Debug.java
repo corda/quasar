@@ -368,16 +368,16 @@ public class Debug {
         return url != null ? url.toString() : null;
     }
 
-    private static Class findClass(String className) {
+    private static Class<?> findClass(String className) {
         try {
             return Thread.currentThread().getContextClassLoader().loadClass(className);
         } catch (ClassNotFoundException e) {
+            try {
+                return Class.forName(className);
+            } catch (ClassNotFoundException e2) {
+                return null;
+            }
         }
-        try {
-            return Class.forName(className);
-        } catch (ClassNotFoundException e) {
-        }
-        return null;
     }
 
     public static String getClassLoaderInfo(ClassLoader cl) {

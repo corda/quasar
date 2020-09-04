@@ -40,7 +40,7 @@ class DBClassWriter extends ClassWriter {
     
     private final MethodDatabase db;
 
-    public DBClassWriter(MethodDatabase db, ClassReader classReader) {
+    DBClassWriter(MethodDatabase db, ClassReader classReader) {
         super(classReader, COMPUTE_FRAMES | COMPUTE_MAXS);
         this.db = db;
     }

@@ -97,7 +97,7 @@ import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
 public class JavaAgent {
     private static final String USAGE = "Usage: vdmcbx(exclusion;...)l(exclusion;...) (verbose, debug, allow monitors, check class, allow blocking)";
     private static volatile boolean ACTIVE;
-    private static final Set<WeakReference<ClassLoader>> classLoaders = Collections.newSetFromMap(MapUtil.<WeakReference<ClassLoader>, Boolean>newConcurrentHashMap());
+    private static final Set<WeakReference<ClassLoader>> classLoaders = Collections.newSetFromMap(MapUtil.newConcurrentHashMap());
 
     public static void premain(String agentArguments, Instrumentation instrumentation) {
         if (!instrumentation.isRetransformClassesSupported())

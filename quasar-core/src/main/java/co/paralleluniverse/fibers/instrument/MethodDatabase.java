@@ -49,8 +49,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -563,10 +561,10 @@ public class MethodDatabase {
         }
     }
 
-    public static class ExtractSuperClass extends ClassVisitor {
+    static class ExtractSuperClass extends ClassVisitor {
         String superClass;
 
-        public ExtractSuperClass() {
+        ExtractSuperClass() {
             super(ASMAPI);
         }
 

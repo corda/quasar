@@ -325,7 +325,7 @@ class InstrumentMethod {
         }
     }
 
-    public void accept(MethodVisitor mv, boolean hasAnnotation) {
+    void accept(MethodVisitor mv, boolean hasAnnotation) {
         db.log(LogLevel.INFO, "Instrumenting method %s:%s#%s%s", sourceName, className, mn.name, mn.desc);
 
         if (mn.name.charAt(0) == '<')

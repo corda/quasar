@@ -1,7 +1,10 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id 'com.jfrog.artifactory'
     id 'org.javamodularity.moduleplugin'
     id 'com.github.johnrengelman.shadow'
+    id 'biz.aQute.bnd.builder' apply false
     id 'com.dorongold.task-tree'
 }
 
@@ -14,7 +17,7 @@ subprojects {
     sourceCompatibility = '11'
     targetCompatibility = '11'
 
-    tasks.withType(JavaCompile) {
+    tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
     }
 
@@ -35,8 +38,11 @@ subprojects {
     ext.baselib         = "${rootProject.projectDir}/baselib"
     ext.quasarJar = "${rootProject.projectDir}/quasar-core/build/libs/quasar-core-${version}.jar" // project(':quasar-core').jar.archivePath
 
+    ext.drpWizVer = '4.1.0'
     ext.guavaVer  = '29.0-jre'
     ext.asmVer    = '7.0'
+    ext.slf4jVer  = '1.7.26'
+    ext.osgiVer   = '7.0.0'
 
     if (!project.hasProperty('mainClass')) { // must use project.hasProperty() rather than hasProperty in subprojects (gradle bug)
         ext.mainClass = ''
@@ -57,28 +63,33 @@ subprojects {
 
     configurations.all {
         resolutionStrategy {
+            dependencySubstitution {
+                // The substitution is needed to get ASM 7.0 whilst Kryo still depends on 5.0.4
+                substitute module("org.ow2.asm:asm") with module("org.ow2.asm:asm:$asmVer")
+
+                // Kryo demands Objenesis 2.5.1, but Mockito wants Objenesis 2.6
+                substitute module("org.objenesis:objenesis") with module("org.objenesis:objenesis:2.5.1")
+
+                // Avoid problem when DropWizard and Log4J ask for different versions of SLF4J.
+                substitute module("org.slf4j:slf4j-api") with module("org.slf4j:slf4j-api:$slf4jVer")
+            }
             failOnVersionConflict()
         }
     }
 
     configurations {
-        compileOnly
         provided
         timewarp
         // markdownDoclet
-        shadowedJar.extendsFrom(runtime)
+        bundledJar.extendsFrom runtimeClasspath
+
+        compileClasspath.extendsFrom provided
+        testCompileOnly.extendsFrom compileOnly
+        testCompileClasspath.extendsFrom provided
+        testRuntimeClasspath.extendsFrom provided
     }
 
     sourceSets {
-        main {
-            compileClasspath += configurations.compileOnly + configurations.provided
-        }
-
-        test {
-            compileClasspath += configurations.compileOnly + configurations.provided
-            runtimeClasspath += configurations.provided
-        }
-
         jmh {
             compileClasspath += main.compileClasspath + main.output + test.compileClasspath + test.output
             runtimeClasspath += compileClasspath + main.runtimeClasspath + test.runtimeClasspath
@@ -91,36 +102,33 @@ subprojects {
     }
 
     dependencies {
-        compile("io.dropwizard.metrics:metrics-core:4.1.0-rc2") {
-            exclude group: 'org.slf4j', module: '*'
-        }
-        compile "io.dropwizard.metrics:metrics-jmx:4.1.0-rc2"
+        implementation "io.dropwizard.metrics:metrics-core:$drpWizVer"
+        implementation "io.dropwizard.metrics:metrics-jmx:$drpWizVer"
         provided "org.apache.ant:ant:1.10.5"
-        compile 'com.google.errorprone:error_prone_annotations:2.3.2'
-        compile ("com.google.guava:guava:$guavaVer") {
+        implementation ("com.google.guava:guava:$guavaVer") {
             exclude group: 'com.google.errorprone', module: '*'
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
         timewarp 'co.paralleluniverse:timewarp:0.2.0-SNAPSHOT'
-        testCompile 'co.paralleluniverse:timewarp:0.2.0-SNAPSHOT'
-        testCompile 'org.hamcrest:hamcrest-all:1.3'
-        testCompile('junit:junit:4.12') {
+        testImplementation 'co.paralleluniverse:timewarp:0.2.0-SNAPSHOT'
+        testImplementation 'org.hamcrest:hamcrest-all:1.3'
+        testImplementation('junit:junit:4.12') {
             exclude group: 'org.hamcrest', module: '*'
         }
-        testCompile('com.google.truth:truth:0.42') {
+        testImplementation('com.google.truth:truth:0.42') {
             exclude group: 'com.google.guava', module: 'guava'
             exclude group: 'com.google.errorprone', module: '*'
             exclude group: 'junit', module: 'junit'
         }
-        testCompile("org.mockito:mockito-core:2.23.0") {
+        testImplementation("org.mockito:mockito-core:2.23.0") {
             exclude group: "org.ow2.asm", module: '*'
             exclude group: "net.bytebuddy", module: '*'
         }
-        testRuntime "net.bytebuddy:byte-buddy:1.9.2" // for Mockito
-        testCompile "org.ow2.asm:asm:$asmVer"
+        testRuntimeOnly "net.bytebuddy:byte-buddy:1.9.2" // for Mockito
+        testImplementation "org.ow2.asm:asm:$asmVer"
 
-        jmhCompile 'org.openjdk.jmh:jmh-core:1.21'
-        jmhCompile 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+        jmhImplementation 'org.openjdk.jmh:jmh-core:1.21'
+        jmhImplementation 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
 
         annotationProcessor 'org.kohsuke.metainf-services:metainf-services:1.8'
         // annotationProcessor 'com.google.auto.service:auto-service:1.0-rc1' // same as metainf-services
@@ -136,14 +144,14 @@ subprojects {
     compileJava {
         if (project.name != 'quasar-kotlin') {
             doLast {
-                scanAndInstrument(sourceSets.main, [configurations.provided, configurations.runtime])
+                scanAndInstrument(sourceSets.main, [configurations.provided, configurations.runtimeClasspath])
             }
         }
     }
     
     test.dependsOn jar
 
-    tasks.withType(Test) {
+    tasks.withType(Test).configureEach {
         useJUnit()
     
         if (project.name != 'quasar-kotlin') {
@@ -229,13 +237,13 @@ subprojects {
     debug.debug = true
 
     project.afterEvaluate {
-        run.dependsOn project(':quasar-core').shadowJar
+        run.dependsOn project(':quasar-core').tasks.named('bundle')
 
         jar {
             manifest {
                 attributes(
                     "Implementation-Title"      :   project.name,
-                    "Implementation-Version"    :   version,
+                    "Implementation-Version"    :   archiveVersion.get(),
                     "Implementation-Vendor"     :   vendor,
                     "Automatic-Module-Name"     :   project.moduleName,
                     "Built-By"                  :   System.getProperty("user.name"),
@@ -244,7 +252,7 @@ subprojects {
         }
     }
 
-    tasks.withType(JavaExec) {
+    tasks.withType(JavaExec).configureEach {
         classpath += sourceSets.test.runtimeClasspath + sourceSets.test.output + sourceSets.jmh.runtimeClasspath + sourceSets.jmh.output
     }
 
@@ -262,11 +270,11 @@ subprojects {
     defaultTasks 'build'
 
     task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier = 'sources'
+        archiveClassifier = 'sources'
         from sourceSets.main.allSource
     }
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
+        archiveClassifier = 'javadoc'
         from javadoc.destinationDir
     }
 
@@ -384,54 +392,49 @@ project (':quasar-core') {
     }
 
     configurations {
-        archives.extendsFrom runtime
+        compileClasspath.extendsFrom provided
     }
 
     dependencies {
 //        compile ":high-scale-lib"
-        compile "org.hdrhistogram:HdrHistogram:2.1.10"
-        compile("org.latencyutils:LatencyUtils:2.0.3") {
+        implementation "org.hdrhistogram:HdrHistogram:2.1.10"
+        implementation("org.latencyutils:LatencyUtils:2.0.3") {
             exclude group: "org.hdrhistogram", module: '*'
         }
-        compile "org.ow2.asm:asm:$asmVer"
-        compile "org.ow2.asm:asm-analysis:$asmVer"
-        compile "org.ow2.asm:asm-commons:$asmVer"
-        compile "org.ow2.asm:asm-util:$asmVer"
+        provided "org.ow2.asm:asm:$asmVer"
+        provided "org.ow2.asm:asm-analysis:$asmVer"
+        provided "org.ow2.asm:asm-commons:$asmVer"
+        provided "org.ow2.asm:asm-util:$asmVer"
 
-        // The exclusions are needed to get asm 5.0.4 whilst Kryo still depends on 5.0.3
-        compile "org.objenesis:objenesis:2.6"
-        compile("com.esotericsoftware:kryo:4.0.2") {
-            exclude group: "org.ow2.asm", module: '*'
-            exclude group: "org.objenesis", module: '*'
-        }
-        compile("de.javakaffee:kryo-serializers:0.42") {
-            exclude group: "com.esotericsoftware", module: '*'
-            exclude group: "com.esotericsoftware.kryo", module: '*'
-        }
-        
-        // this happens after we've filtered the dependency on ASM from core's module-info
-        compileTestJava {
-            options.compilerArgs += ["--add-modules", "org.objectweb.asm", "--add-reads", "co.paralleluniverse.quasar.core=org.objectweb.asm"]
-        }
-        
+        implementation "com.esotericsoftware:kryo:4.0.2"
+        implementation "de.javakaffee:kryo-serializers:0.43"
+
         provided ('junit:junit:4.12') {
             exclude group: 'org.hamcrest', module: '*'
         }
+
+        compileOnly "org.osgi:osgi.annotation:$osgiVer"
+    }
+
+    // this happens after we've filtered the dependency on ASM from core's module-info
+    compileTestJava {
+        options.compilerArgs += ["--add-modules", "org.objectweb.asm", "--add-reads", "co.paralleluniverse.quasar.core=org.objectweb.asm"]
     }
 
     configure(project.tasks.compileJava) {
         doLast {
-            rootProject.scanAndInstrument(sourceSets.main, [configurations.provided, configurations.runtime])
+            rootProject.scanAndInstrument(sourceSets.main, [configurations.provided, configurations.runtimeClasspath])
         }
     }
     
     shadowJar {
-        classifier = '' // overwrite jar
-        destinationDir = file("$buildDir/libs")
+        archiveAppendix = 'shadow'
+        archiveClassifier = ''
+        destinationDirectory = file("$buildDir/libs")
 
         from sourceSets.main.output
 
-        configurations = [project.configurations.runtime]
+        configurations = [project.configurations.compileClasspath]
         dependencies {
             include(dependency('org.ow2.asm:.*:.*'))
 //            include(dependency(':high-scale-lib'))
@@ -445,9 +448,9 @@ project (':quasar-core') {
         manifest {
             attributes(
                 "Implementation-Title"      :   project.name,
-                "Implementation-Version"    :   version,
+                "Implementation-Version"    :   archiveVersion.get(),
                 "Implementation-Vendor"     :   vendor,
-                "Automatic-Module-Name"     :   project.moduleName,
+                "Automatic-Module-Name"     :   moduleName,
                 "Premain-Class"             :   "co.paralleluniverse.fibers.instrument.JavaAgent",
                 "Agent-Class"               :   "co.paralleluniverse.fibers.instrument.JavaAgent",
                 "Can-Retransform-Classes"   :   "true",
@@ -457,25 +460,42 @@ project (':quasar-core') {
         }
     }
 
+    def bundle = tasks.register('bundle', Bundle) {
+        dependsOn shadowJar
+        from zipTree(shadowJar.archiveFile)
+        archiveClassifier = shadowJar.archiveClassifier
+
+        bnd """
+-include: "jar:${shadowJar.archiveFile.map { it.asFile.toURI() }.get()}!/META-INF/MANIFEST.MF"
+Bundle-SymbolicName: co.paralleluniverse.quasar-core
+Bundle-Name: Quasar Agent
+Bundle-Version: $version
+Import-Package: org.LatencyUtils.*;resolution:=optional,\
+ org.HdrHistogram.*;resolution:=optional,\
+ org.apache.tools.ant.*;resolution:=optional,\
+ org.junit.*;resolution:=optional,\
+ *
+"""
+    }
+
     test {
-        dependsOn = [shadowJar, compileClassloadertestJava]
+        dependsOn = [bundle, compileClassloadertestJava]
         testClassesDirs = project.sourceSets.test.output.classesDirs
         classpath = project.sourceSets.test.runtimeClasspath
 
         project.afterEvaluate {
-            jvmArgs "-javaagent:${shadowJar.archivePath}" // =vdc
+            jvmArgs "-javaagent:${bundle.flatMap { it.archiveFile }.get()}" // =vdc
         }
     }
 
     artifacts {
-        archives shadowJar
-        shadowedJar shadowJar
+        archives bundle.flatMap { it.archiveFile }
+        bundledJar bundle.flatMap { it.archiveFile }
     }
 
-    assemble.dependsOn shadowJar
     check.dependsOn test
 
-    tasks.withType(JavaExec) {
+    tasks.withType(JavaExec).configureEach {
         classpath += sourceSets.test.runtimeClasspath + sourceSets.test.output
     }
     run.dependsOn compileJava, testClasses
@@ -485,9 +505,7 @@ project (':quasar-core') {
         source = sourceSets.main.allJava
     }
 
-    assemble.dependsOn shadowJar
-    build.dependsOn shadowJar
-    install.dependsOn shadowJar
+    install.dependsOn bundle
 
     def installer = install.repositories.mavenInstaller
     [installer]*.pom*.whenConfigured {
@@ -514,17 +532,15 @@ project (':quasar-actors') {
     ext.moduleName = 'co.paralleluniverse.quasar.actors'
     
     dependencies {
-        provided project(path: ':quasar-core', configuration: 'shadowedJar')
+        provided project(path: ':quasar-core', configuration: 'bundledJar')
         // compile 'org.mutabilitydetector:MutabilityDetector:0.9.2'
-        compile "org.slf4j:slf4j-api:1.7.25"
-        compile "net.bytebuddy:byte-buddy:1.9.2"
-        
-        testRuntime("org.apache.logging.log4j:log4j-slf4j-impl:2.11.1") {
-            exclude group: "org.slf4j", module: '*'
-        }
-        testRuntime "org.apache.logging.log4j:log4j-api:2.11.1"
-        testRuntime "org.apache.logging.log4j:log4j-core:2.11.1"
-        testRuntime "com.lmax:disruptor:3.4.2" // required for log4j
+        implementation "org.slf4j:slf4j-api:$slf4jVer"
+        implementation "net.bytebuddy:byte-buddy:1.9.2"
+
+        testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:2.11.1"
+        testRuntimeOnly "org.apache.logging.log4j:log4j-api:2.11.1"
+        testRuntimeOnly "org.apache.logging.log4j:log4j-core:2.11.1"
+        testRuntimeOnly "com.lmax:disruptor:3.4.2" // required for log4j
     }
 }
 
@@ -535,7 +551,7 @@ project (':quasar-reactive-streams') {
     ext.moduleName = 'co.paralleluniverse.quasar.reactivestreams'
     
     dependencies {
-        provided project(path: ':quasar-core', configuration: 'shadowedJar')
+        provided project(path: ':quasar-core', configuration: 'bundledJar')
         compile "org.reactivestreams:reactive-streams:1.0.2"
         testCompile("org.reactivestreams:reactive-streams-tck:1.0.2") {
             exclude group: "junit", module: "*"
@@ -559,7 +575,7 @@ project (':quasar-disruptor') {
     ext.moduleName = 'co.paralleluniverse.quasar.disruptor'
 
     dependencies {
-        provided project(path: ':quasar-core', configuration: 'shadowedJar')
+        provided project(path: ':quasar-core', configuration: 'bundledJar')
         compile "com.lmax:disruptor:3.4.2"
     }
 }
@@ -632,7 +648,7 @@ configure(publishedProjects) { subproject ->
     apply plugin: 'com.jfrog.artifactory'
 
     task sourceJar(type: Jar, dependsOn: subproject.classes) {
-        classifier = 'sources'
+        archiveClassifier = 'sources'
         from sourceSets.main.allSource
     }
 
@@ -701,8 +717,8 @@ artifactory {
         contextUrl = 'https://ci-artifactory.corda.r3cev.com/artifactory'
         repository {
             repoKey = 'corda-dependencies-dev'
-            username = System.getenv('CORDA_ARTIFACTORY_USERNAME') ?: System.getProperty('corda.artifactory.username')
-            password = System.getenv('CORDA_ARTIFACTORY_PASSWORD') ?: System.getProperty('corda.artifactory.password')
+            username = project.findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME') ?: System.getProperty('corda.artifactory.username')
+            password = project.findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD') ?: System.getProperty('corda.artifactory.password')
             maven = true
         }
 

@@ -52,8 +52,8 @@ public class OldSuspendablesScanner extends Task {
     private static final boolean USE_REFLECTION = false;
     private static final String CLASSFILE_SUFFIX = ".class";
     private URLClassLoader cl;
-    private final ArrayList<FileSet> filesets = new ArrayList<FileSet>();
-    private final Set<String> results = new HashSet<String>();
+    private final ArrayList<FileSet> filesets = new ArrayList<>();
+    private final Set<String> results = new HashSet<>();
     private String supersFile;
     private boolean append;
     private SimpleSuspendableClassifier ssc;
@@ -230,7 +230,7 @@ public class OldSuspendablesScanner extends Task {
     }
 
     /////////// ASM
-    public void scanClass(ClassNode cls) throws Exception {
+    void scanClass(ClassNode cls) throws Exception {
         List<MethodNode> methods = cls.methods;
         for (MethodNode m : methods) {
             if (isSuspendable(cls, m)) {

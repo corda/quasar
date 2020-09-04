@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 public class FiberForkJoinScheduler extends FiberScheduler {
     private final ForkJoinPool fjPool;
     private final FiberTimedScheduler timer;
-    private final Set<FiberWorkerThread> activeThreads = Collections.newSetFromMap(new ConcurrentHashMap<FiberWorkerThread, Boolean>());
+    private final Set<FiberWorkerThread> activeThreads = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /**
      * Creates a new fiber scheduler.
@@ -76,7 +76,7 @@ public class FiberForkJoinScheduler extends FiberScheduler {
     /**
      * Creates a new fiber scheduler using a default {@link UncaughtExceptionHandler UncaughtExceptionHandler} and no monitoring.
      *
-     * @param name        the scheuler's name. This name is used in naming the scheduler's threads.
+     * @param name        the scheduler's name. This name is used in naming the scheduler's threads.
      * @param parallelism the number of threads in the pool
      */
     public FiberForkJoinScheduler(String name, int parallelism) {

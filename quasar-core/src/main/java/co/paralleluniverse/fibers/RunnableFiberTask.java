@@ -50,7 +50,7 @@ class RunnableFiberTask<V> implements Runnable, FiberTask {
         this.executor = executor;
         this.fiber = fiber;
         this.state = RUNNABLE;
-        this.future = Fiber.USE_VAL_FOR_RESULT ? null : new SettableFuture<V>();
+        this.future = Fiber.USE_VAL_FOR_RESULT ? null : new SettableFuture<>();
     }
 
     @Override
