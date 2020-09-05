@@ -1,3 +1,5 @@
+import static org.gradle.api.JavaVersion.*
+
 pluginManagement {
     repositories {
         gradlePluginPortal()
@@ -17,7 +19,7 @@ include 'quasar-actors'
 include 'quasar-reactive-streams'
 include 'quasar-disruptor'
 
-gradle.ext.java8 = System.properties['java.version'].startsWith('1.8')
+gradle.ext.java8 = current().java8Compatible
 
 // Since version 1.1 the Kotlin compiler doesn't support running on Java < 8
 if (gradle.ext.java8) {
