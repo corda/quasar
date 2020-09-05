@@ -14,6 +14,10 @@
 package co.paralleluniverse.fibers.instrument;
 
 import co.paralleluniverse.concurrent.util.MapUtil;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.util.Textifier;
+import org.objectweb.asm.util.TraceClassVisitor;
 import java.io.PrintWriter;
 import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.Instrumentation;
@@ -23,10 +27,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.util.Textifier;
-import org.objectweb.asm.util.TraceClassVisitor;
 
 /**
  *
@@ -59,7 +59,7 @@ public class Retransform {
         return instrumentor;
     }
 
-    public static boolean isInstrumented(Class clazz) {
+    public static boolean isInstrumented(Class<?> clazz) {
         return SuspendableHelper.isInstrumented(clazz);
     }
 
@@ -94,12 +94,12 @@ public class Retransform {
         return ce.isSuspendable(methodName);
     }
 
-    static void beforeTransform(String className, Class clazz, byte[] data) {
+    static void beforeTransform(String className, Class<?> clazz, byte[] data) {
         for (ClassLoadListener listener : listeners)
             listener.beforeTransform(className, clazz, data);
     }
 
-    static void afterTransform(String className, Class clazz, byte[] data) {
+    static void afterTransform(String className, Class<?> clazz, byte[] data) {
         for (ClassLoadListener listener : listeners)
             listener.afterTransform(className, clazz, data);
     }
@@ -117,8 +117,8 @@ public class Retransform {
     }
 
     public interface ClassLoadListener {
-        void beforeTransform(String className, Class clazz, byte[] data);
+        void beforeTransform(String className, Class<?> clazz, byte[] data);
 
-        void afterTransform(String className, Class clazz, byte[] data);
+        void afterTransform(String className, Class<?> clazz, byte[] data);
     }
 }

@@ -11,7 +11,9 @@
  * under the terms of the GNU Lesser General Public License version 3.0
  * as published by the Free Software Foundation.
  */
-package co.paralleluniverse.fibers;
+package co.paralleluniverse.fibers.instrument;
+
+import co.paralleluniverse.fibers.SuspendExecution;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

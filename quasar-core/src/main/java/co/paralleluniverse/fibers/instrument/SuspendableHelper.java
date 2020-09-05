@@ -44,7 +44,7 @@ public final class SuspendableHelper {
         return javaAgent;
     }
 
-    public static boolean isInstrumented(Class clazz) {
+    public static boolean isInstrumented(Class<?> clazz) {
         return clazz != null && clazz.isAnnotationPresent(Instrumented.class);
     }
 

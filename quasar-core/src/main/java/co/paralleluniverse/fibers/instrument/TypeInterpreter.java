@@ -46,7 +46,7 @@ class TypeInterpreter extends BasicInterpreter {
 
     private final MethodDatabase db;
 
-    public TypeInterpreter(MethodDatabase db) {
+    TypeInterpreter(MethodDatabase db) {
         this.db = db;
     }
 

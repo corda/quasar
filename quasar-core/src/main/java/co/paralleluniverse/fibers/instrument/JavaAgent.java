@@ -87,6 +87,8 @@ import java.security.ProtectionDomain;
 import java.util.Collections;
 import java.util.Set;
 
+import static co.paralleluniverse.fibers.instrument.Classes.FIBER_CLASS_NAME;
+import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
 
 /*
@@ -190,7 +192,7 @@ public class JavaAgent {
         // running Classes.<clinit>. We expect this call to return
         // true.
         // Prints "Classes ready: true"
-        instrumentor.log(LogLevel.DEBUG, "Classes ready: %s", Classes.isYieldMethod(Classes.FIBER_CLASS_NAME, "park"));
+        instrumentor.log(LogLevel.DEBUG, "Classes ready: %s", isYieldMethod(FIBER_CLASS_NAME, "park"));
 
         Retransform.instrumentation = instrumentation;
         Retransform.instrumentor = instrumentor;

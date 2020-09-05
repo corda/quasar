@@ -41,9 +41,6 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import static co.paralleluniverse.fibers.instrument.Classes.*;
-import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
-
 import co.paralleluniverse.fibers.instrument.MethodDatabase.ClassEntry;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import java.util.ArrayList;
@@ -59,6 +56,9 @@ import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
+
+import static co.paralleluniverse.fibers.instrument.Classes.*;
+import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
 
 /**
  * Instrument a class by instrumenting all suspendable methods and copying the others.

@@ -42,6 +42,10 @@
 package co.paralleluniverse.fibers.instrument;
 
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
+
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Opcodes;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -54,9 +58,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.Objects;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
 
 /**
  * <p>
@@ -572,7 +573,7 @@ public class MethodDatabase {
         }
     }
 
-    public static class ExtractSuperClass extends ClassVisitor {
+    static class ExtractSuperClass extends ClassVisitor {
         String superClass;
 
         public ExtractSuperClass() {

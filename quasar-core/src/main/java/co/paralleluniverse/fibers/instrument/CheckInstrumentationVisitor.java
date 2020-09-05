@@ -59,7 +59,7 @@ import java.util.ArrayList;
  *
  * @author Matthias Mann
  */
-public class CheckInstrumentationVisitor extends ClassVisitor {
+class CheckInstrumentationVisitor extends ClassVisitor {
     private final MethodDatabase db;
     private final SuspendableClassifier classifier;
     private String sourceName;
@@ -72,7 +72,7 @@ public class CheckInstrumentationVisitor extends ClassVisitor {
     private boolean alreadyInstrumented;
     private final ArrayList<Pair<String,String>> methodsSyntheticStatic;
 
-    public CheckInstrumentationVisitor(MethodDatabase db) {
+    CheckInstrumentationVisitor(MethodDatabase db) {
         super(ASMAPI);
         this.methodsSyntheticStatic = new ArrayList<>();
         this.db = db;

@@ -16,10 +16,8 @@ package co.paralleluniverse.fibers.instrument;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.*;
 
-import co.paralleluniverse.fibers.DontInstrument;
 import co.paralleluniverse.fibers.Instrumented;
 import co.paralleluniverse.fibers.RuntimeSuspendExecution;
-import co.paralleluniverse.fibers.Stack;
 import co.paralleluniverse.fibers.Suspendable;
 import co.paralleluniverse.fibers.SuspendExecution;
 import org.objectweb.asm.Type;
@@ -30,15 +28,15 @@ import org.objectweb.asm.tree.MethodInsnNode;
  *
  * @author pron
  */
-public final class Classes {
-    private static final BlockingMethod BLOCKING_METHODS[] = {
+final class Classes {
+    private static final BlockingMethod[] BLOCKING_METHODS = {
         new BlockingMethod("java/lang/Thread", "sleep", "(J)V", "(JI)V"),
         new BlockingMethod("java/lang/Thread", "join", "()V", "(J)V", "(JI)V"),
         new BlockingMethod("java/lang/Object", "wait", "()V", "(J)V", "(JI)V"),};
 
-    private static final Set<String> yieldMethods = new HashSet<>(Arrays.asList(new String[]{
+    private static final Set<String> yieldMethods = new HashSet<>(Arrays.asList(
         "park", "yield", "parkAndUnpark", "yieldAndUnpark", "parkAndSerialize", "parkAndCustomSerialize"
-    }));
+    ));
 
     // Don't load the classes
     static final String STACK_NAME       = /*Stack.class.getName()*/ "co.paralleluniverse.fibers.Stack".replace('.', '/');
