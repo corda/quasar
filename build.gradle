@@ -67,6 +67,9 @@ subprojects {
             dependencySubstitution {
                 // The substitution is needed to get ASM 5.2 whilst Kryo still depends on 5.0.4
                 substitute module("org.ow2.asm:asm") with module("org.ow2.asm:asm:$asmVer")
+
+                // Avoid problem when a transitive dependency on TestNG asks for Ant 1.9.7.
+                substitute module("org.apache.ant:ant") with module("org.apache.ant:ant:1.9.9")
             }
             failOnVersionConflict()
         }
@@ -76,18 +79,13 @@ subprojects {
         provided
         timewarp
         // markdownDoclet
+
+        compileClasspath.extendsFrom provided
+        testCompileClasspath.extendsFrom provided
+        testRuntimeClasspath.extendsFrom provided
     }
 
     sourceSets {
-        main {
-            compileClasspath += configurations.provided
-        }
-
-        test {
-            compileClasspath += configurations.provided
-            runtimeClasspath += configurations.provided
-        }
-
         jmh {
             compileClasspath += main.compileClasspath + main.output + test.compileClasspath + test.output
             runtimeClasspath += compileClasspath + main.runtimeClasspath + test.runtimeClasspath
@@ -250,11 +248,11 @@ subprojects {
     defaultTasks 'build'
 
     task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier = 'sources'
+        archiveClassifier = 'sources'
         from sourceSets.main.allSource
     }
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
+        archiveClassifier = 'javadoc'
         from javadoc.destinationDir
     }
 
@@ -442,7 +440,7 @@ project (':quasar-core') {
         }
 
         Jar shadowJarTask = task("${set.name}ShadowJar", type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar, dependsOn: classes) {
-            destinationDir = file("$buildDir/libs")
+            destinationDirectory = file("$buildDir/libs")
             archiveAppendix = 'shadow'
             archiveClassifier = ''
 
@@ -464,7 +462,7 @@ project (':quasar-core') {
                 attributes(
                     "Built-By"                  :   System.getProperty("user.name"),
                     "Implementation-Title"      :   project.name,
-                    "Implementation-Version"    :   version,
+                    "Implementation-Version"    :   archiveVersion.get(),
                     "Implementation-Vendor"     :   vendor,
                     "Premain-Class"             :   "co.paralleluniverse.fibers.instrument.JavaAgent",
                     "Agent-Class"               :   "co.paralleluniverse.fibers.instrument.JavaAgent",
@@ -529,7 +527,7 @@ Import-Package: org.LatencyUtils.*;resolution:=optional,\
         dependencies {
             include(dependency(':jsr166e'))
         }
-        classifier = 'jdk7'
+        archiveClassifier = 'jdk7'
     }
 
     artifacts {
@@ -740,7 +738,7 @@ configure(publishedProjects) { subproject ->
     apply plugin: 'com.jfrog.artifactory'
 
   task sourceJar(type: Jar, dependsOn: subproject.classes) {
-    classifier = 'sources'
+    archiveClassifier = 'sources'
     from sourceSets.main.allSource
   }
 
@@ -817,8 +815,8 @@ artifactory {
         contextUrl = 'https://ci-artifactory.corda.r3cev.com/artifactory'
         repository {
             repoKey = 'corda-dependencies-dev'
-            username = System.getenv('CORDA_ARTIFACTORY_USERNAME') ?: System.getProperty('corda.artifactory.username')
-            password = System.getenv('CORDA_ARTIFACTORY_PASSWORD') ?: System.getProperty('corda.artifactory.password')
+            username = project.findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME') ?: System.getProperty('corda.artifactory.username')
+            password = project.findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD') ?: System.getProperty('corda.artifactory.password')
             maven = true
         }
 
