@@ -484,11 +484,12 @@ Bundle-SymbolicName: co.paralleluniverse.quasar-core
 Bundle-Name: Quasar Agent
 Bundle-Version: $version
 Import-Package: org.LatencyUtils.*;resolution:=optional,\
+ org.HdrHistogram.*;resolution:=optional,\
  com.codahale.metrics.*;resolution:=optional,\
  org.apache.tools.ant.*;resolution:=optional,\
  sun.management.*;resolution:=optional,\
+ org.junit.*;resolution:=optional,\
  sun.misc.*;resolution:=optional,\
- !org.junit.*,\
  *
 """
         }
