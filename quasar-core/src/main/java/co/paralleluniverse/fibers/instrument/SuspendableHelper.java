@@ -22,7 +22,6 @@ import co.paralleluniverse.fibers.Instrumented;
 import co.paralleluniverse.fibers.Stack;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
-// import java.lang.reflect.Executable;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.security.PrivilegedAction;
@@ -111,10 +110,11 @@ public final class SuspendableHelper {
                     final String[] callsites = i.suspendableCallSiteNames();
                     for (String callsite : callsites) {
                         if (callsite.endsWith(nameAndDescSuffix)) {
-                            Class<?> callsiteOwner = null;
+                            Class<?> callsiteOwner;
                             try {
                                 callsiteOwner = Class.forName(getCallsiteOwner(callsite));
                             } catch (ClassNotFoundException e) {
+                                callsiteOwner = null;
                             }
                             if (callsiteOwner != null) {
                                 final Class<?> owner = callee.getDeclaringClass();

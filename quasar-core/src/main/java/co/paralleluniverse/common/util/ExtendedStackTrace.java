@@ -155,7 +155,7 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
         return null;
     }
 
-    protected static final String getName(Member m) {
+    protected static String getName(Member m) {
         if (m instanceof Constructor)
             return "<init>";
         return ((Method)m).getName();
@@ -163,7 +163,7 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
 
     protected static String getDescriptor(Member m) {
         if (m instanceof Constructor)
-            return Type.getConstructorDescriptor((Constructor) m);
+            return Type.getConstructorDescriptor((Constructor<?>) m);
         return Type.getMethodDescriptor((Method) m);
     }
 
@@ -181,7 +181,7 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
         @Override
         public Member[] run() {
             Method[] ms = clazz.getDeclaredMethods();
-            Constructor[] cs = clazz.getDeclaredConstructors();
+            Constructor<?>[] cs = clazz.getDeclaredConstructors();
             Member[] es = new Member[ms.length + cs.length];
             System.arraycopy(cs, 0, es, 0, cs.length);
             System.arraycopy(ms, 0, es, cs.length, ms.length);
