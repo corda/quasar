@@ -16,10 +16,6 @@ package co.paralleluniverse.fibers.instrument;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.*;
 
-import co.paralleluniverse.fibers.Instrumented;
-import co.paralleluniverse.fibers.RuntimeSuspendExecution;
-import co.paralleluniverse.fibers.Suspendable;
-import co.paralleluniverse.fibers.SuspendExecution;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
@@ -47,13 +43,11 @@ final class Classes {
     static final String EXCEPTION_NAME         = Exception.class.getName().replace('.', '/');
     static final String RUNTIME_EXCEPTION_NAME = RuntimeException.class.getName().replace('.', '/');
 
-    static final String RUNTIME_SUSPEND_EXECUTION_NAME = RuntimeSuspendExecution.class.getName().replace('.', '/');
+    static final String RUNTIME_SUSPEND_EXECUTION_NAME = "co/paralleluniverse/fibers/RuntimeSuspendExecution";
     static final String UNDECLARED_THROWABLE_NAME      = UndeclaredThrowableException.class.getName().replace('.', '/');
-    static final String SUSPEND_EXECUTION_NAME         = SuspendExecution.class.getName().replace('.', '/');
+    static final String SUSPEND_EXECUTION_NAME         = "co/paralleluniverse/fibers/SuspendExecution";
     
-    // computed
-    // static final String EXCEPTION_DESC = "L" + SUSPEND_EXECUTION_NAME + ";";
-    static final String SUSPENDABLE_DESC = Type.getDescriptor(Suspendable.class);
+    static final String SUSPENDABLE_DESC = "Lco/paralleluniverse/fibers/Suspendable;";
     static final String DONT_INSTRUMENT_DESC = Type.getDescriptor(DontInstrument.class);
     static final String INSTRUMENTED_DESC = Type.getDescriptor(Instrumented.class);
     static final String LAMBDA_METHOD_PREFIX = "lambda$";

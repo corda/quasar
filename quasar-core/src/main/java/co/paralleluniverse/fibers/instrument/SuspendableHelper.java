@@ -17,9 +17,6 @@ import co.paralleluniverse.common.reflection.ASMUtil;
 import co.paralleluniverse.common.util.ExtendedStackTraceElement;
 import co.paralleluniverse.common.util.Pair;
 import co.paralleluniverse.concurrent.util.MapUtil;
-import co.paralleluniverse.fibers.Fiber;
-import co.paralleluniverse.fibers.Instrumented;
-import co.paralleluniverse.fibers.Stack;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Member;
@@ -88,8 +85,8 @@ public final class SuspendableHelper {
 
         if (calleeSte != null
                 // `verifySuspend` and `popMethod` calls are not suspendable call sites, not verifying them.
-                && ((calleeSte.getClassName().equals(Fiber.class.getName()) && calleeSte.getMethodName().equals("verifySuspend"))
-                || (calleeSte.getClassName().equals(Stack.class.getName()) && calleeSte.getMethodName().equals("popMethod")))) {
+                && ((calleeSte.getClassName().equals("co.paralleluniverse.fibers.Fiber") && calleeSte.getMethodName().equals("verifySuspend"))
+                || (calleeSte.getClassName().equals("co.paralleluniverse.fibers.Stack") && calleeSte.getMethodName().equals("popMethod")))) {
             return new Pair<>(true, null);
         } else {
             final Instrumented i = getAnnotation(m, Instrumented.class);

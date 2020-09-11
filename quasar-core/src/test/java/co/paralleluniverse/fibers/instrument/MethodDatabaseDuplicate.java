@@ -1,7 +1,7 @@
 package co.paralleluniverse.fibers.instrument;
 
 import org.objectweb.asm.Type;
-import co.paralleluniverse.fibers.Instrumented;
+
 import java.io.IOException;
 import java.io.InputStream;
 import org.junit.Test;

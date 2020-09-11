@@ -13,7 +13,6 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.fibers.Instrumented;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -71,7 +70,7 @@ class SuspOffsetsAfterInstrClassVisitor extends ClassVisitor {
                 private int[] suspCallSites = new int[0];
                 private String[] suspCallSiteNames = new String[0];
                 
-                private List<Integer> suspOffsetsAfterInstrL = new ArrayList<>();
+                private final List<Integer> suspOffsetsAfterInstrL = new ArrayList<>();
 
                 @Override
                 public AnnotationVisitor visitAnnotation(final String adesc, boolean visible) {

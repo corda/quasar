@@ -13,6 +13,8 @@
  */
 package co.paralleluniverse.fibers;
 
+import co.paralleluniverse.fibers.instrument.Constants;
+
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -33,8 +35,8 @@ public final class Stack implements Serializable {
      *   - num slots          : 16 bits
      *   - prev method slots  : 16 bits
      */
-    public static final int MAX_ENTRY = (1 << 14) - 1;
-    public static final int MAX_SLOTS = (1 << 16) - 1;
+    public static final int MAX_ENTRY = Constants.STACK_MAX_ENTRY;
+    public static final int MAX_SLOTS = Constants.STACK_MAX_SLOTS;
     private static final int INITIAL_METHOD_STACK_DEPTH = 16;
     private static final int FRAME_RECORD_SIZE = 1;
     private static final long serialVersionUID = 12786283751253L;
