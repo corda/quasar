@@ -79,6 +79,7 @@ class InstrumentClass extends ClassVisitor {
     private boolean alreadyInstrumented;
     private ArrayList<MethodNode> methodsSuspendable;
     private ArrayList<MethodNode> methodsSyntheticStatic;
+    private ArrayList<MethodNode> methodsSuspendableSuper;
 
     private RuntimeException exception;
 
@@ -167,6 +168,9 @@ class InstrumentClass extends ClassVisitor {
             if (methodsSyntheticStatic == null) {
                 methodsSyntheticStatic = new ArrayList<>();
             }
+            if (methodsSuspendableSuper == null) {
+                methodsSuspendableSuper = new ArrayList<>();
+            }
 
             final MethodNode mn = new MethodNode(access, name, desc, signature, exceptions);
 
@@ -226,6 +230,11 @@ class InstrumentClass extends ClassVisitor {
                         methodsSuspendable.add(mn);
                     } else {
 
+                        // If suspendable super just save for later to match against possible synthetic method.
+                        if (susp == SuspendableType.SUSPENDABLE_SUPER) {
+                            methodsSuspendableSuper.add(mn);
+                        }
+
                         final int ACC_STATIC_SYNTHETIC = Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC;
 
                         // If we may have a synthesized default method then save it for later processing.
@@ -262,7 +271,7 @@ class InstrumentClass extends ClassVisitor {
             for (MethodNode mn : methodsSyntheticStatic) {
 
                 // Search though suspendable methods to see if there is a counterpart for this one.
-                if (searchSuspendables(mn)) {
+                if (searchSuspendables(methodsSuspendable, mn) || searchSuspendables(methodsSuspendableSuper, mn)) {
                     // We have a matching suspendable method, make this suspendable to.
                     classEntry.set(mn.name, mn.desc, SuspendableType.SUSPENDABLE);
                     methodsSuspendable.add(mn);
@@ -270,7 +279,6 @@ class InstrumentClass extends ClassVisitor {
                     // Output code for this method.
                     mn.accept(makeOutMV(mn));
                 }
-
             }
         }
 
@@ -345,10 +353,10 @@ class InstrumentClass extends ClassVisitor {
         return true;
     }
 
-    private boolean searchSuspendables(MethodNode mn) {
+    private boolean searchSuspendables(ArrayList<MethodNode> alm, MethodNode mn) {
         // Go through suspendable methods and try to find a match for mn.
         final Type[] staticMethodTypes = Type.getArgumentTypes(mn.desc);
-        for (MethodNode mns : methodsSuspendable) {
+        for (MethodNode mns : alm) {
             if (Objects.equals(mns.name + "$default", mn.name) &&
                 compareSuspendableArgs(mns, staticMethodTypes)) {
                 return true;

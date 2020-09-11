@@ -22,95 +22,128 @@ import kotlin.test.assertEquals
 
 import co.paralleluniverse.kotlin.fibers.StaticPropertiesTest
 
-typealias MyMap = Map<Int, Int>
+abstract class SyntheticAbstractClass  {
 
-class SyntheticTest {
-
-    private val aa = 5
-
+    // Complex template types.
     @Suspendable
-    private fun defFun1(a : Int = 0) : Int {
+    fun complex(m: MyMap, b: Boolean=true): MyMap {
         Fiber.yield()
-        return a + aa
+        return if (b) {
+            m
+        } else {
+            mapOf<Int, Int>(6 to 7)
+        }
     }
 
     @Suspendable
-    private fun defFun2(a : Int, b: Int = 0) : Int {
-       Fiber.yield()
-       return a + b
-    }
+    abstract fun complexabs(m: MyMap, b: Boolean=false): MyMap
 
+    // Primitve types.
     @Suspendable
-    private fun defFun3(a : Int=0, b: Int = 0) : Int {
+    fun primitive(a: Int, b: Int=6): Int {
         Fiber.yield()
         return a + b
     }
 
     @Suspendable
-    private fun defFun() : Int {
-        return  defFun1() + defFun1(10) +
-                defFun2(4) + defFun2(4,2) +
-                defFun3() + defFun3(4) + defFun3(6,1);
-    }
+    abstract fun primitiveabs(a: Int, b: Int=3): Int
+}
 
+class SyntheticConcreteClass : SyntheticAbstractClass() {
     @Suspendable
-    private fun defFunMap(m : MyMap, b : Boolean = false) : MyMap {
+    override fun complexabs(m: MyMap, b: Boolean): MyMap {
         Fiber.yield()
         return if (b) {
             m
         } else {
-            mapOf<Int, Int>(1 to 3)
+            mapOf<Int, Int>(1 to 1)
         }
     }
 
-    @Test fun `synthetic primitve`() {
+    // Does this have to be marked suspendable when overriding ?
+    @Suspendable
+    override fun primitiveabs(a: Int, b: Int): Int {
+        Fiber.yield()
+        return a - b
+    }
+}
+
+class SyntheticAbstractTest {
+
+    @Test fun `abstract primitive`() {
 
         StaticPropertiesTest.withVerifyInstrumentationOn {
 
             Assume.assumeTrue(SystemProperties.isEmptyOrTrue(StaticPropertiesTest.verifyInstrumentationKey))
 
-            val fiber = object : Fiber<Any>() {
+            val fiber = object : Fiber<Int>() {
+                val ac : SyntheticAbstractClass = SyntheticConcreteClass()
                 @Suspendable
-                override fun run(): Any {
-                    return defFun()
+                override fun run(): Int {
+                    return ac.primitive(4)
                 }
             }
 
             val actual = fiber.start().get()
-            assertEquals(41, actual)
+            assertEquals(10, actual)
         }
     }
 
-    @Test fun `synthetic complex`() {
+    @Test fun `abstract primitive abs`() {
+
+        StaticPropertiesTest.withVerifyInstrumentationOn {
+
+            Assume.assumeTrue(SystemProperties.isEmptyOrTrue(StaticPropertiesTest.verifyInstrumentationKey))
+
+            val fiber = object : Fiber<Int>() {
+                val ac : SyntheticAbstractClass = SyntheticConcreteClass()
+                @Suspendable
+                override fun run(): Int {
+                    return ac.primitiveabs(6)
+                }
+            }
+
+            val actual = fiber.start().get()
+            assertEquals(3, actual)
+        }
+    }
+
+    @Test fun `abstract complex`() {
+
         StaticPropertiesTest.withVerifyInstrumentationOn {
 
             Assume.assumeTrue(SystemProperties.isEmptyOrTrue(StaticPropertiesTest.verifyInstrumentationKey))
 
             val fiber = object : Fiber<MyMap>() {
+                val ac : SyntheticAbstractClass = SyntheticConcreteClass()
                 @Suspendable
                 override fun run(): MyMap {
-                    return defFunMap(mapOf(1 to 10, 2 to 20), true)
+                    return ac.complex(mapOf(1 to 4, 5 to 5))
                 }
             }
+
             val actual = fiber.start().get()
-            assertEquals(mapOf(1 to 10, 2 to 20), actual)
+            assertEquals(mapOf(1 to 4, 5 to 5), actual)
         }
     }
 
-    @Test fun `synthetic complex default`() {
+    @Test fun `abstract complex abs`() {
+
         StaticPropertiesTest.withVerifyInstrumentationOn {
 
             Assume.assumeTrue(SystemProperties.isEmptyOrTrue(StaticPropertiesTest.verifyInstrumentationKey))
 
             val fiber = object : Fiber<MyMap>() {
+                val ac : SyntheticAbstractClass = SyntheticConcreteClass()
                 @Suspendable
                 override fun run(): MyMap {
-                    return defFunMap(mapOf(1 to 11, 2 to 21))
+                    return ac.complexabs(mapOf(1 to 11))
                 }
             }
 
             val actual = fiber.start().get()
-            assertEquals(mapOf(1 to 3), actual)
+            assertEquals(mapOf(1 to 1), actual)
         }
     }
+
 }
