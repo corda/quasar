@@ -13,9 +13,9 @@
  */
 package co.paralleluniverse.strands.dataflow;
 
+import co.paralleluniverse.common.monitoring.Debug;
 import co.paralleluniverse.common.monitoring.FlightRecorder;
 import co.paralleluniverse.common.monitoring.FlightRecorderMessage;
-import co.paralleluniverse.common.util.Debug;
 import co.paralleluniverse.concurrent.util.MapUtil;
 import co.paralleluniverse.fibers.*;
 import co.paralleluniverse.strands.SuspendableCallable;

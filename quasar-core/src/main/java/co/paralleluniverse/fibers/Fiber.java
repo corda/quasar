@@ -13,11 +13,11 @@
  */
 package co.paralleluniverse.fibers;
 
+import co.paralleluniverse.common.monitoring.Debug;
 import co.paralleluniverse.common.monitoring.FlightRecorder;
 import co.paralleluniverse.common.monitoring.FlightRecorderMessage;
 import co.paralleluniverse.common.reflection.ASMUtil;
 import co.paralleluniverse.common.reflection.GetDeclaredField;
-import co.paralleluniverse.common.util.Debug;
 import co.paralleluniverse.common.util.Exceptions;
 import co.paralleluniverse.common.util.ExtendedStackTrace;
 import co.paralleluniverse.common.util.ExtendedStackTraceElement;
@@ -1815,8 +1815,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
             stackTrace.append(" (optimized)");
     }
 
-    @SuppressWarnings("unchecked")
-    private static boolean isInstrumented(Class clazz) {
+    private static boolean isInstrumented(Class<?> clazz) {
         boolean res = clazz.isAnnotationPresent(Instrumented.class);
         if (!res)
             res = doPrivileged(new CheckInstrumented(clazz)); // a second chance
@@ -1835,15 +1834,15 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
             return isInstrumented0(clazz);
         }
 
-        private static boolean isInstrumented0(Class clazz) {
+        private static boolean isInstrumented0(Class<?> clazz) {
             // Sometimes, a child class does not implement any suspendable methods AND is loaded before its superclass (that does). Test for that:
-            Class superclazz = clazz.getSuperclass();
+            Class<?> superclazz = clazz.getSuperclass();
             if (superclazz != null) {
                 if (superclazz.isAnnotationPresent(Instrumented.class)) {
                     // make sure the child class doesn't have any suspendable methods
                     Method[] ms = clazz.getDeclaredMethods();
                     for (Method m : ms) {
-                        for (Class et : m.getExceptionTypes()) {
+                        for (Class<?> et : m.getExceptionTypes()) {
                             if (et.equals(SuspendExecution.class))
                                 return false;
                         }

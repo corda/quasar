@@ -95,7 +95,7 @@ class SuspOffsetsAfterInstrClassVisitor extends ClassVisitor {
                                         suspCallSites = (int[]) value;
                                         break;
                                     case Instrumented.FIELD_NAME_SUSPENDABLE_CALL_SITES_OFFSETS_AFTER_INSTR:
-                                        ; // Ignore, we're filling it
+                                        // Ignore, we're filling it
                                         break;
                                     default:
                                         throw new RuntimeException("Unexpected `@Instrumented` field: " + attrib);
@@ -107,7 +107,7 @@ class SuspOffsetsAfterInstrClassVisitor extends ClassVisitor {
                                 // String[] value not handled by visit
                                 if (Instrumented.FIELD_NAME_SUSPENDABLE_CALL_SITE_NAMES.equals(attrib))
                                     return new AnnotationVisitor(ASMAPI) {
-                                        List<String> callSites = new ArrayList<>();
+                                        final List<String> callSites = new ArrayList<>();
                                         
                                         @Override
                                         public void visit(String attrib, Object value) {

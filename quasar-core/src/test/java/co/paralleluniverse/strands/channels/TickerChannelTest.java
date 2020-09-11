@@ -14,20 +14,17 @@
 package co.paralleluniverse.strands.channels;
 
 import static co.paralleluniverse.common.test.Matchers.*;
+import co.paralleluniverse.common.monitoring.Debug;
 import co.paralleluniverse.common.test.TestUtil;
-import co.paralleluniverse.common.util.Debug;
 import co.paralleluniverse.fibers.Fiber;
 import co.paralleluniverse.fibers.FiberForkJoinScheduler;
 import co.paralleluniverse.fibers.FiberScheduler;
 import co.paralleluniverse.fibers.SuspendExecution;
 import co.paralleluniverse.strands.Strand;
 import co.paralleluniverse.strands.SuspendableRunnable;
-import java.util.Arrays;
 import static org.hamcrest.CoreMatchers.*;
 import org.junit.After;
 import static org.junit.Assert.*;
-import static org.junit.Assume.*;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -44,7 +41,7 @@ public class TickerChannelTest {
     public TestRule watchman = TestUtil.WATCHMAN;
     
     static final int bufferSize = 10;
-    private FiberScheduler scheduler;
+    private final FiberScheduler scheduler;
 
     public TickerChannelTest() {
         scheduler = new FiberForkJoinScheduler("test", 4, null, false);

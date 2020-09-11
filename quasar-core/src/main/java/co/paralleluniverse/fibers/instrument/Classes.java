@@ -35,9 +35,9 @@ final class Classes {
     ));
 
     // Don't load the classes
-    static final String STACK_NAME       = /*Stack.class.getName()*/ "co.paralleluniverse.fibers.Stack".replace('.', '/');
-    static final String FIBER_CLASS_NAME = /*Fiber.class.getName()*/ "co.paralleluniverse.fibers.Fiber".replace('.', '/');
-    static final String STRAND_NAME      = /*Strand.class.getName()*/"co.paralleluniverse.strands.Strand".replace('.', '/');
+    static final String STACK_NAME       = /*Stack.class.getName().replace('.', '/')*/ "co/paralleluniverse/fibers/Stack";
+    static final String FIBER_CLASS_NAME = /*Fiber.class.getName().replace('.', '/')*/ "co/paralleluniverse/fibers/Fiber";
+    static final String STRAND_NAME      = /*Strand.class.getName().replace('.', '/')*/"co/paralleluniverse/strands/Strand";
 
     static final String THROWABLE_NAME         = Throwable.class.getName().replace('.', '/');
     static final String EXCEPTION_NAME         = Exception.class.getName().replace('.', '/');

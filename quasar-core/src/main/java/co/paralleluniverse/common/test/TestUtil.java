@@ -12,7 +12,7 @@
  */
 package co.paralleluniverse.common.test;
 
-import co.paralleluniverse.common.util.Debug;
+import co.paralleluniverse.common.monitoring.Debug;
 import java.util.Arrays;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;

@@ -15,7 +15,7 @@ package co.paralleluniverse.actors;
 
 import co.paralleluniverse.actors.ActorImpl.ActorLifecycleListener;
 import static co.paralleluniverse.actors.ActorImpl.getActorRefImpl;
-import co.paralleluniverse.common.util.Debug;
+import co.paralleluniverse.common.monitoring.Debug;
 import co.paralleluniverse.common.util.Objects;
 import co.paralleluniverse.concurrent.util.MapUtil;
 import co.paralleluniverse.concurrent.util.ThreadAccess;
