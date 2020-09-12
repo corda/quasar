@@ -17,11 +17,10 @@ import co.paralleluniverse.common.util.Pair;
 import co.paralleluniverse.concurrent.util.EnhancedAtomicReference;
 import co.paralleluniverse.fibers.SuspendExecution;
 import co.paralleluniverse.strands.Timeout;
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  *
@@ -38,13 +39,7 @@ import java.util.concurrent.TimeUnit;
 public class ReceivePortGroup<M> implements Mix<M> {
     private static final Object ping = new Object();
 
-    private static final Predicate<Mix.State> soloP =
-        new Predicate<Mix.State>() {
-            @Override
-            public boolean apply(Mix.State s) {
-                return (s != null && s.solo);
-            }
-        };
+    private static final Predicate<State> soloP = s -> (s != null && s.solo);
 
     private final static Mode modeDefault = Mode.NORMAL;
     private final static boolean soloDefault = false;
@@ -220,7 +215,7 @@ public class ReceivePortGroup<M> implements Mix<M> {
              &&
                 (s.get(port).mode.equals(Mix.Mode.MUTE)
                  || (soloEffect.get().equals(Mix.SoloEffect.MUTE_OTHERS)
-                     && Iterables.any(s.values(), soloP)));
+                     && any(s.values(), soloP)));
     }
 
     private boolean isPaused(ReceivePort<? extends M> port, final Map<? extends ReceivePort<? extends M>, State> s) {
@@ -229,7 +224,16 @@ public class ReceivePortGroup<M> implements Mix<M> {
              &&
                 (s.get(port).mode.equals(Mix.Mode.PAUSE)
                  || (soloEffect.get().equals(Mix.SoloEffect.PAUSE_OTHERS)
-                     && Iterables.any(s.values(), soloP)));
+                     && any(s.values(), soloP)));
+    }
+
+    private static <T> boolean any(Iterable<T> values, Predicate<T> condition) {
+        for (T value: values) {
+            if (condition.test(value)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

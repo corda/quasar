@@ -14,8 +14,8 @@ subprojects {
     apply plugin: 'maven-publish'
     apply plugin: 'com.jfrog.artifactory'
 
-    sourceCompatibility = '1.7'
-    targetCompatibility = '1.7'
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
@@ -31,8 +31,8 @@ subprojects {
     ext.licenseUrl1     = "http://www.gnu.org/licenses/lgpl-3.0.txt"
     ext.licenseName2    = "Eclipse Public License - v 1.0"
     ext.licenseUrl2     = "http://www.eclipse.org/legal/epl-v10.html"
-    ext.scmUrl          = "https://github.com/puniverse/quasar"
-    ext.scmConnection   = "https://github.com/puniverse/quasar.git"
+    ext.scmUrl          = "https://github.com/corda/quasar"
+    ext.scmConnection   = "https://github.com/corda/quasar.git"
     ext.distDir         = "$buildDir/dist"
     ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
     ext.baselib         = "${rootProject.projectDir}/baselib"
@@ -220,7 +220,7 @@ subprojects {
     debug.debug = true
 
     project.afterEvaluate {
-        run.dependsOn project(':quasar-core').tasks["jdk${project.ext.jdkVer}Bundle"]
+        run.dependsOn project(':quasar-core').tasks["jdk${project.ext.jdkVer}ShadowJar"]
     }
 
     tasks.withType(JavaExec).configureEach {
@@ -430,10 +430,7 @@ project (':quasar-core') {
         compileOnly "org.osgi:osgi.annotation:$osgiVer"
     }
 
-    def ssets = [sourceSets.jdk7]
-    if(ext.java8) {
-        ssets += sourceSets.jdk8
-    }
+    def ssets = [sourceSets.jdk8]
 
     ssets.each { set ->
         configure(project.tasks["compile${capitalize(set.name)}Java"]) {
@@ -444,7 +441,6 @@ project (':quasar-core') {
 
         Jar shadowJarTask = task("${set.name}ShadowJar", type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar, dependsOn: classes) {
             destinationDirectory = file("$buildDir/libs")
-            archiveAppendix = 'shadow'
             archiveClassifier = ''
 
             from set.output
@@ -478,63 +474,102 @@ project (':quasar-core') {
 
         def bundleTask = tasks.register("${set.name}Bundle", Bundle) {
             dependsOn shadowJarTask
-            from zipTree(shadowJarTask.archiveFile)
-            archiveClassifier = shadowJarTask.archiveClassifier
+            from(zipTree(shadowJarTask.archiveFile)) {
+                exclude 'co/paralleluniverse/fibers/instrument/**'
+                exclude 'co/paralleluniverse/common/reflection/**'
+                exclude 'co/paralleluniverse/common/util/**'
+                exclude 'co/paralleluniverse/concurrent/util/**'
+                exclude 'co/paralleluniverse/asm/**'
+            }
+            archiveAppendix = 'osgi'
+
+            manifest {
+                attributes(
+                    "Built-By"                  :   System.getProperty("user.name"),
+                    "Implementation-Title"      :   project.name,
+                    "Implementation-Version"    :   archiveVersion.get(),
+                    "Implementation-Vendor"     :   vendor
+                )
+            }
 
             bnd """
--include: "jar:${shadowJarTask.archiveFile.map { it.asFile.toURI() }.get()}!/META-INF/MANIFEST.MF"
 Bundle-SymbolicName: co.paralleluniverse.quasar-core
-Bundle-Name: Quasar Agent
+Bundle-Name: Quasar Fibers
 Bundle-Version: $version
-Import-Package: org.LatencyUtils.*;resolution:=optional,\
+Import-Package: \
+ org.LatencyUtils.*;resolution:=optional,\
  org.HdrHistogram.*;resolution:=optional,\
- org.apache.tools.ant.*;resolution:=optional,\
- sun.management.*;resolution:=optional,\
  org.junit.*;resolution:=optional,\
  *
 """
         }
 
-        def testTask = task("${set.name}Test", type: Test, dependsOn: [bundleTask, compileClassloadertestJava]) {
+        def bundleAgentTask = tasks.register("${set.name}AgentBundle", Bundle) {
+            dependsOn shadowJarTask
+            from(zipTree(shadowJarTask.archiveFile)) {
+                include 'co/paralleluniverse/fibers/instrument/**'
+                include 'co/paralleluniverse/common/reflection/**'
+                include 'co/paralleluniverse/common/util/**'
+                include 'co/paralleluniverse/concurrent/util/**'
+                include 'co/paralleluniverse/asm/**'
+                exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTask*'
+                exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTKB*'
+                exclude 'co/paralleluniverse/fibers/instrument/OldSuspendablesScanner*'
+                exclude 'co/paralleluniverse/fibers/instrument/QuasarURLClassLoader*'
+                exclude 'co/paralleluniverse/fibers/instrument/SuspendablesScanner*'
+            }
+            archiveAppendix = 'osgi'
+            archiveClassifier = 'agent'
+
+            bnd """
+-include: "jar:${shadowJarTask.archiveFile.map { it.asFile.toURI() }.get()}!/META-INF/MANIFEST.MF"
+Bundle-SymbolicName: co.paralleluniverse.quasar-core.agent
+Bundle-Name: Quasar Agent
+Bundle-Version: $version
+"""
+        }
+
+        def testTask = task("${set.name}Test", type: Test, dependsOn: [shadowJarTask, compileClassloadertestJava]) {
             testClassesDirs = project.sourceSets["${set.name}test"].output.classesDirs
             classpath = project.sourceSets["${set.name}test"].runtimeClasspath
             project.afterEvaluate {
-                jvmArgs "-javaagent:${bundleTask.flatMap { it.archiveFile }.get()}" // =vdc
+                jvmArgs "-javaagent:${shadowJarTask.archiveFile.get()}" // =vdc
             }
         }
 
         artifacts {
-            archives bundleTask.flatMap { it.archiveFile }
+            archives shadowJarTask
         }
 
-        signArchives.dependsOn bundleTask
-        artifactoryPublish.dependsOn bundleTask
+        signArchives.dependsOn shadowJarTask, bundleTask, bundleAgentTask
+        artifactoryPublish.dependsOn shadowJarTask, bundleTask, bundleAgentTask
 
         test.dependsOn testTask
     }
 
-    def jdk7Bundle = tasks.named('jdk7Bundle', Bundle)
+    def jdk8ShadowJar = tasks.named('jdk8ShadowJar')
     def jdk8Bundle = tasks.named('jdk8Bundle', Bundle)
+    def jdk8AgentBundle = tasks.named('jdk8AgentBundle', Bundle)
 
-    compileJdk7Java {
-        sourceCompatibility = '1.7'
-        targetCompatibility = '1.7'
-    }
+    //    compileJdk7Java {
+    //        sourceCompatibility = '1.7'
+    //        targetCompatibility = '1.7'
+    //    }
 
     //    jdk7Jar {
     //        from zipTree("${baselib}/jsr166e.jar")  // include non-Maven jars
     //    }
 
-    jdk7ShadowJar {
-        dependencies {
-            include(dependency(':jsr166e'))
-        }
-        archiveClassifier = 'jdk7'
-    }
+    //    jdk7ShadowJar {
+    //        dependencies {
+    //            include(dependency(':jsr166e'))
+    //        }
+    //        archiveClassifier = 'jdk7'
+    //    }
 
-    artifacts {
-        jdk7Archives jdk7Bundle.flatMap { it.archiveFile }
-    }
+    //    artifacts {
+    //        jdk7Archives jdk7Shadow.flatMap { it.archiveFile }
+    //    }
 
     if (ext.java8) {
         compileJdk8Java {
@@ -552,7 +587,7 @@ Import-Package: org.LatencyUtils.*;resolution:=optional,\
         //        }
 
         artifacts {
-            jdk8Archives jdk8Bundle.flatMap { it.archiveFile }
+            jdk8Archives jdk8ShadowJar.flatMap { it.archiveFile }
         }
 
         tasks.withType(JavaExec).configureEach {
@@ -560,10 +595,10 @@ Import-Package: org.LatencyUtils.*;resolution:=optional,\
         }
         run.dependsOn compileJdk8Java, jdk8testClasses
     } else {
-        tasks.withType(JavaExec).configureEach {
-            classpath += sourceSets.jdk7test.runtimeClasspath + sourceSets.jdk7test.output
-        }
-        run.dependsOn compileJdk7Java, jdk7testClasses
+        //tasks.withType(JavaExec).configureEach {
+        //    classpath += sourceSets.jdk7test.runtimeClasspath + sourceSets.jdk7test.output
+        //}
+        //run.dependsOn compileJdk7Java, jdk7testClasses
     }
 
     javadoc {
@@ -593,8 +628,7 @@ Import-Package: org.LatencyUtils.*;resolution:=optional,\
     }
     ext {
         mavenArtifacts = {
-            it.artifact jdk7Bundle.flatMap { it.archiveFile }
-            it.artifact jdk8Bundle.flatMap { it.archiveFile }
+            it.artifact jdk8ShadowJar.flatMap { it.archiveFile }
 
             it.pom{ pom->
                 pom.withXml{ xml ->
@@ -609,6 +643,26 @@ Import-Package: org.LatencyUtils.*;resolution:=optional,\
                         }
                     }
 
+                }
+            }
+        }
+
+        osgiArtifacts = {
+            it.artifact jdk8Bundle.flatMap { it.archiveFile }
+            it.artifact source: jdk8AgentBundle.flatMap { it.archiveFile }, classifier: jdk8AgentBundle.flatMap { it.archiveClassifier }.get()
+
+            it.pom { pom->
+                pom.withXml { xml ->
+                    def dependenciesNode = xml.asNode().appendNode('dependencies')
+                    project.configurations.jdk8Archives.allDependencies.each {
+                        if (! (it instanceof SelfResolvingDependency)) {
+                            def dependencyNode = dependenciesNode.appendNode('dependency')
+                            dependencyNode.appendNode('groupId', it.group)
+                            dependencyNode.appendNode('artifactId', it.name)
+                            dependencyNode.appendNode('version', it.version)
+                            dependencyNode.appendNode('scope', 'runtime')
+                        }
+                    }
                 }
             }
         }
@@ -749,6 +803,53 @@ configure(publishedProjects) { subproject ->
 //
     publishing {
         publications {
+            if (subproject.hasProperty('osgiArtifacts')) {
+                create(subproject.name + '-osgi', MavenPublication) {
+                    subproject.osgiArtifacts.call(it)
+                    alias true
+
+                    groupId subproject.group
+                    artifactId subproject.name + '-osgi'
+                    artifact tasks.sourceJar
+                    artifact tasks.javadocJar
+
+                    pom {
+                        name = subproject.name + '-osgi'
+                        packaging = 'jar'
+                        description = subproject.description
+                        url = subproject.url
+
+                        scm {
+                            url = subproject.scmUrl
+                            connection = subproject.scmConnection
+                            developerConnection = subproject.scmConnection
+                        }
+                        licenses {
+                            license {
+                                name = subproject.licenseName1
+                                url = subproject.licenseUrl1
+                                distribution = 'repo'
+                            }
+                            license {
+                                name = subproject.licenseName2
+                                url = subproject.licenseUrl2
+                                distribution = 'repo'
+                            }
+                        }
+                    }
+                    pom.withXml {
+                        Node pomNode = asNode()
+                        pomNode.dependencies.'*'.findAll() {
+                            it.artifactId.text().startsWith('jsr166e') ||
+                                it.artifactId.text().startsWith('high-scale-lib') ||
+                                it.artifactId.text().startsWith('org.ow2.asm')
+                        }.each() {
+                            it.parent().remove(it)
+                        }
+                    }
+                }
+            }
+
             create(subproject.name, MavenPublication) {
 
 //                if (subproject.name == "quasar-core"){
@@ -823,6 +924,7 @@ artifactory {
         defaults {
             if (publishedProjects.contains(project)) {
                 publications(project.name)
+                publications(project.name + '-osgi')
             }
         }
     }

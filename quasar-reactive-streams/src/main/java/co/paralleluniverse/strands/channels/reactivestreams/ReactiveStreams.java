@@ -172,7 +172,7 @@ public class ReactiveStreams {
      * The transformer will run in its own fiber.
      * <p>
      * Same as calling 
-     * {@link #toProcessor(FiberFactory, int, OverflowPolicy, boolean, SuspendableAction2) toProcessor(null, bufferSize, policy, transformer)
+     * {@link #toProcessor(FiberFactory, int, OverflowPolicy, boolean, SuspendableAction2) toProcessor(null, bufferSize, policy, transformer)}
      *
      * @param <T>         the type of elements flowing into the transformer
      * @param <R>         the type of elements flowing out of the transformer

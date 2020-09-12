@@ -12,7 +12,7 @@
  */
 package co.paralleluniverse.common.util;
 
-import co.paralleluniverse.common.reflection.ASMUtil;
+import co.paralleluniverse.asm.ASMUtil;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;

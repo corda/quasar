@@ -13,7 +13,7 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.common.reflection.ASMUtil;
+import co.paralleluniverse.asm.ASMUtil;
 import co.paralleluniverse.common.reflection.GetDeclaredMethod;
 import co.paralleluniverse.fibers.Suspendable;
 import org.apache.tools.ant.BuildException;
@@ -42,7 +42,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static co.paralleluniverse.common.reflection.ASMUtil.*;
+import static co.paralleluniverse.asm.ASMUtil.*;
 import static java.security.AccessController.doPrivileged;
 
 /**
