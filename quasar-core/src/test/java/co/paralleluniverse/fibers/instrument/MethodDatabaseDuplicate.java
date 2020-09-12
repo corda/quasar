@@ -1,5 +1,6 @@
 package co.paralleluniverse.fibers.instrument;
 
+import co.paralleluniverse.fibers.Instrumented;
 import org.objectweb.asm.Type;
 
 import java.io.IOException;

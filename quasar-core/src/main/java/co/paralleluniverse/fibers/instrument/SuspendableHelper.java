@@ -34,10 +34,6 @@ public final class SuspendableHelper {
         return javaAgent;
     }
 
-    public static boolean isInstrumented(Class<?> clazz) {
-        return clazz != null && clazz.isAnnotationPresent(Instrumented.class);
-    }
-
     @SuppressWarnings("WeakerAccess")
     public static boolean isSyntheticAndNotLambda(Member m) {
         return m.isSynthetic() && !m.getName().startsWith(LAMBDA_METHOD_PREFIX);

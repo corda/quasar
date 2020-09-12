@@ -16,7 +16,6 @@ package co.paralleluniverse.fibers;
 import co.paralleluniverse.common.reflection.ASMUtil;
 import co.paralleluniverse.common.util.ExtendedStackTraceElement;
 import co.paralleluniverse.common.util.Pair;
-import co.paralleluniverse.fibers.instrument.Instrumented;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;

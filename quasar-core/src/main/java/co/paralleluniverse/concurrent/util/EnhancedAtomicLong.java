@@ -23,10 +23,28 @@ import java.util.function.Predicate;
  * @author circlespainter
  */
 public class EnhancedAtomicLong extends AtomicLong {
-    public static final Function<Long, Long> DEC = l -> l - 1;
+    // Do not convert this to a lambda, because then Gradle will
+    // instrument it. This will add an invisible dependency on
+    // the @com.paralleluniverse.fibers.Instrumented annotation
+    // for OSGi to complain about.
+    public static final Function<Long, Long> DEC = new Function<Long, Long>() {
+        @Override
+        public Long apply(Long l) {
+            return l - 1;
+        }
+    };
 
     public static Predicate<Long> gt(final long n) {
-        return l -> l > n;
+        // Do not convert this to a lambda, because then Gradle will
+        // instrument it. This will add an invisible dependency on
+        // the @com.paralleluniverse.fibers.Instrumented annotation
+        // for OSGi to complain about.
+        return new Predicate<Long>() {
+            @Override
+            public boolean test(Long l) {
+                return l > n;
+            }
+        };
     }
 
     public boolean evalAndUpdate(final Predicate<Long> predicate, final Function<Long, Long> update) {

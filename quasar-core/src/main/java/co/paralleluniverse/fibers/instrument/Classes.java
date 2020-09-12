@@ -49,7 +49,7 @@ final class Classes {
     
     static final String SUSPENDABLE_DESC = "Lco/paralleluniverse/fibers/Suspendable;";
     static final String DONT_INSTRUMENT_DESC = Type.getDescriptor(DontInstrument.class);
-    static final String INSTRUMENTED_DESC = Type.getDescriptor(Instrumented.class);
+    static final String INSTRUMENTED_DESC = "Lco/paralleluniverse/fibers/Instrumented;";
     static final String LAMBDA_METHOD_PREFIX = "lambda$";
 
     static boolean isYieldMethod(String className, String methodName) {

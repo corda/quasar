@@ -38,7 +38,7 @@ class SuspOffsetsAfterInstrClassVisitor extends ClassVisitor {
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         this.className = name;
 
-        // need atleast 1.5 for annotations to work
+        // need at least 1.5 for annotations to work
         if (version < Opcodes.V1_5)
             version = Opcodes.V1_5;
 
@@ -82,19 +82,19 @@ class SuspOffsetsAfterInstrClassVisitor extends ClassVisitor {
                             public void visit(String attrib, Object value) {
                                 if (null != attrib)
                                     switch (attrib) {
-                                    case Instrumented.FIELD_NAME_METHOD_START:
+                                    case Constants.FIELD_NAME_METHOD_START:
                                         methodStart = (Integer) value;
                                         break;
-                                    case Instrumented.FIELD_NAME_METHOD_END:
+                                    case Constants.FIELD_NAME_METHOD_END:
                                         methodEnd = (Integer) value;
                                         break;
-                                    case Instrumented.FIELD_NAME_METHOD_OPTIMIZED:
+                                    case Constants.FIELD_NAME_METHOD_OPTIMIZED:
                                         optimized = (Boolean) value;
                                         break;
-                                    case Instrumented.FIELD_NAME_SUSPENDABLE_CALL_SITES:
+                                    case Constants.FIELD_NAME_SUSPENDABLE_CALL_SITES:
                                         suspCallSites = (int[]) value;
                                         break;
-                                    case Instrumented.FIELD_NAME_SUSPENDABLE_CALL_SITES_OFFSETS_AFTER_INSTR:
+                                    case Constants.FIELD_NAME_SUSPENDABLE_CALL_SITES_OFFSETS_AFTER_INSTR:
                                         // Ignore, we're filling it
                                         break;
                                     default:
@@ -105,7 +105,7 @@ class SuspOffsetsAfterInstrClassVisitor extends ClassVisitor {
                             @Override
                             public AnnotationVisitor visitArray(String attrib) {
                                 // String[] value not handled by visit
-                                if (Instrumented.FIELD_NAME_SUSPENDABLE_CALL_SITE_NAMES.equals(attrib))
+                                if (Constants.FIELD_NAME_SUSPENDABLE_CALL_SITE_NAMES.equals(attrib))
                                     return new AnnotationVisitor(ASMAPI) {
                                         final List<String> callSites = new ArrayList<>();
                                         

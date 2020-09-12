@@ -59,10 +59,6 @@ public class Retransform {
         return instrumentor;
     }
 
-    public static boolean isInstrumented(Class<?> clazz) {
-        return SuspendableHelper.isInstrumented(clazz);
-    }
-
 //    public static boolean isInstrumented(String className) {
 //        for (Iterator<WeakReference<ClassLoader>> it = classLoaders.iterator(); it.hasNext();) {
 //            final WeakReference<ClassLoader> ref = it.next();

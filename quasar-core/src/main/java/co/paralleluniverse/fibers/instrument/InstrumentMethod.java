@@ -41,7 +41,7 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-// import co.paralleluniverse.common.util.SystemProperties;
+import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import static co.paralleluniverse.fibers.instrument.Classes.INSTRUMENTED_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.EXCEPTION_NAME;
 import static co.paralleluniverse.fibers.instrument.Classes.THROWABLE_NAME;
@@ -53,7 +53,6 @@ import static co.paralleluniverse.fibers.instrument.Classes.UNDECLARED_THROWABLE
 import static co.paralleluniverse.fibers.instrument.Classes.isAllowedToBlock;
 import static co.paralleluniverse.fibers.instrument.Classes.blockingCallIdx;
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
-import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import static co.paralleluniverse.fibers.instrument.MethodDatabase.isInvocationHandlerInvocation;
 import static co.paralleluniverse.fibers.instrument.MethodDatabase.isMethodHandleInvocation;
 import static co.paralleluniverse.fibers.instrument.MethodDatabase.isReflectInvocation;
@@ -658,24 +657,24 @@ class InstrumentMethod {
         final StringBuilder sb = db.isDebug() ? new StringBuilder() : null;
         final AnnotationVisitor instrumentedAV = mv.visitAnnotation(INSTRUMENTED_DESC, true);
         if (sb != null)
-            sb.append("@").append(Instrumented.class.getSimpleName()).append("(");
+            sb.append("@Instrumented(");
 
-        instrumentedAV.visit(Instrumented.FIELD_NAME_METHOD_OPTIMIZED, skip);
+        instrumentedAV.visit(Constants.FIELD_NAME_METHOD_OPTIMIZED, skip);
         if (sb != null)
-            sb.append(Instrumented.FIELD_NAME_METHOD_OPTIMIZED + "=").append(skip).append(", ");
+            sb.append(Constants.FIELD_NAME_METHOD_OPTIMIZED + '=').append(skip).append(", ");
 
-        instrumentedAV.visit(Instrumented.FIELD_NAME_METHOD_START, startSourceLine);
+        instrumentedAV.visit(Constants.FIELD_NAME_METHOD_START, startSourceLine);
         if (sb != null)
-            sb.append(Instrumented.FIELD_NAME_METHOD_START + "=").append(startSourceLine).append(", ");
+            sb.append(Constants.FIELD_NAME_METHOD_START + '=').append(startSourceLine).append(", ");
 
-        instrumentedAV.visit(Instrumented.FIELD_NAME_METHOD_END, endSourceLine);
+        instrumentedAV.visit(Constants.FIELD_NAME_METHOD_END, endSourceLine);
         if (sb != null)
-            sb.append(Instrumented.FIELD_NAME_METHOD_END + "=").append(endSourceLine).append(", ");
+            sb.append(Constants.FIELD_NAME_METHOD_END + '=').append(endSourceLine).append(", ");
 
         if (suspCallsSourceLines != null) {
-            final AnnotationVisitor linesAV = instrumentedAV.visitArray(Instrumented.FIELD_NAME_SUSPENDABLE_CALL_SITES);
+            final AnnotationVisitor linesAV = instrumentedAV.visitArray(Constants.FIELD_NAME_SUSPENDABLE_CALL_SITES);
             if (sb != null)
-                sb.append(Instrumented.FIELD_NAME_SUSPENDABLE_CALL_SITES + "=[");
+                sb.append(Constants.FIELD_NAME_SUSPENDABLE_CALL_SITES + "=[");
             for (int i = 0; i < suspCallsSourceLines.length; i++) {
                 if (sb != null && i != 0)
                     sb.append(", ");
@@ -691,9 +690,9 @@ class InstrumentMethod {
         }
 
         if (instrumentedCalls != null) {
-            final AnnotationVisitor instrumentedCallsAV = instrumentedAV.visitArray(Instrumented.FIELD_NAME_SUSPENDABLE_CALL_SITE_NAMES);
+            final AnnotationVisitor instrumentedCallsAV = instrumentedAV.visitArray(Constants.FIELD_NAME_SUSPENDABLE_CALL_SITE_NAMES);
             if (sb != null)
-                sb.append(Instrumented.FIELD_NAME_SUSPENDABLE_CALL_SITE_NAMES + "=[");
+                sb.append(Constants.FIELD_NAME_SUSPENDABLE_CALL_SITE_NAMES + "=[");
             for (int i = 0; i < instrumentedCalls.length; i++) {
                 if (sb != null && i != 0)
                     sb.append(", ");
@@ -709,9 +708,9 @@ class InstrumentMethod {
         }
 
         if (postInstrOffsets != null) {
-            final AnnotationVisitor postInstrOffsetsAV = instrumentedAV.visitArray(Instrumented.FIELD_NAME_SUSPENDABLE_CALL_SITES_OFFSETS_AFTER_INSTR);
+            final AnnotationVisitor postInstrOffsetsAV = instrumentedAV.visitArray(Constants.FIELD_NAME_SUSPENDABLE_CALL_SITES_OFFSETS_AFTER_INSTR);
             if (sb != null)
-                sb.append(Instrumented.FIELD_NAME_SUSPENDABLE_CALL_SITES_OFFSETS_AFTER_INSTR + "=[");
+                sb.append(Constants.FIELD_NAME_SUSPENDABLE_CALL_SITES_OFFSETS_AFTER_INSTR + "=[");
             for (int i = 0; i < postInstrOffsets.length; i++) {
                 if (sb != null && i != 0)
                     sb.append(", ");
@@ -856,7 +855,7 @@ class InstrumentMethod {
         }
     }
 
-    private static void dumpParameterAnnotations(MethodVisitor mv, List[] parameterAnnotations, boolean visible) {
+    private static void dumpParameterAnnotations(MethodVisitor mv, List<?>[] parameterAnnotations, boolean visible) {
         for (int i = 0; i < parameterAnnotations.length; i++) {
             if (parameterAnnotations[i] != null) {
                 for (Object o : parameterAnnotations[i]) {
