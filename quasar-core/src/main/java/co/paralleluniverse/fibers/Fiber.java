@@ -30,7 +30,6 @@ import co.paralleluniverse.concurrent.util.ThreadAccess;
 import co.paralleluniverse.concurrent.util.ThreadUtil;
 import co.paralleluniverse.fibers.FiberForkJoinScheduler.FiberForkJoinTask;
 import co.paralleluniverse.fibers.instrument.Instrumented;
-import co.paralleluniverse.fibers.instrument.SuspendableHelper;
 import co.paralleluniverse.io.serialization.ByteArraySerializer;
 import co.paralleluniverse.io.serialization.kryo.KryoSerializer;
 import co.paralleluniverse.strands.Strand;
@@ -38,9 +37,14 @@ import co.paralleluniverse.strands.Stranded;
 import co.paralleluniverse.strands.SuspendableCallable;
 import co.paralleluniverse.strands.SuspendableRunnable;
 import co.paralleluniverse.strands.SuspendableUtils.VoidSuspendableCallable;
-import static co.paralleluniverse.strands.SuspendableUtils.runnableToCallable;
-import static java.security.AccessController.doPrivileged;
 import co.paralleluniverse.strands.dataflow.Val;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Registration;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
+
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
@@ -55,13 +59,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Registration;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import java.lang.reflect.Member;
+
+import static co.paralleluniverse.fibers.instrument.SuspendableHelper.isJavaAgentActive;
+import static co.paralleluniverse.fibers.instrument.SuspendableHelper.isWaiver;
+import static co.paralleluniverse.strands.SuspendableUtils.runnableToCallable;
+import static java.security.AccessController.doPrivileged;
 
 /**
  * A lightweight thread.
@@ -101,7 +104,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
             System.err.println("QUASAR WARNING: Debug mode enabled. This may harm performance.");
         if (Debug.isAssertionsEnabled())
             System.err.println("QUASAR WARNING: Assertions enabled. This may harm performance.");
-        if (!SuspendableHelper.isJavaAgentActive() && !disableAgentWarning)
+        if (!isJavaAgentActive() && !disableAgentWarning)
             System.err.println("QUASAR WARNING: Quasar Java Agent isn't running. If you're using another instrumentation method you can ignore this message; "
                     + "otherwise, please refer to the Getting Started section in the Quasar documentation.");
         assert printVerifyInstrumentationWarning();
@@ -191,7 +194,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         setName(name);
         Strand parent = Strand.currentStrand(); // retaining the parent as a field is a huge, complex memory leak
         this.target = target;
-        this.task = scheduler != null ? scheduler.newFiberTask(this) : new FiberForkJoinTask(this);
+        this.task = scheduler != null ? scheduler.newFiberTask(this) : new FiberForkJoinTask<>(this);
         this.initialStackSize = stackSize;
         this.stack = new Stack(this, stackSize > 0 ? stackSize : DEFAULT_STACK_SIZE);
         this.priority = (byte)NORM_PRIORITY;
@@ -249,15 +252,15 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
     }
 
     private static FiberScheduler defaultScheduler() {
-        final Fiber parent = currentFiber();
+        final Fiber<?> parent = currentFiber();
         if (parent == null)
             return DefaultFiberScheduler.getInstance();
         else
             return parent.getScheduler();
     }
 
-    private static Fiber verifyParent() {
-        final Fiber parent = currentFiber();
+    private static Fiber<?> verifyParent() {
+        final Fiber<?> parent = currentFiber();
         if (parent == null)
             throw new IllegalStateException("This constructor may only be used from within a Fiber");
         return parent;
@@ -325,7 +328,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      * @see #MIN_PRIORITY
      */
     @Override
-    public Fiber setPriority(int newPriority) {
+    public Fiber<?> setPriority(int newPriority) {
         if (newPriority > MAX_PRIORITY || newPriority < MIN_PRIORITY)
             throw new IllegalArgumentException();
         this.priority = (byte) newPriority;
@@ -359,7 +362,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
     }
     
     @Deprecated
-    public Fiber setNoLocals(boolean value) {
+    public Fiber<?> setNoLocals(boolean value) {
         this.noLocals = value;
         if (value) {
             this.fiberLocals = null;
@@ -609,7 +612,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      *
      * @return the active Fiber on this thread or NULL if no Fiber is running.
      */
-    public static Fiber currentFiber() {
+    public static Fiber<?> currentFiber() {
         return getCurrentFiber();
     }
 
@@ -624,7 +627,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
     }
 
     public static long getCurrentRun() {
-        Fiber f = currentFiber();
+        Fiber<?> f = currentFiber();
         if (f == null)
             throw new IllegalStateException("Not in fiber");
         return f.getRun();
@@ -679,19 +682,19 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         verifySuspend().yield1();
     }
 
-    public static void parkAndUnpark(Fiber other) throws SuspendExecution {
+    public static void parkAndUnpark(Fiber<?> other) throws SuspendExecution {
         parkAndUnpark(other, null);
     }
 
-    public static void parkAndUnpark(Fiber other, Object blocker) throws SuspendExecution {
+    public static void parkAndUnpark(Fiber<?> other, Object blocker) throws SuspendExecution {
         verifySuspend().parkAndUnpark1(other, blocker, 0, TimeUnit.NANOSECONDS);
     }
 
-    public static void yieldAndUnpark(Fiber other, Object blocker) throws SuspendExecution {
+    public static void yieldAndUnpark(Fiber<?> other, Object blocker) throws SuspendExecution {
         verifySuspend().yieldAndUnpark1(other, blocker, 0, TimeUnit.NANOSECONDS);
     }
 
-    public static void yieldAndUnpark(Fiber other) throws SuspendExecution {
+    public static void yieldAndUnpark(Fiber<?> other) throws SuspendExecution {
         yieldAndUnpark(other, null);
     }
 
@@ -708,7 +711,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
     }
 
     public static boolean interrupted() {
-        final Fiber current = currentFiber();
+        final Fiber<?> current = currentFiber();
         if (current == null)
             throw new IllegalStateException("Not called on a fiber");
         final boolean interrupted = current.isInterrupted();
@@ -751,14 +754,14 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         task.yield();
     }
 
-    private void parkAndUnpark1(Fiber other, Object blocker, long timeout, TimeUnit unit) throws SuspendExecution {
+    private void parkAndUnpark1(Fiber<?> other, Object blocker, long timeout, TimeUnit unit) throws SuspendExecution {
         record(1, "Fiber", "parkAndUnpark", "Parking %s and unparking %s blocker: %s", this, other, blocker);
         if (!other.exec(blocker, timeout, unit))
             other.unpark(blocker);
         park1(blocker, null, -1, null);
     }
 
-    private void yieldAndUnpark1(Fiber other, Object blocker, long timeout, TimeUnit unit) throws SuspendExecution {
+    private void yieldAndUnpark1(Fiber<?> other, Object blocker, long timeout, TimeUnit unit) throws SuspendExecution {
         record(1, "Fiber", "yieldAndUnpark", "Yielding %s and unparking %s blocker: %s", this, other, blocker);
         if (!other.exec(blocker, timeout, unit)) {
             other.unpark(blocker);
@@ -1059,7 +1062,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         ThreadAccess.setInheritedAccessControlContext(currentThread, origAcc);
     }
 
-    private void setCurrentFiber(Fiber fiber, Thread currentThread) {
+    private void setCurrentFiber(Fiber<?> fiber, Thread currentThread) {
         if (scheduler != null)
             scheduler.setCurrentFiber(fiber, currentThread);
         else
@@ -1079,20 +1082,20 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         return scheduler.getCurrentTarget(currentThread);
     }
 
-    private static Fiber getCurrentFiber() {
+    private static Fiber<?> getCurrentFiber() {
         final Thread currentThread = Thread.currentThread();
         if (FiberForkJoinScheduler.isFiberThread(currentThread))
             return FiberForkJoinScheduler.getTargetFiber(currentThread);
         else {
             final Strand s = currentStrand.get();
-            return s instanceof Fiber ? (Fiber) s : null;
+            return s instanceof Fiber ? (Fiber<?>) s : null;
         }
     }
 
     static final class DummyRunnable implements Runnable {
-        final Fiber fiber;
+        final Fiber<?> fiber;
 
-        public DummyRunnable(Fiber fiber) {
+        public DummyRunnable(Fiber<?> fiber) {
             this.fiber = fiber;
         }
 
@@ -1120,7 +1123,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      *
      * @return {@code this}
      */
-    public Fiber inheritThreadLocals() {
+    public Fiber<?> inheritThreadLocals() {
         if (state != State.NEW)
             throw new IllegalStateException("Method called on a started fiber");
         if (!noLocals)
@@ -1669,21 +1672,21 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
          *
          * @param current
          */
-        void run(Fiber current);
+        void run(Fiber<?> current);
     }
 
-    private static Fiber verifySuspend() {
+    private static Fiber<?> verifySuspend() {
         return verifySuspend(verifyCurrent());
     }
 
-    static Fiber verifySuspend(Fiber current) {
+    static Fiber<?> verifySuspend(Fiber<?> current) {
         if (verifyInstrumentation)
             checkInstrumentation();
         return current;
     }
 
-    private static Fiber verifyCurrent() {
-        Fiber current = currentFiber();
+    private static Fiber<?> verifyCurrent() {
+        Fiber<?> current = currentFiber();
         if (current == null) {
             final Stack stack = Stack.getStack();
             if (stack != null) {
@@ -1738,13 +1741,13 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
                 continue;
 
             if (!ste.getClassName().equals(Fiber.class.getName()) && !ste.getClassName().startsWith(Fiber.class.getName() + '$')
-                    && !ste.getClassName().equals(Stack.class.getName()) && !SuspendableHelper.isWaiver(ste.getClassName(), ste.getMethodName())) {
+                    && !ste.getClassName().equals(Stack.class.getName()) && !isWaiver(ste.getClassName(), ste.getMethodName())) {
                 final Class<?> clazz = ste.getDeclaringClass();
-                final boolean classInstrumented = SuspendableHelper.isInstrumented(clazz);
-                final /*Executable*/ Member m = SuspendableHelper.lookupMethod(ste);
+                final boolean classInstrumented = isInstrumented(clazz);
+                final /*Executable*/ Member m = FiberHelper.lookupMethod(ste);
                 if (m != null) {
-                    final boolean methodInstrumented = SuspendableHelper.isInstrumented(m);
-                    final Pair<Boolean, Instrumented> callSiteInstrumented = SuspendableHelper.isCallSiteInstrumented(m, ste.getLineNumber(), ste.getBytecodeIndex(), stes, i);
+                    final boolean methodInstrumented = FiberHelper.isInstrumented(m);
+                    final Pair<Boolean, Instrumented> callSiteInstrumented = FiberHelper.isCallSiteInstrumented(m, ste.getLineNumber(), ste.getBytecodeIndex(), stes, i);
                     if (!classInstrumented || !methodInstrumented || !callSiteInstrumented.getFirst()) {
                         if (ok)
                             stackTrace = initTrace(i, stes);
@@ -1791,9 +1794,9 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
     private static String[] getReadableCallsites(String[] callsites) {
         String[] readable = new String[callsites.length];
         for (int i = 0; i < callsites.length; i++)
-            readable[i] = SuspendableHelper.getCallsiteOwner(callsites[i]) + "."
-                          + SuspendableHelper.getCallsiteName(callsites[i])
-                          + ASMUtil.getReadableDescriptor(SuspendableHelper.getCallsiteDesc(callsites[i]));
+            readable[i] = FiberHelper.getCallsiteOwner(callsites[i]) + "."
+                          + FiberHelper.getCallsiteName(callsites[i])
+                          + ASMUtil.getReadableDescriptor(FiberHelper.getCallsiteDesc(callsites[i]));
         return readable;
     }
 
@@ -1809,9 +1812,9 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
     }
 
     private static void printTraceLine(StringBuilder stackTrace, ExtendedStackTraceElement ste) {
-        final Member m = SuspendableHelper.lookupMethod(ste);
+        final Member m = FiberHelper.lookupMethod(ste);
         stackTrace.append("\n\tat ").append(ste.getMethod() == null ? ste.toString(m) : ste.toString());
-        if (SuspendableHelper.isOptimized(m))
+        if (FiberHelper.isOptimized(m))
             stackTrace.append(" (optimized)");
     }
 
@@ -2017,7 +2020,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
 //            return; // should only happen during unparkSerialized 
         while (!park(SERIALIZER_BLOCKER, new ParkAction() {
             @Override
-            public void run(Fiber f) {
+            public void run(Fiber<?> f) {
                 f.record(1, "Fiber", "parkAndSerialize", "Serializing fiber %s", f);
                 writer.write(f, getFiberSerializer());
             }
@@ -2035,7 +2038,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
     public static void parkAndCustomSerialize(final CustomFiberWriter writer) throws SuspendExecution {
         while (!park(SERIALIZER_BLOCKER, new ParkAction() {
             @Override
-            public void run(Fiber f) {
+            public void run(Fiber<?> f) {
                 f.record(1, "Fiber", "parkAndCustomSerialize", "Serializing fiber %s", f);
                 writer.write(f);
             }
@@ -2111,8 +2114,8 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         return s;
     }
 
-    private static class FiberSerializer extends Serializer<Fiber> {
-        private boolean includeThreadLocals;
+    private static class FiberSerializer extends Serializer<Fiber<?>> {
+        private final boolean includeThreadLocals;
 
         public FiberSerializer(boolean includeThreadLocals) {
             this.includeThreadLocals = includeThreadLocals;
@@ -2120,8 +2123,8 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         }
 
         @Override
-        @SuppressWarnings({"CallToPrintStackTrace", "unchecked"})
-        public void write(Kryo kryo, Output output, Fiber f) {
+        @SuppressWarnings("CallToPrintStackTrace")
+        public void write(Kryo kryo, Output output, Fiber<?> f) {
             final Thread currentThread = Thread.currentThread();
 
             // If we need to serialise thread local storage slots as well, then we have to do a swap to avoid
@@ -2134,7 +2137,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
                 try {
                     f.stack.resumeStack();
                     kryo.writeClass(output, f.getClass());
-                    new FieldSerializer(kryo, f.getClass()).write(kryo, output, f);
+                    new FieldSerializer<>(kryo, f.getClass()).write(kryo, output, f);
                 } finally {
                     f.fiberLocals = tmpFiberLocals;
                     f.inheritableFiberLocals = tmpInheritableFiberLocals;
@@ -2155,7 +2158,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
                     f.stack.resumeStack();
 
                     kryo.writeClass(output, f.getClass());
-                    new FieldSerializer(kryo, f.getClass()).write(kryo, output, f);
+                    new FieldSerializer<>(kryo, f.getClass()).write(kryo, output, f);
                 } catch (Throwable t) {
                     t.printStackTrace();
                     throw t;
@@ -2170,8 +2173,8 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
 
         @Override
         @SuppressWarnings("CallToPrintStackTrace")
-        public Fiber read(Kryo kryo, Input input, Class<Fiber> type) {
-            final Fiber f;
+        public Fiber<?> read(Kryo kryo, Input input, Class<Fiber<?>> type) {
+            final Fiber<?> f;
             final Thread currentThread = Thread.currentThread();
             final Object tmpThreadLocals = ThreadAccess.getThreadLocals(currentThread);
             final Object tmpInheritableThreadLocals = ThreadAccess.getInheritableThreadLocals(currentThread);
@@ -2181,7 +2184,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
                 final Registration reg = kryo.readClass(input);
                 if (reg == null)
                     return null;
-                f = (Fiber) new FieldSerializer<>(kryo, reg.getType()).read(kryo, input, reg.getType());
+                f = (Fiber<?>) new FieldSerializer<>(kryo, reg.getType()).read(kryo, input, reg.getType());
 
                 if (!f.noLocals) {
                     f.fiberLocals = ThreadAccess.getThreadLocals(currentThread);
