@@ -75,7 +75,7 @@ class ExtendedStackTraceClassContext extends ExtendedStackTrace {
                 || className.contains("$$Lambda$"));
     }
 
-    private static boolean skipCTX(Class c) {
+    private static boolean skipCTX(Class<?> c) {
         final String className = c.getName();
         return (className.startsWith("java.lang.invoke.")
                 // Originated from http://bugs.java.com/view_bug.do?bug_id=8025636, Quasar PR #207
@@ -84,7 +84,7 @@ class ExtendedStackTraceClassContext extends ExtendedStackTrace {
 
     private static class ClassContext extends SecurityManager {
         @Override
-        public Class[] getClassContext() {
+        public Class<?>[] getClassContext() {
             return super.getClassContext();
         }
     }

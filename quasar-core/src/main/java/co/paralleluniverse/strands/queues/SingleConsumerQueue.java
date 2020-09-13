@@ -13,9 +13,9 @@
  */
 package co.paralleluniverse.strands.queues;
 
-import co.paralleluniverse.common.monitoring.Debug;
 import co.paralleluniverse.common.monitoring.FlightRecorder;
 import co.paralleluniverse.common.monitoring.FlightRecorderMessage;
+import co.paralleluniverse.common.util.Debug;
 import co.paralleluniverse.common.util.Objects;
 import java.util.AbstractCollection;
 import java.util.Collection;

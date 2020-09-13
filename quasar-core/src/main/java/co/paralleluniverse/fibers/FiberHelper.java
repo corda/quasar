@@ -13,7 +13,7 @@
  */
 package co.paralleluniverse.fibers;
 
-import co.paralleluniverse.common.reflection.ASMUtil;
+import co.paralleluniverse.common.asm.ASMUtil;
 import co.paralleluniverse.common.util.ExtendedStackTraceElement;
 import co.paralleluniverse.common.util.Pair;
 

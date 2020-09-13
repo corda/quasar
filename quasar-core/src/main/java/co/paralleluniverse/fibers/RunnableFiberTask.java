@@ -12,10 +12,10 @@
  */
 package co.paralleluniverse.fibers;
 
-import co.paralleluniverse.common.monitoring.Debug;
 import co.paralleluniverse.common.monitoring.FlightRecorder;
 import co.paralleluniverse.common.monitoring.FlightRecorderMessage;
 import co.paralleluniverse.common.reflection.GetDeclaredField;
+import co.paralleluniverse.common.util.Debug;
 import co.paralleluniverse.common.util.Exceptions;
 import co.paralleluniverse.common.util.SystemProperties;
 import co.paralleluniverse.common.util.UtilUnsafe;

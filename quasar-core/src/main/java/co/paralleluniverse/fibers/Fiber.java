@@ -13,11 +13,11 @@
  */
 package co.paralleluniverse.fibers;
 
-import co.paralleluniverse.common.monitoring.Debug;
+import co.paralleluniverse.common.asm.ASMUtil;
 import co.paralleluniverse.common.monitoring.FlightRecorder;
 import co.paralleluniverse.common.monitoring.FlightRecorderMessage;
-import co.paralleluniverse.common.reflection.ASMUtil;
 import co.paralleluniverse.common.reflection.GetDeclaredField;
+import co.paralleluniverse.common.util.Debug;
 import co.paralleluniverse.common.util.Exceptions;
 import co.paralleluniverse.common.util.ExtendedStackTrace;
 import co.paralleluniverse.common.util.ExtendedStackTraceElement;

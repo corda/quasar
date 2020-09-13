@@ -13,11 +13,10 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.common.util.Pair;
-import co.paralleluniverse.concurrent.util.MapUtil;
 import java.lang.reflect.Member;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static co.paralleluniverse.fibers.instrument.Classes.LAMBDA_METHOD_PREFIX;
 
@@ -28,7 +27,7 @@ import static co.paralleluniverse.fibers.instrument.Classes.LAMBDA_METHOD_PREFIX
 public final class SuspendableHelper {
     static boolean javaAgent;
 
-    private static final Set<Pair<String, String>> waivers = Collections.newSetFromMap(MapUtil.newConcurrentHashMap());
+    private static final Set<Pair<String, String>> waivers = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public static boolean isJavaAgentActive() {
         return javaAgent;

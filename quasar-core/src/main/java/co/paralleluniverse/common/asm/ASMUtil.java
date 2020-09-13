@@ -11,35 +11,69 @@
  * under the terms of the GNU Lesser General Public License version 3.0
  * as published by the Free Software Foundation.
  */
-package co.paralleluniverse.common.reflection;
+package co.paralleluniverse.common.asm;
 
-import static co.paralleluniverse.asm.ASMUtil.getClassNode;
-import static co.paralleluniverse.common.reflection.ClassLoaderUtil.classToResource;
-import static co.paralleluniverse.common.reflection.ClassLoaderUtil.classToSlashed;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.ClassNode;
+
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.List;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static co.paralleluniverse.asm.ASMUtil.classToSlashed;
+import static co.paralleluniverse.asm.ASMUtil.getClassNode;
+import static org.objectweb.asm.ClassReader.SKIP_FRAMES;
 
 /**
  *
  * @author pron
  */
 public final class ASMUtil {
-    public static InputStream getClassInputStream(String className, ClassLoader cl) {
-        final String resource = classToResource(className);
-        return cl != null ? cl.getResourceAsStream(resource) : ClassLoader.getSystemResourceAsStream(resource);
-    }
+    public static final int ASMAPI = Opcodes.ASM5;
 
-    public static InputStream getClassInputStream(Class<?> clazz) {
-        final InputStream is = getClassInputStream(clazz.getName(), clazz.getClassLoader());
-        if (is == null)
-            throw new UnsupportedOperationException("Class file " + clazz.getName() + " could not be loaded by the class's classloader " + clazz.getClassLoader());
-        return is;
+    public static void findMethod(
+        Class<?> clazz,
+        String targetMethodName,
+        int targetLineNumber,
+        AtomicReference<String> exactMatch,
+        AtomicReference<String> descriptor
+    ) throws IOException {
+        co.paralleluniverse.asm.ASMUtil.accept(clazz, SKIP_FRAMES, new ClassVisitor(ASMAPI) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, final String desc, String signature, String[] exceptions) {
+                MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
+                if (exactMatch.get() == null && targetMethodName.equals(name)) {
+                    mv = new MethodVisitor(api, mv) {
+                        int minLine = Integer.MAX_VALUE, maxLine = Integer.MIN_VALUE;
+
+                        @Override
+                        public void visitLineNumber(int line, Label start) {
+                            if (line < minLine)
+                                minLine = line;
+                            if (line > maxLine)
+                                maxLine = line;
+                            if (targetLineNumber == line)
+                                exactMatch.set(desc);
+                        }
+
+                        @Override
+                        public void visitEnd() {
+                            if (minLine <= targetLineNumber && maxLine >= targetLineNumber)
+                                descriptor.compareAndSet(null, desc);
+                            super.visitEnd();
+                        }
+                    };
+                }
+                return mv;
+            }
+        });
     }
 
     public static boolean isAssignableFrom(Class<?> supertype, String className, ClassLoader cl) {
@@ -77,28 +111,28 @@ public final class ASMUtil {
             throw new RuntimeException(e);
         }
     }
-    
+
     public static String getDescriptor(Member m) {
         if (m instanceof Method)
             return Type.getMethodDescriptor((Method) m);
         if (m instanceof Constructor)
-            return Type.getConstructorDescriptor((Constructor) m);
+            return Type.getConstructorDescriptor((Constructor<?>) m);
         throw new IllegalArgumentException("Not an executable: " + m);
     }
-    
+
     public static String getReadableDescriptor(String descriptor) {
         Type[] types = Type.getArgumentTypes(descriptor);
         StringBuilder sb = new StringBuilder();
-        sb.append("(");
+        sb.append('(');
         for (int i = 0; i < types.length; i++) {
             if (i > 0)
                 sb.append(", ");
             sb.append(types[i].getClassName());
         }
-        sb.append(")");
+        sb.append(')');
         return sb.toString();
     }
-    
+
     private ASMUtil() {
     }
 }

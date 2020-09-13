@@ -13,7 +13,6 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.concurrent.util.MapUtil;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.util.Textifier;
@@ -26,6 +25,7 @@ import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -35,7 +35,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Retransform {
     static volatile Instrumentation instrumentation;
     static volatile QuasarInstrumentor instrumentor;
-    static volatile Set<WeakReference<ClassLoader>> classLoaders = Collections.newSetFromMap(MapUtil.<WeakReference<ClassLoader>, Boolean>newConcurrentHashMap());
+    static volatile Set<WeakReference<ClassLoader>> classLoaders = Collections.newSetFromMap(new ConcurrentHashMap<WeakReference<ClassLoader>, Boolean>());
     
     private static final CopyOnWriteArrayList<ClassLoadListener> listeners = new CopyOnWriteArrayList<>();
 

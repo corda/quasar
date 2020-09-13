@@ -12,6 +12,8 @@
  */
 package co.paralleluniverse.common.monitoring;
 
+import co.paralleluniverse.common.util.Debug;
+
 import java.util.Arrays;
 import java.util.Formatter;
 

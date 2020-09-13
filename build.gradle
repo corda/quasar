@@ -475,11 +475,9 @@ project (':quasar-core') {
         def bundleTask = tasks.register("${set.name}Bundle", Bundle) {
             dependsOn shadowJarTask
             from(zipTree(shadowJarTask.archiveFile)) {
-                exclude 'co/paralleluniverse/fibers/instrument/**'
-                exclude 'co/paralleluniverse/common/reflection/**'
-                exclude 'co/paralleluniverse/common/util/**'
-                exclude 'co/paralleluniverse/concurrent/util/**'
                 exclude 'co/paralleluniverse/asm/**'
+                exclude 'co/paralleluniverse/common/asm/**'
+                exclude 'co/paralleluniverse/fibers/instrument/**'
             }
             archiveAppendix = 'osgi'
 
@@ -507,11 +505,9 @@ Import-Package: \
         def bundleAgentTask = tasks.register("${set.name}AgentBundle", Bundle) {
             dependsOn shadowJarTask
             from(zipTree(shadowJarTask.archiveFile)) {
-                include 'co/paralleluniverse/fibers/instrument/**'
-                include 'co/paralleluniverse/common/reflection/**'
-                include 'co/paralleluniverse/common/util/**'
-                include 'co/paralleluniverse/concurrent/util/**'
                 include 'co/paralleluniverse/asm/**'
+                include 'co/paralleluniverse/common/asm/**'
+                include 'co/paralleluniverse/fibers/instrument/**'
                 exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTask*'
                 exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTKB*'
                 exclude 'co/paralleluniverse/fibers/instrument/OldSuspendablesScanner*'

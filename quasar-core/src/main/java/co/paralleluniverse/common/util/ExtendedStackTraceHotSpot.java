@@ -171,10 +171,10 @@ class ExtendedStackTraceHotSpot extends ExtendedStackTrace {
     private static int getSlot(/*Executable*/Member m) {
         try {
             if (m instanceof Constructor)
-                return ctorSlot.getInt((Constructor) m);
+                return ctorSlot.getInt(m);
             else if (m instanceof Field)
-                return fieldSlot.getInt((Field) m);
-            return methodSlot.getInt((Method) m);
+                return fieldSlot.getInt(m);
+            return methodSlot.getInt(m);
         } catch (IllegalAccessException e) {
             throw new AssertionError(e);
         }

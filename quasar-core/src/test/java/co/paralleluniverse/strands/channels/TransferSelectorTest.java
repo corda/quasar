@@ -13,8 +13,8 @@
  */
 package co.paralleluniverse.strands.channels;
 
-import co.paralleluniverse.common.monitoring.Debug;
 import co.paralleluniverse.common.test.TestUtil;
+import co.paralleluniverse.common.util.Debug;
 import co.paralleluniverse.fibers.Fiber;
 import co.paralleluniverse.fibers.FiberForkJoinScheduler;
 import co.paralleluniverse.fibers.FiberScheduler;

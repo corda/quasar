@@ -12,7 +12,6 @@
  */
 package co.paralleluniverse.common.util;
 
-import co.paralleluniverse.asm.ASMUtil;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
@@ -20,13 +19,9 @@ import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReference;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
+import static co.paralleluniverse.common.asm.ASMUtil.findMethod;
+import static co.paralleluniverse.common.asm.ASMUtil.getDescriptor;
 import static java.security.AccessController.doPrivileged;
 
 /**
@@ -99,35 +94,7 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
             try {
                 final AtomicReference<String> exactMatch = new AtomicReference<>();
                 final AtomicReference<String> descriptor = new AtomicReference<>();
-                ASMUtil.accept(este.getDeclaringClass(), ClassReader.SKIP_FRAMES, new ClassVisitor(Opcodes.ASM5) {
-                    @Override
-                    public MethodVisitor visitMethod(int access, String name, final String desc, String signature, String[] exceptions) {
-                        MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
-                        if (exactMatch.get() == null && targetMethodName.equals(name)) {
-                            mv = new MethodVisitor(api, mv) {
-                                int minLine = Integer.MAX_VALUE, maxLine = Integer.MIN_VALUE;
-
-                                @Override
-                                public void visitLineNumber(int line, Label start) {
-                                    if (line < minLine)
-                                        minLine = line;
-                                    if (line > maxLine)
-                                        maxLine = line;
-                                    if (targetLineNumber == line)
-                                        exactMatch.set(desc);
-                                }
-
-                                @Override
-                                public void visitEnd() {
-                                    if (minLine <= targetLineNumber && maxLine >= targetLineNumber)
-                                        descriptor.compareAndSet(null, desc);
-                                    super.visitEnd();
-                                }
-                            };
-                        }
-                        return mv;
-                    }
-                });
+                findMethod(este.getDeclaringClass(), targetMethodName, targetLineNumber, exactMatch, descriptor);
 
                 String exactMatchValue = exactMatch.get();
                 String descriptorValue = descriptor.get();
@@ -159,12 +126,6 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
         if (m instanceof Constructor)
             return "<init>";
         return ((Method)m).getName();
-    }
-
-    protected static String getDescriptor(Member m) {
-        if (m instanceof Constructor)
-            return Type.getConstructorDescriptor((Constructor<?>) m);
-        return Type.getMethodDescriptor((Method) m);
     }
 
     protected final Member[] getMethods(Class<?> clazz) {

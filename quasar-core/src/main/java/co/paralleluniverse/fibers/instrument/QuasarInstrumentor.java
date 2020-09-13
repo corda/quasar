@@ -13,9 +13,6 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.common.util.Debug;
-import co.paralleluniverse.common.util.SystemProperties;
-import co.paralleluniverse.common.util.VisibleForTesting;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -41,7 +38,7 @@ public final class QuasarInstrumentor {
     public static final int ASMAPI = Opcodes.ASM5;
 
     private final static String EXAMINED_CLASS = System.getProperty("co.paralleluniverse.fibers.writeInstrumentedClasses");
-    private static final boolean allowJdkInstrumentation = SystemProperties.isEmptyOrTrue("co.paralleluniverse.fibers.allowJdkInstrumentation");
+    private static final boolean allowJdkInstrumentation = isEmptyOrTrue(System.getProperty("co.paralleluniverse.fibers.allowJdkInstrumentation"));
     private final WeakHashMap<ClassLoader, MethodDatabase> dbForClassloader = new WeakHashMap<>();
     private boolean check;
     private final boolean aot;
@@ -53,6 +50,12 @@ public final class QuasarInstrumentor {
     private boolean verbose;
     private boolean debug;
     private int logLevelMask;
+
+    private static boolean isEmptyOrTrue(String value) {
+        if (value == null)
+            return false;
+        return value.isEmpty() || Boolean.parseBoolean(value);
+    }
 
     public QuasarInstrumentor() {
         this(false);
@@ -105,7 +108,6 @@ public final class QuasarInstrumentor {
         return instrumentClass(loader, className, is, false);
     }
 
-    @VisibleForTesting
     byte[] instrumentClass(ClassLoader loader, String className, InputStream is, boolean forceInstrumentation) throws IOException {
         className = className != null ? className.replace('.', '/') : null;
 

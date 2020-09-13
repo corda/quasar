@@ -18,7 +18,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.io.IOException;
@@ -26,14 +25,41 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Objects;
 
-import static co.paralleluniverse.common.reflection.ASMUtil.getClassInputStream;
-import static co.paralleluniverse.common.reflection.ClassLoaderUtil.classToResource;
-
 /**
  *
  * @author pron
  */
 public final class ASMUtil {
+    public static String classToResource(String className) {
+        if (className == null)
+            return null;
+        return className.replace('.', '/') + ".class";
+    }
+
+    public static String classToSlashed(String className) {
+        if (className == null)
+            return null;
+        return className.replace('.', '/');
+    }
+
+    public static String classToSlashed(Class<?> clazz) {
+        if (clazz == null)
+            return null;
+        return classToSlashed(clazz.getName());
+    }
+
+    public static InputStream getClassInputStream(String className, ClassLoader cl) {
+        final String resource = classToResource(className);
+        return cl != null ? cl.getResourceAsStream(resource) : ClassLoader.getSystemResourceAsStream(resource);
+    }
+
+    public static InputStream getClassInputStream(Class<?> clazz) {
+        final InputStream is = getClassInputStream(clazz.getName(), clazz.getClassLoader());
+        if (is == null)
+            throw new UnsupportedOperationException("Class file " + clazz.getName() + " could not be loaded by the class's classloader " + clazz.getClassLoader());
+        return is;
+    }
+
     public static <T extends ClassVisitor> T accept(InputStream is, int flags, T visitor) throws IOException {
         if (is == null)
             return null;
@@ -43,7 +69,7 @@ public final class ASMUtil {
         }
     }
 
-    public static <T extends ClassVisitor> T accept(byte[] buffer, int flags, T visitor) throws IOException {
+    public static <T extends ClassVisitor> T accept(byte[] buffer, int flags, T visitor) {
         if (buffer == null)
             throw new NullPointerException("Buffer is null");
         new ClassReader(buffer).accept(visitor, flags);
@@ -89,28 +115,8 @@ public final class ASMUtil {
         return hasAnnotation(Type.getDescriptor(ann), anns);
     }
 
-    public static boolean hasAnnotation(String annDesc, ClassNode c) {
-        return hasAnnotation(annDesc, c.visibleAnnotations);
-    }
-
-    public static boolean hasAnnotation(Class<?> ann, ClassNode c) {
-        return hasAnnotation(ann, c.visibleAnnotations);
-    }
-
-    public static boolean hasAnnotation(String annDesc, MethodNode m) {
-        return hasAnnotation(annDesc, m.visibleAnnotations);
-    }
-
     public static boolean hasAnnotation(Class<?> ann, MethodNode m) {
         return hasAnnotation(ann, m.visibleAnnotations);
-    }
-
-    public static boolean hasAnnotation(String annDesc, FieldNode f) {
-        return hasAnnotation(annDesc, f.visibleAnnotations);
-    }
-
-    public static boolean hasAnnotation(Class<?> ann, FieldNode f) {
-        return hasAnnotation(ann, f.visibleAnnotations);
     }
 
     public static MethodNode getMethod(MethodNode method, List<MethodNode> ms) {

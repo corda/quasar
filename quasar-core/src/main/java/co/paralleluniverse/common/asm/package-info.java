@@ -1,4 +1,4 @@
 @Export
-package co.paralleluniverse.concurrent.util;
+package co.paralleluniverse.common.asm;
 
 import org.osgi.annotation.bundle.Export;
