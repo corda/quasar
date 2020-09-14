@@ -50,8 +50,8 @@ import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.ClassEntry;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import org.objectweb.asm.*;
-
 import java.util.ArrayList;
+
 
 /**
  * Check if a class contains suspendable methods.
@@ -70,10 +70,11 @@ public class CheckInstrumentationVisitor extends ClassVisitor {
     private ClassEntry classEntry;
     private boolean hasSuspendable;
     private boolean alreadyInstrumented;
-    private ArrayList<Pair<String,String>> methodsSyntheticStatic;
+    private final ArrayList<Pair<String,String>> methodsSyntheticStatic;
 
     public CheckInstrumentationVisitor(MethodDatabase db) {
         super(ASMAPI);
+        this.methodsSyntheticStatic = new ArrayList<>();
         this.db = db;
         this.classifier = db.getClassifier();
     }
@@ -161,9 +162,6 @@ public class CheckInstrumentationVisitor extends ClassVisitor {
                     // It may be missing annotations that we can fix later in visitEnd.
                     final int ACC_STATIC_SYNTHETIC = Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC;
                     if (!susp && ((access & ACC_STATIC_SYNTHETIC) == ACC_STATIC_SYNTHETIC) && name.endsWith("$default")) {
-                        if (methodsSyntheticStatic == null) {
-                            methodsSyntheticStatic = new ArrayList<>();
-                        }
                         methodsSyntheticStatic.add(new Pair(name, desc));
                     }
 
@@ -201,29 +199,27 @@ public class CheckInstrumentationVisitor extends ClassVisitor {
 
     @Override
     public void visitEnd() {
-        if (methodsSyntheticStatic != null) {
-            // Now look at our synthetic static collection and try and match up these methods with their class counterpart.
-            // If we find a match in name and type signature then mark it as suspendable. We know these methods are synthetic.
-            // Be careful though as we need to look for class members _or_ static class members with no this pointer.
-            for (Pair<String,String> p : methodsSyntheticStatic) {
-                // We know name ends in $default. So remove last $default characters.
-                final int defaultLen = "$default".length();
-                final String name = p.getFirst().substring(0, p.getFirst().length() - defaultLen);
+        // Now look at our synthetic static collection and try and match up these methods with their class counterpart.
+        // If we find a match in name and type signature then mark it as suspendable. We know these methods are synthetic.
+        // Be careful though as we need to look for class members _or_ static class members with no this pointer.
+        for (Pair<String,String> p : methodsSyntheticStatic) {
+            // We know name ends in $default. So remove last $default characters.
+            final int defaultLen = "$default".length();
+            final String name = p.getFirst().substring(0, p.getFirst().length() - defaultLen);
 
-                // Try at argument positions 0 an 1. Static method has no this pointer in first argument position.
-                for (int i=0; i<2; ++i) {
+            // Try at argument positions 0 an 1. Static method has no this pointer in first argument position.
+            for (int i=0; i<2; ++i) {
 
-                    // Try and look up a matching method in classEntry.
-                    final SuspendableType type = classEntry.check(name, buildDescriptorFromSyntheticStatic(i, p.getSecond()));
+                // Try and look up a matching method in classEntry.
+                final SuspendableType type = classEntry.check(name, buildDescriptorFromSyntheticStatic(i, p.getSecond()));
 
-                    if (type != null) {
-                        // Finally if we've found a non null match that is suspendable set it on the synthetic static.
-                        if (type != SuspendableType.NON_SUSPENDABLE) {
-                            classEntry.set(p.getFirst(), p.getSecond(), SuspendableType.SUSPENDABLE);
-                        }
-                        // Only find one match and we're done.
-                        break;
+                if (type != null) {
+                    // Finally if we've found a non null match that is suspendable set it on the synthetic static.
+                    if (type != SuspendableType.NON_SUSPENDABLE) {
+                        classEntry.set(p.getFirst(), p.getSecond(), SuspendableType.SUSPENDABLE);
                     }
+                    // Only find one match and we're done.
+                    break;
                 }
             }
         }
