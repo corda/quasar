@@ -43,11 +43,6 @@ package co.paralleluniverse.fibers.instrument;
 
 import co.paralleluniverse.fibers.instrument.MethodDatabase.ClassEntry;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
-import org.objectweb.asm.Type;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -56,6 +51,8 @@ import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static co.paralleluniverse.fibers.instrument.Classes.*;
 import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
@@ -77,7 +74,7 @@ class InstrumentClass extends ClassVisitor {
     private boolean suspendableInterface;
     private ClassEntry classEntry;
     private boolean alreadyInstrumented;
-    private ArrayList<MethodNode> methodsSuspendable;
+    private List<MethodNode> methodsSuspendable;
 
     private RuntimeException exception;
 

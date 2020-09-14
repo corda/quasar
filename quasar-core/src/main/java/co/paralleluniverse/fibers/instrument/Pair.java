@@ -26,6 +26,14 @@ final class Pair<First, Second> {
         this.second = second;
     }
 
+    First getFirst() {
+        return first;
+    }
+
+    Second getSecond() {
+        return second;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj == null)
