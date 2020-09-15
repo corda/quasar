@@ -34,10 +34,11 @@ final class Classes {
         "park", "yield", "parkAndUnpark", "yieldAndUnpark", "parkAndSerialize", "parkAndCustomSerialize"
     ));
 
-    // Don't load the classes
+    // Don't load these classes
     static final String STACK_NAME       = /*Stack.class.getName().replace('.', '/')*/ "co/paralleluniverse/fibers/Stack";
     static final String FIBER_CLASS_NAME = /*Fiber.class.getName().replace('.', '/')*/ "co/paralleluniverse/fibers/Fiber";
     static final String STRAND_NAME      = /*Strand.class.getName().replace('.', '/')*/"co/paralleluniverse/strands/Strand";
+    static final String FIBER_HELPER_NAME = "co/paralleluniverse/fibers/FiberHelper";
 
     static final String THROWABLE_NAME         = Throwable.class.getName().replace('.', '/');
     static final String EXCEPTION_NAME         = Exception.class.getName().replace('.', '/');
