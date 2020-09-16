@@ -547,26 +547,6 @@ Bundle-Version: $version
     def jdk8Bundle = tasks.named('jdk8Bundle', Bundle)
     def jdk8AgentBundle = tasks.named('jdk8AgentBundle', Bundle)
 
-    //    compileJdk7Java {
-    //        sourceCompatibility = '1.7'
-    //        targetCompatibility = '1.7'
-    //    }
-
-    //    jdk7Jar {
-    //        from zipTree("${baselib}/jsr166e.jar")  // include non-Maven jars
-    //    }
-
-    //    jdk7ShadowJar {
-    //        dependencies {
-    //            include(dependency(':jsr166e'))
-    //        }
-    //        archiveClassifier = 'jdk7'
-    //    }
-
-    //    artifacts {
-    //        jdk7Archives jdk7Shadow.flatMap { it.archiveFile }
-    //    }
-
     if (ext.java8) {
         compileJdk8Java {
             sourceCompatibility = '1.8'
@@ -578,10 +558,6 @@ Bundle-Version: $version
             targetCompatibility = '1.8'
         }
 
-        //        jdk8Jar {
-        //            classifier = 'jdk8'
-        //        }
-
         artifacts {
             jdk8Archives jdk8ShadowJar.flatMap { it.archiveFile }
         }
@@ -590,11 +566,6 @@ Bundle-Version: $version
             classpath += sourceSets.jdk8test.runtimeClasspath + sourceSets.jdk8test.output
         }
         run.dependsOn compileJdk8Java, jdk8testClasses
-    } else {
-        //tasks.withType(JavaExec).configureEach {
-        //    classpath += sourceSets.jdk7test.runtimeClasspath + sourceSets.jdk7test.output
-        //}
-        //run.dependsOn compileJdk7Java, jdk7testClasses
     }
 
     javadoc {
