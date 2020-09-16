@@ -82,7 +82,7 @@ final class FiberHelper {
                 return new Pair<>(false, null);
             }
 
-            if (calleeSte != null && i.suspendableCallSiteNames() != null) { // check by callsite name (fails for bootstrapped lambdas)
+            if (calleeSte != null) { // check by callsite name (fails for bootstrapped lambdas)
                 final Member callee = calleeSte.getMethod();
                 if (callee == null) {
                     final String methodName = "." + calleeSte.getMethodName() + "(";
@@ -96,7 +96,7 @@ final class FiberHelper {
                     final String[] callsites = i.suspendableCallSiteNames();
                     for (String callsite : callsites) {
                         if (callsite.endsWith(nameAndDescSuffix)) {
-                            String ownerName = getCallsiteOwner(callsite);
+                            final String ownerName = getCallsiteOwner(callsite);
                             Class<?> callsiteOwner;
                             try {
                                 callsiteOwner = Class.forName(ownerName, true, Thread.currentThread().getContextClassLoader());
@@ -162,9 +162,8 @@ final class FiberHelper {
         if (c2.isAssignableFrom(c1))
             return hasMethodWithDescriptor(nameAndDescSuffix, c2);
 
-        return
-                declareInCommonAncestor(nameAndDescSuffix, c1.getSuperclass(), c2) ||
-                        declareInCommonAncestor(nameAndDescSuffix, c1.getInterfaces(), c2);
+        return declareInCommonAncestor(nameAndDescSuffix, c1.getSuperclass(), c2) ||
+            declareInCommonAncestor(nameAndDescSuffix, c1.getInterfaces(), c2);
     }
 
     private static boolean hasMethodWithDescriptor(String nameAndDescSuffix, Class<?> c) {

@@ -114,7 +114,7 @@ public class FiberTest implements Serializable {
 
     @Test
     public void testPriority() throws Exception {
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 
@@ -141,7 +141,7 @@ public class FiberTest implements Serializable {
 
     @Test
     public void testTimeout() throws Exception {
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 Fiber.park(100, TimeUnit.MILLISECONDS);
@@ -159,7 +159,7 @@ public class FiberTest implements Serializable {
 
     @Test
     public void testJoinFromFiber() throws Exception {
-        final Fiber<Integer> fiber1 = new Fiber<Integer>(scheduler, new SuspendableCallable<Integer>() {
+        final Fiber<Integer> fiber1 = new Fiber<>(scheduler, new SuspendableCallable<Integer>() {
             @Override
             public Integer run() throws SuspendExecution {
                 Fiber.park(100, TimeUnit.MILLISECONDS);
@@ -167,7 +167,7 @@ public class FiberTest implements Serializable {
             }
         }).start();
 
-        final Fiber<Integer> fiber2 = new Fiber<Integer>(scheduler, new SuspendableCallable<Integer>() {
+        final Fiber<Integer> fiber2 = new Fiber<>(scheduler, new SuspendableCallable<Integer>() {
             @Override
             public Integer run() throws SuspendExecution, InterruptedException {
                 try {
@@ -187,7 +187,7 @@ public class FiberTest implements Serializable {
 
     @Test
     public void testInterrupt() throws Exception {
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 try {
@@ -207,7 +207,7 @@ public class FiberTest implements Serializable {
     public void testCancel1() throws Exception {
         final AtomicBoolean started = new AtomicBoolean();
         final AtomicBoolean terminated = new AtomicBoolean();
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 started.set(true);
@@ -232,7 +232,7 @@ public class FiberTest implements Serializable {
     public void testCancel2() throws Exception {
         final AtomicBoolean started = new AtomicBoolean();
         final AtomicBoolean terminated = new AtomicBoolean();
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 started.set(true);
@@ -264,7 +264,7 @@ public class FiberTest implements Serializable {
         tl1.set("foo");
         tl2.set("bar");
 
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 assertThat(tl1.get(), is(nullValue()));
@@ -296,7 +296,7 @@ public class FiberTest implements Serializable {
         tl1.set("foo");
         tl2.set("bar");
 
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 assertThat(tl1.get(), is(nullValue()));
@@ -321,7 +321,7 @@ public class FiberTest implements Serializable {
         final ThreadLocal<String> tl1 = new ThreadLocal<>();
         tl1.set("foo");
 
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 assertThat(tl1.get(), is("foo"));
@@ -353,10 +353,10 @@ public class FiberTest implements Serializable {
 
         final int n = 100;
         final int loops = 100;
-        Fiber[] fibers = new Fiber[n];
+        Fiber<?>[] fibers = new Fiber<?>[n];
         for (int i = 0; i < n; i++) {
             final int id = i;
-            Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+            Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
                 @Override
                 public void run() throws SuspendExecution, InterruptedException {
                     for (int j = 0; j < loops; j++) {
@@ -372,7 +372,7 @@ public class FiberTest implements Serializable {
             fibers[i] = fiber;
         }
 
-        for (Fiber fiber : fibers)
+        for (Fiber<?> fiber : fibers)
             fiber.join();
     }
 
@@ -383,10 +383,10 @@ public class FiberTest implements Serializable {
 
         final int n = 100;
         final int loops = 100;
-        Fiber[] fibers = new Fiber[n];
+        Fiber<?>[] fibers = new Fiber<?>[n];
         for (int i = 0; i < n; i++) {
             final int id = i;
-            Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+            Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
                 @Override
                 public void run() throws SuspendExecution, InterruptedException {
                     for (int j = 0; j < loops; j++) {
@@ -402,13 +402,13 @@ public class FiberTest implements Serializable {
             fibers[i] = fiber;
         }
 
-        for (Fiber fiber : fibers)
+        for (Fiber<?> fiber : fibers)
             fiber.join();
     }
 
     @Test
     public void whenFiberIsNewThenDumpStackReturnsNull() throws Exception {
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 foo();
@@ -424,7 +424,7 @@ public class FiberTest implements Serializable {
 
     @Test
     public void whenFiberIsTerminatedThenDumpStackReturnsNull() throws Exception {
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 foo();
@@ -442,7 +442,7 @@ public class FiberTest implements Serializable {
 
     @Test
     public void testDumpStackCurrentFiber() throws Exception {
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 foo();
@@ -464,7 +464,7 @@ public class FiberTest implements Serializable {
 
     @Test
     public void testDumpStackRunningFiber() throws Exception {
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 foo();
@@ -503,7 +503,7 @@ public class FiberTest implements Serializable {
         final Condition cond = new SimpleConditionSynchronizer(null);
         final AtomicBoolean flag = new AtomicBoolean(false);
 
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 foo();
@@ -548,7 +548,7 @@ public class FiberTest implements Serializable {
         final Condition cond = new SimpleConditionSynchronizer(null);
         final AtomicBoolean flag = new AtomicBoolean(false);
 
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 foo();
@@ -567,7 +567,7 @@ public class FiberTest implements Serializable {
 
         Thread.sleep(200);
 
-        Fiber fiber2 = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber2 = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 StackTraceElement[] st = fiber.getStackTrace();
@@ -598,7 +598,7 @@ public class FiberTest implements Serializable {
     @Test
     public void testDumpStackSleepingFiber() throws Exception {
         // sleep is a special case
-        Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 foo();
@@ -631,7 +631,7 @@ public class FiberTest implements Serializable {
 
     @Test
     public void testBadFiberDetection() throws Exception {
-        Fiber good = new Fiber("good", scheduler, new SuspendableRunnable() {
+        Fiber<?> good = new Fiber<>("good", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 for (int i = 0; i < 100; i++)
@@ -639,7 +639,7 @@ public class FiberTest implements Serializable {
             }
         }).start();
 
-        Fiber bad = new Fiber("bad", scheduler, new SuspendableRunnable() {
+        Fiber<?> bad = new Fiber<>("bad", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 final long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(1000);

@@ -273,7 +273,7 @@ public class Selector<Message> implements Synchronization {
      * @return a <i>send</i> {@link SelectAction} that can be selected by the selector.
      */
     public static <Message> SelectAction<Message> send(SendPort<? super Message> ch, Message message, SelectSendListener<Message> listener) {
-        return new SelectActionImpl<Message>((SendPort) ch, message, listener);
+        return new SelectActionImpl<>((SendPort<Message>) ch, message, listener);
     }
 
     /**
@@ -283,7 +283,7 @@ public class Selector<Message> implements Synchronization {
      * @param ch        the channel from which the operation tries to receive
      * @return a <i>receive</i> {@link SelectAction} that can be selected by the selector.
      */
-    public static <Message> SelectAction<Message> receive(ReceivePort<? extends Message> ch) {
+    public static <Message> SelectAction<Message> receive(ReceivePort<? super Message> ch) {
         return receive(ch, null);
     }
 
@@ -295,8 +295,8 @@ public class Selector<Message> implements Synchronization {
      * @param listener  a {@link SelectReceiveListener} which will be triggered if this operation succeeds.
      * @return a <i>receive</i> {@link SelectAction} that can be selected by the selector.
      */
-    public static <Message> SelectAction<Message> receive(ReceivePort<? extends Message> ch, SelectReceiveListener<Message> listener) {
-        return new SelectActionImpl(ch, listener);
+    public static <Message> SelectAction<Message> receive(ReceivePort<? super Message> ch, SelectReceiveListener<Message> listener) {
+        return new SelectActionImpl<>((ReceivePort<Message>) ch, listener);
     }
     ///////////////////
     private static final AtomicLong selectorId = new AtomicLong(); // used to break symmetry to prevent deadlock in transfer channel
@@ -320,7 +320,7 @@ public class Selector<Message> implements Synchronization {
         this.actions = (List<? extends SelectActionImpl<Message>>) actions;
         this.priority = priority;
         for (int i = 0; i < actions.size(); i++) {
-            SelectActionImpl<? extends Message> sa = (SelectActionImpl<? extends Message>) actions.get(i);
+            SelectActionImpl<? super Message> sa = (SelectActionImpl<? super Message>) actions.get(i);
             sa.setSelector(this);
             sa.setIndex(i);
             record("<init>", "%s added %s", this, sa);
@@ -358,7 +358,7 @@ public class Selector<Message> implements Synchronization {
         for (int i = 0; i < n; i++) {
             SelectActionImpl<Message> sa = actions.get(i);
 
-            sa.token = sa.port.register((SelectActionImpl) sa);
+            sa.token = sa.port.register(sa);
             lastRegistered = i;
             if (sa.isDone()) {
                 assert winner == sa; // seen to have failed in co.paralleluniverse.strands.channels.GeneralSelectorTest > testFans1[5] 
@@ -376,7 +376,7 @@ public class Selector<Message> implements Synchronization {
     @Override
     public void unregister(Object registrationToken) {
         for (int i = 0; i <= lastRegistered; i++) {
-            SelectActionImpl sa = actions.get(i);
+            SelectActionImpl<Message> sa = actions.get(i);
             sa.port.unregister(sa.token);
             sa.token = null; // for GC
         }
@@ -434,16 +434,16 @@ public class Selector<Message> implements Synchronization {
     public SelectAction<Message> trySelect() throws SuspendExecution {
         selectInit();
         for (int i = 0; i < actions.size(); i++) {
-            SelectActionImpl sa = actions.get(i);
+            SelectActionImpl<Message> sa = actions.get(i);
 
             if (sa.isData()) {
-                if (((SendPort) sa.port).trySend(sa.message())) {
+                if (((SendPort<Message>) sa.port).trySend(sa.message())) {
                     sa.fire();
                     return sa;
                 }
             } else {
-                Object m = ((ReceivePort) sa.port).tryReceive();
-                if (m != null || ((ReceivePort) sa.port).isClosed()) {
+                Message m = ((ReceivePort<Message>) sa.port).tryReceive();
+                if (m != null || ((ReceivePort<Message>) sa.port).isClosed()) {
                     sa.setItem(m);
                     sa.fire();
                     return sa;
