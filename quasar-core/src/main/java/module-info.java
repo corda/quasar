@@ -50,6 +50,7 @@ module co.paralleluniverse.quasar.core {
     // This is to appease the Java 9 module import.
     // co.paralleluniverse.asm is actually a shadowing of org.objectweb.asm.
     exports co.paralleluniverse.asm to co.paralleluniverse.quasar.actors;
+    exports co.paralleluniverse.common.asm to co.paralleluniverse.quasar.actors;
 
     uses co.paralleluniverse.fibers.instrument.SuspendableClassifier;
 }

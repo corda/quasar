@@ -41,9 +41,9 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.common.reflection.ClassLoaderUtil;
-import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
-import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Opcodes;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -56,9 +56,9 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.Objects;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
+
+import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
+import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 
 /**
  * <p>
@@ -69,14 +69,14 @@ import org.objectweb.asm.Opcodes;
  * @author Matthias Mann
  * @author pron
  */
-public class MethodDatabase {
+public final class MethodDatabase {
     private final WeakReference<ClassLoader> clRef;
     private final SuspendableClassifier classifier;
     private final NavigableMap<String, ClassEntry> classes;
     private final HashMap<String, String> superClasses;
     private final QuasarInstrumentor instrumentor;
 
-    public MethodDatabase(QuasarInstrumentor instrumentor, ClassLoader classloader, SuspendableClassifier classifier) {
+    MethodDatabase(QuasarInstrumentor instrumentor, ClassLoader classloader, SuspendableClassifier classifier) {
         this.instrumentor = instrumentor;
         this.clRef = classloader != null ? new WeakReference<>(classloader) : null;
         this.classifier = classifier;
@@ -371,7 +371,7 @@ public class MethodDatabase {
     }
 
     private ArrayList<String> getSuperClasses(String className) {
-        ArrayList<String> result = new ArrayList<String>();
+        ArrayList<String> result = new ArrayList<>();
         for (;;) {
             result.add(0, className);
             if ("java/lang/Object".equals(className)) {
@@ -448,7 +448,7 @@ public class MethodDatabase {
 
     public enum SuspendableType {
         NON_SUSPENDABLE, SUSPENDABLE_SUPER, SUSPENDABLE
-    };
+    }
 
     public static final class ClassEntry {
         private final HashMap<String, SuspendableType> methods;

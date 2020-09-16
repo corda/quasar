@@ -70,7 +70,7 @@ public class FiberTimedScheduler {
     private final ReentrantLock mainLock = new ReentrantLock();
     private final FiberScheduler scheduler;
     private final FibersMonitor monitor;
-    private Map<Thread, FiberInfo> fibersInfo = new IdentityHashMap<Thread, FiberInfo>();
+    private final Map<Thread, FiberInfo> fibersInfo = new IdentityHashMap<>();
 
     @SuppressWarnings("CallToThreadStartDuringObjectConstruction")
     public FiberTimedScheduler(FiberScheduler scheduler, ThreadFactory threadFactory, FibersMonitor monitor) {
@@ -403,19 +403,19 @@ public class FiberTimedScheduler {
         return !worker.isAlive();
     }
 
-    private Collection<Fiber> findProblemFibers(long now, long nanos) {
-        final List<Fiber> pfs = new ArrayList<Fiber>();
-        final Map<Thread, Fiber> fibs = scheduler.getRunningFibers();
+    private Collection<Fiber<?>> findProblemFibers(long now, long nanos) {
+        final List<Fiber<?>> pfs = new ArrayList<>();
+        final Map<Thread, Fiber<?>> fibs = scheduler.getRunningFibers();
 
         if (fibs == null)
             return null;
 
         fibersInfo.keySet().retainAll(fibs.keySet());
 
-        for (Iterator<Map.Entry<Thread, Fiber>> it = fibs.entrySet().iterator(); it.hasNext();) {
-            final Map.Entry<Thread, Fiber> entry = it.next();
+        for (Iterator<Map.Entry<Thread, Fiber<?>>> it = fibs.entrySet().iterator(); it.hasNext();) {
+            final Map.Entry<Thread, Fiber<?>> entry = it.next();
             final Thread t = entry.getKey();
-            final Fiber f = entry.getValue();
+            final Fiber<?> f = entry.getValue();
 
             if (f != null)
                 f.getState(); // volatile read
@@ -434,7 +434,7 @@ public class FiberTimedScheduler {
         return pfs;
     }
 
-    private void reportProblemFibers(Collection<Fiber> fs) {
+    private void reportProblemFibers(Collection<Fiber<?>> fs) {
         scheduler.getMonitor().setRunawayFibers(fs);
 
         if (fs == null)

@@ -242,7 +242,7 @@ public class SuspendablesScanner extends Task {
         });
     }
 
-    private void visitAntProject(Function<InputStream, Void> classFileVisitor) throws IOException {
+    private void visitAntProject(Function<InputStream, Void> classFileVisitor) {
         for (FileSet fs : filesets) {
             try {
                 final DirectoryScanner ds = fs.getDirectoryScanner(getProject());
@@ -309,7 +309,7 @@ public class SuspendablesScanner extends Task {
         private String className;
         private boolean suspendableClass;
 
-        public SuspendableClassifier(boolean inProject, int api, ClassVisitor cv) {
+        SuspendableClassifier(boolean inProject, int api, ClassVisitor cv) {
             super(api, cv);
             this.inProject = inProject;
         }

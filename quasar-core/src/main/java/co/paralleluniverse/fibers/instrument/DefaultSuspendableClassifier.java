@@ -13,10 +13,11 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import static co.paralleluniverse.fibers.instrument.Classes.LAMBDA_METHOD_PREFIX;
-import static co.paralleluniverse.fibers.instrument.Classes.SUSPEND_EXECUTION_NAME;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import java.util.ServiceLoader;
+
+import static co.paralleluniverse.fibers.instrument.Classes.LAMBDA_METHOD_PREFIX;
+import static co.paralleluniverse.fibers.instrument.Classes.SUSPEND_EXECUTION_NAME;
 
 /**
  *

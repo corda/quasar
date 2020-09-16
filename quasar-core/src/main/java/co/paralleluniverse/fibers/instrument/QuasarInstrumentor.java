@@ -13,9 +13,6 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.common.util.Debug;
-import co.paralleluniverse.common.util.SystemProperties;
-import co.paralleluniverse.common.util.VisibleForTesting;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -43,8 +40,8 @@ public final class QuasarInstrumentor {
 
     private static final List<String> BUILT_IN_PACKAGES = List.of(
         "co/paralleluniverse/asm/",
+        "co/paraleluniverse/common/asm/",
         "org/objectweb/asm/", // For testing
-        "org/gradle/",
         "org/netbeans/lib/"
     );
 
@@ -58,7 +55,7 @@ public final class QuasarInstrumentor {
     }
 
     private static final String EXAMINED_CLASS = System.getProperty("co.paralleluniverse.fibers.writeInstrumentedClasses");
-    private static final boolean allowJdkInstrumentation = SystemProperties.isEmptyOrTrue("co.paralleluniverse.fibers.allowJdkInstrumentation");
+    private static final boolean allowJdkInstrumentation = isEmptyOrTrue("co.paralleluniverse.fibers.allowJdkInstrumentation");
     private final WeakHashMap<ClassLoader, MethodDatabase> dbForClassloader = new WeakHashMap<>();
     private MethodDatabase bootstrapDB;
     private boolean check;
@@ -71,6 +68,12 @@ public final class QuasarInstrumentor {
     private boolean verbose;
     private boolean debug;
     private int logLevelMask;
+
+    private static boolean isEmptyOrTrue(String value) {
+        if (value == null)
+            return false;
+        return value.isEmpty() || Boolean.parseBoolean(value);
+    }
 
     public QuasarInstrumentor() {
         this(false);
@@ -101,6 +104,8 @@ public final class QuasarInstrumentor {
                 return false;
             } else if (className.equals(Classes.STACK_NAME)) {
                 return false;
+            } else if (className.equals(Classes.FIBER_HELPER_NAME) || className.startsWith(Classes.FIBER_HELPER_NAME + '$')) {
+                return false;
             } else if (isBuiltInPackage(className)) {
                 return false;
             } else if (className.startsWith("java/lang/") || (!allowJdkInstrumentation && MethodDatabase.isJDK(className))) {
@@ -122,7 +127,6 @@ public final class QuasarInstrumentor {
         return instrumentClass(loader, className, is, false);
     }
 
-    @VisibleForTesting
     byte[] instrumentClass(ClassLoader loader, String className, InputStream is, boolean forceInstrumentation) throws IOException {
         className = className != null ? className.replace('.', '/') : null;
 

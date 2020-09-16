@@ -11,7 +11,7 @@ sourceCompatibility = '11'
 targetCompatibility = '11'
 
 dependencies {
-    compile project(path: ':quasar-core', configuration: 'bundledJar')
+    compile project(path: ':quasar-core', configuration: 'shadowedJar')
     compile project(':quasar-actors')
 
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
@@ -29,6 +29,6 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 
 classes {
     doLast {
-        scanAndInstrument(sourceSets.main, [configurations.provided, configurations.runtime])
+        scanAndInstrument(sourceSets.main, [configurations.provided, configurations.runtimeClasspath])
     }
 }

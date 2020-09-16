@@ -279,7 +279,7 @@ public class Selector<Message> implements Synchronization {
      * @param ch        the channel from which the operation tries to receive
      * @return a <i>receive</i> {@link SelectAction} that can be selected by the selector.
      */
-    public static <Message> SelectAction<Message> receive(ReceivePort<? extends Message> ch) {
+    public static <Message> SelectAction<Message> receive(ReceivePort<? super Message> ch) {
         return receive(ch, null);
     }
 
@@ -291,7 +291,7 @@ public class Selector<Message> implements Synchronization {
      * @param listener  a {@link SelectReceiveListener} which will be triggered if this operation succeeds.
      * @return a <i>receive</i> {@link SelectAction} that can be selected by the selector.
      */
-    public static <Message> SelectAction<Message> receive(ReceivePort<? extends Message> ch, SelectReceiveListener<Message> listener) {
+    public static <Message> SelectAction<Message> receive(ReceivePort<? super Message> ch, SelectReceiveListener<Message> listener) {
         return new SelectActionImpl(ch, listener);
     }
     ///////////////////

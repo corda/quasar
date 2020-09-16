@@ -1,4 +1,6 @@
 import aQute.bnd.gradle.Bundle
+import java.util.jar.JarFile
+import java.util.jar.Manifest
 
 plugins {
     id 'com.jfrog.artifactory'
@@ -81,7 +83,7 @@ subprojects {
         provided
         timewarp
         // markdownDoclet
-        bundledJar.extendsFrom runtimeClasspath
+        shadowedJar.extendsFrom runtimeClasspath
 
         compileClasspath.extendsFrom provided
         testCompileOnly.extendsFrom compileOnly
@@ -237,7 +239,7 @@ subprojects {
     debug.debug = true
 
     project.afterEvaluate {
-        run.dependsOn project(':quasar-core').tasks.named('bundle')
+        run.dependsOn project(':quasar-core').tasks.named('shadowJar')
 
         jar {
             manifest {
@@ -336,6 +338,17 @@ def scanAndInstrument(sset, configs) {
     }
 }
 
+String fetchManifestAttributeFrom(File archive, String attributeName) {
+    return new JarFile(archive).with { jar ->
+        Manifest manifest = jar.manifest
+        manifest.mainAttributes.getValue(attributeName)
+    }
+}
+
+String fetchManifestAttributeFrom(TaskProvider<? extends Jar> task, String attributeName) {
+    return fetchManifestAttributeFrom(task.flatMap { it.archiveFile }.get().asFile, attributeName)
+}
+
 project (':quasar-core') {
     /*
      * see:
@@ -351,7 +364,7 @@ project (':quasar-core') {
     ext.moduleName = 'co.paralleluniverse.quasar.core'
     
     // remove default artifact
-    configurations.runtime.artifacts.with { archives ->
+    configurations.runtimeClasspath.artifacts.with { archives ->
         archives.each {
             archives.remove(it)
         }
@@ -396,7 +409,6 @@ project (':quasar-core') {
     }
 
     dependencies {
-//        compile ":high-scale-lib"
         implementation "org.hdrhistogram:HdrHistogram:2.1.10"
         implementation("org.latencyutils:LatencyUtils:2.0.3") {
             exclude group: "org.hdrhistogram", module: '*'
@@ -426,24 +438,21 @@ project (':quasar-core') {
             rootProject.scanAndInstrument(sourceSets.main, [configurations.provided, configurations.runtimeClasspath])
         }
     }
-    
-    shadowJar {
-        archiveAppendix = 'shadow'
-        archiveClassifier = ''
+
+    tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
         destinationDirectory = file("$buildDir/libs")
+        archiveClassifier = ''
 
         from sourceSets.main.output
 
         configurations = [project.configurations.compileClasspath]
         dependencies {
             include(dependency('org.ow2.asm:.*:.*'))
-//            include(dependency(':high-scale-lib'))
         }
         exclude 'META-INF/INDEX.LIST'
 //      exclude 'module-info.class'
 
         relocate 'org.objectweb.asm.', 'co.paralleluniverse.asm.'
-//        relocate 'org.cliffc.high_scale_lib.', 'co.paralleluniverse.high_scale_lib.'
 
         manifest {
             attributes(
@@ -462,35 +471,100 @@ project (':quasar-core') {
 
     def bundle = tasks.register('bundle', Bundle) {
         dependsOn shadowJar
-        from zipTree(shadowJar.archiveFile)
-        archiveClassifier = shadowJar.archiveClassifier
+        from(zipTree(shadowJar.archiveFile)) {
+            exclude 'co/paralleluniverse/asm/**'
+            exclude 'co/paralleluniverse/common/asm/**'
+            exclude 'co/paralleluniverse/fibers/instrument/**'
+        }
+        archiveAppendix = 'osgi'
+
+        manifest {
+            attributes(
+                "Built-By"                  :   System.getProperty("user.name"),
+                "Implementation-Title"      :   project.name,
+                "Implementation-Version"    :   archiveVersion.get(),
+                "Implementation-Vendor"     :   vendor
+            )
+        }
 
         bnd """
--include: "jar:${shadowJar.archiveFile.map { it.asFile.toURI() }.get()}!/META-INF/MANIFEST.MF"
 Bundle-SymbolicName: co.paralleluniverse.quasar-core
-Bundle-Name: Quasar Agent
+Bundle-Name: Quasar Fibers
 Bundle-Version: $version
-Import-Package: org.LatencyUtils.*;resolution:=optional,\
+Import-Package: \
+ org.LatencyUtils.*;resolution:=optional,\
  org.HdrHistogram.*;resolution:=optional,\
- org.apache.tools.ant.*;resolution:=optional,\
  org.junit.*;resolution:=optional,\
  *
 """
     }
 
+    def validateBundle = tasks.register("validateBundle") {
+        dependsOn bundle
+        doLast {
+            String exportPackages = fetchManifestAttributeFrom(bundle, 'Export-Package')
+            if (exportPackages && exportPackages.contains('co.paralleluniverse.asm')) {
+                throw new InvalidUserCodeException("OSGi bundle should not import shaded ASM package: " + exportPackages)
+            }
+        }
+    }
+
+    bundle.configure {
+        it.finalizedBy validateBundle
+    }
+
+    def agentBundle = tasks.register("agentBundle", Bundle) {
+        dependsOn shadowJar
+        from(zipTree(shadowJar.archiveFile)) {
+            include 'co/paralleluniverse/asm/**'
+            include 'co/paralleluniverse/common/asm/**'
+            include 'co/paralleluniverse/fibers/instrument/**'
+            exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTask*'
+            exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTKB*'
+            exclude 'co/paralleluniverse/fibers/instrument/ModuleFilterTask*'
+            exclude 'co/paralleluniverse/fibers/instrument/OldSuspendablesScanner*'
+            exclude 'co/paralleluniverse/fibers/instrument/SuspendablesScanner*'
+        }
+        archiveAppendix = 'osgi'
+        archiveClassifier = 'agent'
+
+        bnd """
+-include: "jar:${shadowJar.archiveFile.map { it.asFile.toURI() }.get()}!/META-INF/MANIFEST.MF"
+Bundle-SymbolicName: co.paralleluniverse.quasar-core.agent
+Bundle-Name: Quasar Agent
+Bundle-Version: $version
+"""
+    }
+
+    def validateAgentBundle = tasks.register("validateAgentBundle") {
+        dependsOn agentBundle
+        doLast {
+            String importPackages = fetchManifestAttributeFrom(agentBundle, 'Import-Package')
+            if (importPackages) {
+                throw new InvalidUserDataException("OSGi bundle for Java agent should not import anything: " + importPackages)
+            }
+        }
+    }
+
+    agentBundle.configure {
+        it.finalizedBy validateAgentBundle
+    }
+
     test {
-        dependsOn = [bundle, compileClassloadertestJava]
+        dependsOn = [shadowJar, bundle, agentBundle, compileClassloadertestJava]
         testClassesDirs = project.sourceSets.test.output.classesDirs
         classpath = project.sourceSets.test.runtimeClasspath
 
         project.afterEvaluate {
-            jvmArgs "-javaagent:${bundle.flatMap { it.archiveFile }.get()}" // =vdc
+            jvmArgs "-javaagent:${shadowJar.archiveFile.get()}" // =vdc
         }
     }
 
     artifacts {
+        archives shadowJar.archiveFile
         archives bundle.flatMap { it.archiveFile }
-        bundledJar bundle.flatMap { it.archiveFile }
+        archives agentBundle.flatMap { it.archiveFile }
+        shadowedJar shadowJar.archiveFile
     }
 
     check.dependsOn test
@@ -505,7 +579,7 @@ Import-Package: org.LatencyUtils.*;resolution:=optional,\
         source = sourceSets.main.allJava
     }
 
-    install.dependsOn bundle
+    install.dependsOn shadowJar, bundle, agentBundle
 
     def installer = install.repositories.mavenInstaller
     [installer]*.pom*.whenConfigured {
@@ -532,7 +606,7 @@ project (':quasar-actors') {
     ext.moduleName = 'co.paralleluniverse.quasar.actors'
     
     dependencies {
-        provided project(path: ':quasar-core', configuration: 'bundledJar')
+        provided project(path: ':quasar-core', configuration: 'shadowedJar')
         // compile 'org.mutabilitydetector:MutabilityDetector:0.9.2'
         implementation "org.slf4j:slf4j-api:$slf4jVer"
         implementation "net.bytebuddy:byte-buddy:1.9.2"
@@ -551,7 +625,7 @@ project (':quasar-reactive-streams') {
     ext.moduleName = 'co.paralleluniverse.quasar.reactivestreams'
     
     dependencies {
-        provided project(path: ':quasar-core', configuration: 'bundledJar')
+        provided project(path: ':quasar-core', configuration: 'shadowedJar')
         compile "org.reactivestreams:reactive-streams:1.0.2"
         testCompile("org.reactivestreams:reactive-streams-tck:1.0.2") {
             exclude group: "junit", module: "*"
@@ -575,7 +649,7 @@ project (':quasar-disruptor') {
     ext.moduleName = 'co.paralleluniverse.quasar.disruptor'
 
     dependencies {
-        provided project(path: ':quasar-core', configuration: 'bundledJar')
+        provided project(path: ':quasar-core', configuration: 'shadowedJar')
         compile "com.lmax:disruptor:3.4.2"
     }
 }
