@@ -13,15 +13,20 @@
  */
 package co.paralleluniverse.concurrent.util;
 
+import co.paralleluniverse.fibers.instrument.DontInstrument;
+
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
  * Extension of {@link AtomicLong} with useful methods based on CAS.
+ * This class doesn't need to be instrumented, but it has lambdas
+ * and so Quasar will do it anyway. Hence {@link DontInstrument}!
  *
  * @author circlespainter
  */
+@DontInstrument
 public class EnhancedAtomicLong extends AtomicLong {
     public static final Function<Long, Long> DEC = l -> l - 1;
 
