@@ -1,4 +1,6 @@
 import aQute.bnd.gradle.Bundle
+import java.util.jar.JarFile
+import java.util.jar.Manifest
 
 plugins {
     id 'com.jfrog.artifactory'
@@ -320,6 +322,17 @@ def scanAndInstrument(sset, configs) {
     }
 }
 
+String fetchManifestAttributeFrom(File archive, String attributeName) {
+    return new JarFile(archive).with { jar ->
+        Manifest manifest = jar.manifest
+        manifest.mainAttributes.getValue(attributeName)
+    }
+}
+
+String fetchManifestAttributeFrom(TaskProvider<? extends Jar> task, String attributeName) {
+    return fetchManifestAttributeFrom(task.flatMap { it.archiveFile }.get().asFile, attributeName)
+}
+
 project (':quasar-core') {
     /*
      * see:
@@ -502,6 +515,20 @@ Import-Package: \
 """
         }
 
+        def validateBundle = tasks.register("${set.name}ValidateBundle") {
+            dependsOn bundleTask
+            doLast {
+                String exportPackages = fetchManifestAttributeFrom(bundleTask, 'Export-Package')
+                if (exportPackages && exportPackages.contains('co.paralleluniverse.asm')) {
+                    throw new InvalidUserCodeException("OSGi bundle should not import shaded ASM package: " + exportPackages)
+                }
+            }
+        }
+
+        bundleTask.configure {
+            it.finalizedBy validateBundle
+        }
+
         def bundleAgentTask = tasks.register("${set.name}AgentBundle", Bundle) {
             dependsOn shadowJarTask
             from(zipTree(shadowJarTask.archiveFile)) {
@@ -523,6 +550,20 @@ Bundle-SymbolicName: co.paralleluniverse.quasar-core.agent
 Bundle-Name: Quasar Agent
 Bundle-Version: $version
 """
+        }
+
+        def validateAgentBundle = tasks.register("${set.name}ValidateAgentBundle") {
+            dependsOn bundleAgentTask
+            doLast {
+                String importPackages = fetchManifestAttributeFrom(bundleAgentTask, 'Import-Package')
+                if (importPackages) {
+                    throw new InvalidUserDataException("OSGi bundle for Java agent should not import anything: " + importPackages)
+                }
+            }
+        }
+
+        bundleAgentTask.configure {
+            it.finalizedBy validateAgentBundle
         }
 
         def testTask = task("${set.name}Test", type: Test, dependsOn: [shadowJarTask, compileClassloadertestJava]) {
