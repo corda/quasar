@@ -41,6 +41,7 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
+import co.paralleluniverse.common.resource.ClassLoaderUtil;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;

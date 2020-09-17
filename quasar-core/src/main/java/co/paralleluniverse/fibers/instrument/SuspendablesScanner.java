@@ -13,7 +13,7 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.common.reflection.ClassLoaderUtil;
+import co.paralleluniverse.common.resource.ClassLoaderUtil;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import org.apache.tools.ant.AntClassLoader;
 import org.apache.tools.ant.BuildException;
@@ -60,8 +60,8 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
 
-import static co.paralleluniverse.common.reflection.ClassLoaderUtil.classToResource;
-import static co.paralleluniverse.common.reflection.ClassLoaderUtil.isClassFile;
+import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToResource;
+import static co.paralleluniverse.common.resource.ClassLoaderUtil.isClassFile;
 import static co.paralleluniverse.fibers.instrument.Classes.DONT_INSTRUMENT_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPENDABLE_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPEND_EXECUTION_NAME;

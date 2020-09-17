@@ -42,6 +42,7 @@ module co.paralleluniverse.quasar.core {
     exports co.paralleluniverse.common.util       to co.paralleluniverse.quasar.actors;
     exports co.paralleluniverse.common.monitoring to co.paralleluniverse.quasar.actors;
     exports co.paralleluniverse.common.reflection to co.paralleluniverse.quasar.actors;
+    exports co.paralleluniverse.common.resource   to co.paralleluniverse.quasar.actors;
     exports co.paralleluniverse.common.test       to co.paralleluniverse.quasar.actors;
     exports co.paralleluniverse.concurrent.util   to co.paralleluniverse.quasar.actors;
     exports co.paralleluniverse.io.serialization  to co.paralleluniverse.quasar.actors;

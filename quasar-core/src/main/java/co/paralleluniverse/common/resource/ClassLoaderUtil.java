@@ -29,7 +29,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package co.paralleluniverse.common.reflection;
+package co.paralleluniverse.common.resource;
 
 import java.io.File;
 import java.io.IOException;

@@ -450,7 +450,6 @@ project (':quasar-core') {
             include(dependency('org.ow2.asm:.*:.*'))
         }
         exclude 'META-INF/INDEX.LIST'
-//      exclude 'module-info.class'
 
         relocate 'org.objectweb.asm.', 'co.paralleluniverse.asm.'
 
@@ -474,7 +473,9 @@ project (':quasar-core') {
         from(zipTree(shadowJar.archiveFile)) {
             exclude 'co/paralleluniverse/asm/**'
             exclude 'co/paralleluniverse/common/asm/**'
+            exclude 'co/paralleluniverse/common/resource/**'
             exclude 'co/paralleluniverse/fibers/instrument/**'
+            exclude 'module-info.class'
         }
         archiveAppendix = 'osgi'
 
@@ -483,7 +484,8 @@ project (':quasar-core') {
                 "Built-By"                  :   System.getProperty("user.name"),
                 "Implementation-Title"      :   project.name,
                 "Implementation-Version"    :   archiveVersion.get(),
-                "Implementation-Vendor"     :   vendor
+                "Implementation-Vendor"     :   vendor,
+                "Automatic-Module-Name"     :   "${moduleName}.osgi",
             )
         }
 
@@ -518,6 +520,7 @@ Import-Package: \
         from(zipTree(shadowJar.archiveFile)) {
             include 'co/paralleluniverse/asm/**'
             include 'co/paralleluniverse/common/asm/**'
+            include 'co/paralleluniverse/common/resource/**'
             include 'co/paralleluniverse/fibers/instrument/**'
             exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTask*'
             exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTKB*'
@@ -540,8 +543,8 @@ Bundle-Version: $version
         dependsOn agentBundle
         doLast {
             String importPackages = fetchManifestAttributeFrom(agentBundle, 'Import-Package')
-            if (importPackages) {
-                throw new InvalidUserDataException("OSGi bundle for Java agent should not import anything: " + importPackages)
+            if (importPackages && !importPackages.equals("co.paralleluniverse.common.resource")) {
+                throw new InvalidUserDataException("OSGi bundle for Java agent should only import from itself: " + importPackages)
             }
         }
     }

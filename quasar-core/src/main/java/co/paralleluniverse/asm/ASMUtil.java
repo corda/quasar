@@ -24,29 +24,13 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToResource;
+
 /**
  *
  * @author pron
  */
 public final class ASMUtil {
-    public static String classToResource(String className) {
-        if (className == null)
-            return null;
-        return className.replace('.', '/') + ".class";
-    }
-
-    public static String classToSlashed(String className) {
-        if (className == null)
-            return null;
-        return className.replace('.', '/');
-    }
-
-    public static String classToSlashed(Class<?> clazz) {
-        if (clazz == null)
-            return null;
-        return classToSlashed(clazz.getName());
-    }
-
     public static InputStream getClassInputStream(String className, ClassLoader cl) {
         final String resource = classToResource(className);
         return cl != null ? cl.getResourceAsStream(resource) : ClassLoader.getSystemResourceAsStream(resource);
