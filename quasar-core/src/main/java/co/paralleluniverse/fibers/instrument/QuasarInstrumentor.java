@@ -13,10 +13,10 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
+import co.paralleluniverse.common.asm.ASMUtil;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
  */
 public final class QuasarInstrumentor {
     @SuppressWarnings("WeakerAccess")
-    public static final int ASMAPI = Opcodes.ASM7;
+    public static final int ASMAPI = ASMUtil.ASMAPI;
 
     private static final List<String> BUILT_IN_PACKAGES = List.of(
         "co/paralleluniverse/asm/",

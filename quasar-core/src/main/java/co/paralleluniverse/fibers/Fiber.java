@@ -2118,7 +2118,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         }
 
         @Override
-        @SuppressWarnings({"CallToPrintStackTrace", "unchecked"})
+        @SuppressWarnings("CallToPrintStackTrace")
         public void write(Kryo kryo, Output output, Fiber<?> f) {
             final Thread currentThread = Thread.currentThread();
 

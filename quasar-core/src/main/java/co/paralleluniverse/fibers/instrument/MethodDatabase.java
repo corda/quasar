@@ -58,7 +58,7 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.Objects;
 
-import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
+import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 
 /**

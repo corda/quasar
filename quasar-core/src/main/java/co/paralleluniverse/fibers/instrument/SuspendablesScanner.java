@@ -60,12 +60,12 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
 
+import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToResource;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.isClassFile;
 import static co.paralleluniverse.fibers.instrument.Classes.DONT_INSTRUMENT_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPENDABLE_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPEND_EXECUTION_NAME;
-import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
 
 public class SuspendablesScanner extends Task {
     private final Map<String, MethodNode> methods = new HashMap<>();

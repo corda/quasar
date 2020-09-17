@@ -150,7 +150,7 @@ public class FiberForkJoinScheduler extends FiberScheduler {
 
     @Override
     <V> FiberTask<V> newFiberTask(Fiber<V> fiber) {
-        return new FiberForkJoinTask<V>(fiber, fjPool);
+        return new FiberForkJoinTask<>(fiber, fjPool);
     }
 
     @Override
@@ -182,7 +182,7 @@ public class FiberForkJoinScheduler extends FiberScheduler {
 
     static Fiber<?> getTargetFiber(Thread thread) {
         final Object target = ParkableForkJoinTask.getTarget(thread);
-        if (target == null || !(target instanceof Fiber.DummyRunnable))
+        if (!(target instanceof Fiber.DummyRunnable))
             return null;
         return ((Fiber.DummyRunnable) target).fiber;
     }

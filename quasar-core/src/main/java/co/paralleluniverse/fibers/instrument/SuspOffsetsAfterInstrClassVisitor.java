@@ -20,8 +20,8 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.util.*;
 
+import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 import static co.paralleluniverse.fibers.instrument.Classes.*;
-import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
 
 /**
  * @author circlespainter

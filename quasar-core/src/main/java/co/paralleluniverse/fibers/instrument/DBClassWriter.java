@@ -44,7 +44,7 @@ class DBClassWriter extends ClassWriter {
         super(classReader, COMPUTE_FRAMES | COMPUTE_MAXS);
         this.db = db;
     }
-    
+
     @Override
     protected String getCommonSuperClass(String type1, String type2) {
         return db.getCommonSuperClass(type1, type2);

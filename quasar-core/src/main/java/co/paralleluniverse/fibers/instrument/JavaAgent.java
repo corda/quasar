@@ -87,7 +87,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
+import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 
 /*
  * @author pron

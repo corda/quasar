@@ -133,7 +133,7 @@ public final class ClassLoaderUtil {
     }
 
     private static void scanDirectory(File directory, ClassLoader classloader, Visitor visitor) throws IOException {
-        scanDirectory(directory, classloader, "", new HashSet<File>(), visitor);
+        scanDirectory(directory, classloader, "", new HashSet<>(), visitor);
     }
 
     private static void scanDirectory(File directory, ClassLoader classloader, String packagePrefix, Set<File> ancestors, Visitor visitor) throws IOException {
@@ -148,13 +148,12 @@ public final class ClassLoaderUtil {
             // IO error, just skip the directory
             return;
         }
-        Set<File> newAncestors = new HashSet<>();
-        newAncestors.addAll(ancestors);
+        Set<File> newAncestors = new HashSet<>(ancestors);
         newAncestors.add(canonical);
         for (File f : files) {
             String name = f.getName();
             if (f.isDirectory()) {
-                scanDirectory(f, classloader, packagePrefix + name + "/", newAncestors, visitor);
+                scanDirectory(f, classloader, packagePrefix + name + '/', newAncestors, visitor);
             } else {
                 String resourceName = packagePrefix + name;
                 if (!resourceName.equals(JarFile.MANIFEST_NAME))

@@ -81,7 +81,7 @@ public class FiberTimedScheduler {
                 work();
             }
         });
-        this.workQueue = USE_LOCKFREE_DELAY_QUEUE ? new SingleConsumerNonblockingProducerDelayQueue<ScheduledFutureTask>() : new co.paralleluniverse.concurrent.util.DelayQueue<ScheduledFutureTask>();
+        this.workQueue = USE_LOCKFREE_DELAY_QUEUE ? new SingleConsumerNonblockingProducerDelayQueue<>() : new co.paralleluniverse.concurrent.util.DelayQueue<>();
 
         this.monitor = monitor;
 
@@ -178,7 +178,7 @@ public class FiberTimedScheduler {
 
     private void run(ScheduledFutureTask task) {
         try {
-            final Fiber fiber = task.fiber;
+            final Fiber<?> fiber = task.fiber;
             fiber.unpark(task.blocker);
         } catch (Exception e) {
             e.printStackTrace();
@@ -441,7 +441,7 @@ public class FiberTimedScheduler {
             return;
 
         loop:
-        for (Fiber f : fs) {
+        for (Fiber<?> f : fs) {
             Thread t = f.getRunningThread();
             StackTraceElement[] stackTrace = f.getStackTrace();
             if (stackTrace != null) {
@@ -466,15 +466,15 @@ public class FiberTimedScheduler {
     }
 
     private static class FiberInfo {
-        Fiber fiber;
+        Fiber<?> fiber;
         long run;
         long time;
 
-        FiberInfo(Fiber fiber, long run, long time) {
+        FiberInfo(Fiber<?> fiber, long run, long time) {
             set(fiber, run, time);
         }
 
-        final void set(Fiber fiber, long run, long time) {
+        final void set(Fiber<?> fiber, long run, long time) {
             this.fiber = fiber;
             this.run = run;
             this.time = time;
