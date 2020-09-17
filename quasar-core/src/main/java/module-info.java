@@ -31,6 +31,7 @@ module co.paralleluniverse.quasar.core {
 
     exports co.paralleluniverse.fibers;
     exports co.paralleluniverse.fibers.futures;
+    exports co.paralleluniverse.fibers.instrument;
     exports co.paralleluniverse.fibers.io;
     exports co.paralleluniverse.remote;
     exports co.paralleluniverse.strands;
