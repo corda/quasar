@@ -13,9 +13,9 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.common.reflection.ClassLoaderUtil;
-import static co.paralleluniverse.common.reflection.ClassLoaderUtil.isClassFile;
-import static co.paralleluniverse.common.reflection.ClassLoaderUtil.classToResource;
+import co.paralleluniverse.common.resource.ClassLoaderUtil;
+import static co.paralleluniverse.common.resource.ClassLoaderUtil.isClassFile;
+import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToResource;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPENDABLE_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.DONT_INSTRUMENT_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPEND_EXECUTION_NAME;

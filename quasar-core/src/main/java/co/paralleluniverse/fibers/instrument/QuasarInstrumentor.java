@@ -44,6 +44,7 @@ public final class QuasarInstrumentor {
     private static final List<String> BUILT_IN_PACKAGES = unmodifiableList(asList(
         "co/paralleluniverse/asm/",
         "co/paralleluniverse/common/asm/",
+        "co/paralleluniverse/common/resource/",
         "org/objectweb/asm/", // For testing
         "org/netbeans/lib/"
     ));

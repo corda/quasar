@@ -27,8 +27,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static co.paralleluniverse.asm.ASMUtil.classToSlashed;
 import static co.paralleluniverse.asm.ASMUtil.getClassNode;
+import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToSlashed;
 import static org.objectweb.asm.ClassReader.SKIP_FRAMES;
 
 /**
