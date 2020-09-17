@@ -179,8 +179,12 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
         public Class<?> getDeclaringClass() {
             if (clazz == null) {
                 try {
-                    clazz = Class.forName(getClassName());
+                    clazz = Class.forName(getClassName(), true, Thread.currentThread().getContextClassLoader());
                 } catch (ClassNotFoundException e) {
+                    try {
+                        clazz = Class.forName(getClassName(), true, getClass().getClassLoader());
+                    } catch (ClassNotFoundException e2) {
+                    }
                 }
             }
             return clazz;

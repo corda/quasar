@@ -53,9 +53,9 @@ import org.objectweb.asm.Type;
 import java.util.ArrayList;
 import java.util.List;
 
+import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 import static co.paralleluniverse.fibers.instrument.Classes.INSTRUMENTED_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPENDABLE_DESC;
-import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
 
 /**
  * Check if a class contains suspendable methods.

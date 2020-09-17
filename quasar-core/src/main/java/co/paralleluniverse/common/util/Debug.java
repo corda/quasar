@@ -373,7 +373,7 @@ public final class Debug {
             return Class.forName(className, true, Thread.currentThread().getContextClassLoader());
         } catch (ClassNotFoundException e) {
             try {
-                return Class.forName(className);
+                return Class.forName(className, true, Debug.class.getClassLoader());
             } catch (ClassNotFoundException e2) {
                 return null;
             }

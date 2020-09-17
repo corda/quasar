@@ -54,8 +54,8 @@ import org.objectweb.asm.tree.analysis.AnalyzerException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 import static co.paralleluniverse.fibers.instrument.Classes.*;
-import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
 
 /**
  * Instrument a class by instrumenting all suspendable methods and copying the others.

@@ -87,9 +87,9 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 import static co.paralleluniverse.fibers.instrument.Classes.FIBER_CLASS_NAME;
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
-import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.ASMAPI;
 
 /*
  * @author pron
