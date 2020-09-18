@@ -356,7 +356,7 @@ project (':quasar-core') {
         main {
             java {
                 srcDir 'src/main/java'
-                srcDir 'src/jdk7/java'
+                srcDir 'src/jdk8/java'
             }
         }
 
@@ -413,7 +413,7 @@ project (':quasar-core') {
                 srcDir 'src/classloadertest/java'
             }
 
-            compileClasspath += jdk7.output + test.compileClasspath
+            compileClasspath += jdk8.output + test.compileClasspath
             runtimeClasspath += compileClasspath + test.runtimeClasspath
         }
     }
