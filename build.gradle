@@ -360,25 +360,6 @@ project (':quasar-core') {
             }
         }
 
-        jdk7 {
-            java {
-                srcDir 'src/main/java'
-                srcDir 'src/jdk7/java'
-            }
-
-            compileClasspath += main.compileClasspath // += main.uoutput
-            runtimeClasspath += main.runtimeClasspath // += main.uoutput
-        }
-
-        jdk7test {
-            java {
-                srcDir 'src/test/java'
-            }
-
-            compileClasspath += jdk7.output + test.compileClasspath
-            runtimeClasspath += compileClasspath  + test.runtimeClasspath
-        }
-
         jdk8 {
             java {
                 srcDir 'src/main/java'
@@ -420,12 +401,10 @@ project (':quasar-core') {
 
     configurations {
         compileClasspath.extendsFrom provided
-        jdk7Archives.extendsFrom runtimeClasspath
         jdk8Archives.extendsFrom runtimeClasspath
     }
 
     dependencies {
-        jdk7Compile ":jsr166e"
         implementation ":high-scale-lib"
         implementation "org.hdrhistogram:HdrHistogram:2.1.9"
         implementation("org.latencyutils:LatencyUtils:2.0.3") {
@@ -613,11 +592,7 @@ Bundle-Version: $version
 
     javadoc {
         options.encoding = 'UTF-8'
-        if (project.ext.java8) {
-            source = sourceSets.jdk8.allJava
-        } else {
-            source = sourceSets.jdk7.allJava
-        }
+        source = sourceSets.jdk8.allJava
     }
 
     def installer = install.repositories.mavenInstaller
@@ -728,11 +703,7 @@ task javadoc(type: Javadoc, dependsOn: subprojects.javadoc) {
     title = "Quasar ${project(':quasar-core').version}"
     destinationDir = file("docs/javadoc")
 
-    if (project.ext.java8) {
-        source = project(':quasar-core').sourceSets.jdk8.allJava
-    } else {
-        source = project(':quasar-core').sourceSets.jdk7.allJava
-    }
+    source = project(':quasar-core').sourceSets.jdk8.allJava
     source += project(':quasar-actors').sourceSets.main.allJava
     source += project(':quasar-reactive-streams').sourceSets.main.allJava
 
