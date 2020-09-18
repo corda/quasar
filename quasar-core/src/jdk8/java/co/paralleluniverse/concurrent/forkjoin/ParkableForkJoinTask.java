@@ -43,7 +43,7 @@ public abstract class ParkableForkJoinTask<V> extends ForkJoinTask<V> {
     private final DummyRunnable taskRef = new DummyRunnable(this);
     private volatile int state; // The state field is updated while enforcing memory consistency. This beats the "don't re-fork" rule (see Javadoc for ForkJoinTask.fork())
     private Object blocker;
-    private ParkableForkJoinTask enclosing;
+    private ParkableForkJoinTask<?> enclosing;
     private boolean parkExclusive;
     private Object unparker;
     private StackTraceElement[] unparkStackTrace;
@@ -53,11 +53,11 @@ public abstract class ParkableForkJoinTask<V> extends ForkJoinTask<V> {
     }
 
     public static ParkableForkJoinTask<?> getCurrent() {
-        ParkableForkJoinTask ct = getCurrent1();
+        ParkableForkJoinTask<?> ct = getCurrent1();
         if (ct == null && Thread.currentThread() instanceof ForkJoinWorkerThread) { // false in tests
-            Fiber f = Fiber.currentFiber();
+            Fiber<?> f = Fiber.currentFiber();
             if (f != null)
-                ct = (ParkableForkJoinTask) f.getTask();
+                ct = (ParkableForkJoinTask<?>) f.getTask();
         }
         return ct;
     }
@@ -133,7 +133,7 @@ public abstract class ParkableForkJoinTask<V> extends ForkJoinTask<V> {
         return blocker;
     }
 
-    ParkableForkJoinTask getEnclosing() {
+    ParkableForkJoinTask<?> getEnclosing() {
         return enclosing;
     }
 
@@ -143,7 +143,7 @@ public abstract class ParkableForkJoinTask<V> extends ForkJoinTask<V> {
     }
 
     protected void onCompletion(boolean res) {
-        record("doExec", "done normally %s", this, Boolean.valueOf(res));
+        record("doExec", "done normally %s", this, res);
     }
 
     protected void onException(Throwable t) {
@@ -294,8 +294,7 @@ public abstract class ParkableForkJoinTask<V> extends ForkJoinTask<V> {
     }
 
     protected boolean tryUnpark(Object unblocker) {
-        boolean res = compareAndSetState(PARKED, RUNNABLE);
-        return res;
+        return compareAndSetState(PARKED, RUNNABLE);
     }
 
     protected void yield() throws Exception {
@@ -389,9 +388,9 @@ public abstract class ParkableForkJoinTask<V> extends ForkJoinTask<V> {
     }
 
     private static final class DummyRunnable implements Runnable {
-        final ParkableForkJoinTask task;
+        final ParkableForkJoinTask<?> task;
 
-        public DummyRunnable(ParkableForkJoinTask task) {
+        public DummyRunnable(ParkableForkJoinTask<?> task) {
             this.task = task;
         }
 
