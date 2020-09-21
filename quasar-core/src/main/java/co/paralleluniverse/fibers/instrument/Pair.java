@@ -17,20 +17,20 @@ import java.util.Objects;
 /**
  * @author pron
  */
-public final class Pair<First, Second> {
+final class Pair<First, Second> {
     private final First first;
     private final Second second;
 
-    public Pair(First first, Second second) {
+    Pair(First first, Second second) {
         this.first = first;
         this.second = second;
     }
 
-    public First getFirst() {
+    First getFirst() {
         return first;
     }
 
-    public Second getSecond() {
+    Second getSecond() {
         return second;
     }
 

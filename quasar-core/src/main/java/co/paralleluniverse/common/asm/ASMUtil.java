@@ -102,13 +102,13 @@ public final class ASMUtil {
     public static String getReadableDescriptor(String descriptor) {
         Type[] types = Type.getArgumentTypes(descriptor);
         StringBuilder sb = new StringBuilder();
-        sb.append("(");
+        sb.append('(');
         for (int i = 0; i < types.length; i++) {
             if (i > 0)
                 sb.append(", ");
             sb.append(types[i].getClassName());
         }
-        sb.append(")");
+        sb.append(')');
         return sb.toString();
     }
 
