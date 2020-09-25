@@ -6,9 +6,13 @@ plugins {
     id 'com.jfrog.artifactory'
     id 'org.javamodularity.moduleplugin'
     id 'com.github.johnrengelman.shadow'
-    id 'biz.aQute.bnd.builder' apply false
     id 'com.dorongold.task-tree'
+    id 'biz.aQute.bnd.builder' apply false
+    id "org.jetbrains.kotlin.jvm" apply false
 }
+
+sourceCompatibility = '11'
+targetCompatibility = '11'
 
 subprojects {
     apply plugin: 'java'
@@ -16,15 +20,12 @@ subprojects {
     apply plugin: 'com.jfrog.artifactory'
     apply plugin: 'org.javamodularity.moduleplugin'
 
-    sourceCompatibility = '11'
-    targetCompatibility = '11'
-
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
     }
 
     group               = "co.paralleluniverse"
-    version             = "0.8.3_r3-SNAPSHOT"
+    version             = quasarVersion
     status              = "integration"
     description         = "Fibers, Channels and Actors for the JVM"
     ext.url             = "http://puniverse.github.com/quasar"
@@ -99,11 +100,12 @@ subprojects {
     }
 
     compileJmhJava {
-        sourceCompatibility = '1.8'
-        targetCompatibility = '1.8'
+        sourceCompatibility = '11'
+        targetCompatibility = '11'
     }
 
     dependencies {
+
         implementation "io.dropwizard.metrics:metrics-core:$drpWizVer"
         implementation "io.dropwizard.metrics:metrics-jmx:$drpWizVer"
         provided "org.apache.ant:ant:1.10.5"
@@ -296,6 +298,13 @@ subprojects {
     ///////// Publish Artifacts
     apply plugin: 'maven'
 }
+
+logger.lifecycle("Gradle version: {}", gradle.gradleVersion)
+logger.lifecycle("Java version: {}", JavaVersion.current())
+logger.lifecycle("Java source compatibility: {}", sourceCompatibility)
+logger.lifecycle("Java target compatibility: {}", targetCompatibility)
+logger.lifecycle("Kotlin version: {}", kotlinVersion)
+logger.lifecycle("Building quasar version: {}", quasarVersion)
 
 def scanAndInstrument(sset, configs) {
 
@@ -609,6 +618,43 @@ Bundle-Version: $version
                     }
                 }
             }
+        }
+    }
+}
+
+project (':quasar-kotlin') {
+
+    apply plugin: 'kotlin'
+
+    ext.moduleName = 'co.paralleluniverse.quasar.kotlin'
+
+    configurations {
+        all {
+            resolutionStrategy {
+                // Have to force kotlinx to use 1.3.9 for Kotlin 1.4.
+                force "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxVersion"
+            }
+        }
+    }
+
+    dependencies {
+        compile project(path: ':quasar-core', configuration: 'shadowedJar')
+        compile project(':quasar-actors')
+
+        compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+        compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
+
+        testCompile "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+        testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion"
+    }
+
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions.jvmTarget = "11"
+    }
+
+    classes {
+        doLast {
+            scanAndInstrument(sourceSets.main, [configurations.provided, configurations.runtimeClasspath])
         }
     }
 }
