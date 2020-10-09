@@ -2,6 +2,7 @@ package co.paralleluniverse.kotlin.fibers.lang._1_4_x
 
 import co.paralleluniverse.common.util.SystemProperties
 import co.paralleluniverse.fibers.Fiber
+import co.paralleluniverse.fibers.Fiber.sleep
 import co.paralleluniverse.fibers.Suspendable
 import co.paralleluniverse.kotlin.fibers.StaticPropertiesTest.fiberWithVerifyInstrumentationOn
 import org.junit.Assume
@@ -11,29 +12,36 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SAMTest {
+
     // TODO Check heavy Suspendable so lightly thrown.
-    @Suspendable
     private fun interface IntPredicate {
         @Suspendable
         fun accept(i:Int): Boolean
     }
-    
-    @Suspendable
-    private fun doYield() {
-        Fiber.yield()
+
+    private class IntPredicateImpl : IntPredicate {
+        @Suspendable
+        override fun accept(i:Int): Boolean {
+            Fiber.yield()
+            return i > 0
+        }
     }
 
     @Suspendable
-    private fun localLambda(a:Int) : Boolean {
-        // val isPositive = IntPredicate { doYield(); it > 0}
-        val l: (Int) -> Boolean = {doYield(); it > 0}
-        return l(a)
+    fun localLambda(a:Int) : Boolean {
+        // val isPositive = (@Suspendable { num: Int -> num > 0})(a)
+        return (@Suspendable { num: Int -> num > 0})(a)
     }
 
     @Suspendable
-    private fun localSAM(a:Int) : Boolean {
-        val isPositive = IntPredicate { doYield(); it > 0}
+    fun localSAM(a:Int) : Boolean {
+        val isPositive = IntPredicate @Suspendable{ Fiber.yield(); it > 0}
         return isPositive.accept(a)
+    }
+
+    @Test fun `local lambdas`(){
+        // This lambda will be instrumented !!
+        assertTrue { { num: Int -> num > 0}(5) }
     }
 
     @Test fun `local lambdas in suspendables`() {
@@ -45,7 +53,6 @@ class SAMTest {
         })
     }
 
-    @Ignore("This test break quasar")
     @Test fun `local SAM in suspendables`() {
         // TODO This does not work, need to check what is going on in instrumentation.
         // TODO The above case of local lambda does work, so clearly instrumentation has some lambda awareness.
