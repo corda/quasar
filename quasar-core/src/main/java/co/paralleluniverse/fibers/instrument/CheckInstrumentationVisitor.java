@@ -130,10 +130,6 @@ class CheckInstrumentationVisitor extends ClassVisitor {
     public MethodVisitor visitMethod(final int access, final String name, final String desc, String signature, String[] exceptions) {
         SuspendableType suspendable = null;
 
-        if (className.contains("SAMTest$localSAM$isPositive")) {
-            suspendable = null;
-        }
-
         if (suspendableInterface)
             suspendable = SuspendableType.SUSPENDABLE_SUPER;
         if (suspendable == null)
@@ -175,7 +171,7 @@ class CheckInstrumentationVisitor extends ClassVisitor {
                         methodsSyntheticStatic.add(new Pair<>(name, desc));
                     }
 
-                    // If we have a method not suspendable that is a syntehtic bridge method then save for later processing.
+                    // If we have a method not suspendable that is a synthetic bridge method then save for later processing.
                     // It may be that the method should be suspendable as it's a bridge for a suspendable method.
                     final int ACC_SYNTHETIC_BRIDGE = Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE;
                     if (!susp && ((access & ACC_SYNTHETIC_BRIDGE) == ACC_SYNTHETIC_BRIDGE)) {
@@ -245,7 +241,7 @@ class CheckInstrumentationVisitor extends ClassVisitor {
         }
 
         // Now look through synthetic bridge methods and try and find a corresponding invoke with same signature.
-        // If we find such a method and it is suspendable then mark syntehtic as suspendable.
+        // If we find such a method and it is suspendable then mark synthetic as suspendable.
         for (Pair<String,String> p : methodsSyntheticBridge) {
 
             // Try and look up a matching method in classEntry.
