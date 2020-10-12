@@ -13,7 +13,6 @@ import kotlin.test.assertTrue
 
 class SAMTest {
 
-    // TODO Check heavy Suspendable so lightly thrown.
     private fun interface IntPredicate {
         @Suspendable
         fun accept(i:Int): Boolean
@@ -54,8 +53,6 @@ class SAMTest {
     }
 
     @Test fun `local SAM in suspendables`() {
-        // TODO This does not work, need to check what is going on in instrumentation.
-        // TODO The above case of local lambda does work, so clearly instrumentation has some lambda awareness.
         assertTrue(fiberWithVerifyInstrumentationOn {
             localSAM(4)
         })

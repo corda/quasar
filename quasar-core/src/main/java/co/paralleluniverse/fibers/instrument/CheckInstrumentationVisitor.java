@@ -154,10 +154,9 @@ class CheckInstrumentationVisitor extends ClassVisitor {
 
                 @Override
                 public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
-                    super.visitAnnotation(adesc, visible);
                     if (adesc.equals(SUSPENDABLE_DESC))
                         susp = true;
-                    return null;
+                    return super.visitAnnotation(adesc, visible);
                 }
 
                 @Override
