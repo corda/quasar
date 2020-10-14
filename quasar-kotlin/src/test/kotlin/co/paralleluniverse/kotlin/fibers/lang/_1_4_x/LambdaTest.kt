@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class lambdaTest {
+class LambdaTest {
 
     @Suspendable
     private fun fib(a: Int): Int {
@@ -22,7 +22,7 @@ class lambdaTest {
     }
 
     @Test
-    fun `local lambda fib`() {
+    fun `lambda fib`() {
         assertEquals(34, StaticPropertiesTest.fiberWithVerifyInstrumentationOn {
             fib(9)
         })

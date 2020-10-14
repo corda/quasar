@@ -11,7 +11,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class NameAndPositionalArguments {
+class NameAndPositionalArgumentsTest {
 
     @Suspendable
     private fun doYield() {
