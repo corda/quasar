@@ -55,7 +55,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
-import static co.paralleluniverse.fibers.instrument.Classes.*;
+import static co.paralleluniverse.fibers.instrument.Classes.getTypeDesc;
+import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 
 /**
  * Instrument a class by instrumenting all suspendable methods and copying the others.
@@ -133,9 +134,9 @@ class InstrumentClass extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        if (desc.equals(INSTRUMENTED_DESC) || desc.equals(DONT_INSTRUMENT_DESC))
+        if (desc.equals(getTypeDesc(Classes.TYPE_DESC_ID.INSTRUMENTED)) || desc.equals(getTypeDesc(Classes.TYPE_DESC_ID.DONT_INSTRUMENT)))
             this.alreadyInstrumented = true;
-        else if (isInterface && desc.equals(SUSPENDABLE_DESC))
+        else if (isInterface && desc.equals(getTypeDesc(Classes.TYPE_DESC_ID.SUSPENDABLE)))
             this.suspendableInterface = true;
 
         return super.visitAnnotation(desc, visible);
@@ -165,9 +166,9 @@ class InstrumentClass extends ClassVisitor {
                 @Override
                 public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
                     // look for @Suspendable or @DontInstrument annotation
-                    if (adesc.equals(SUSPENDABLE_DESC))
+                    if (adesc.equals(getTypeDesc(Classes.TYPE_DESC_ID.SUSPENDABLE)))
                         susp = SuspendableType.SUSPENDABLE;
-                    else if (adesc.equals(DONT_INSTRUMENT_DESC))
+                    else if (adesc.equals(getTypeDesc(Classes.TYPE_DESC_ID.DONT_INSTRUMENT)))
                         susp = SuspendableType.NON_SUSPENDABLE;
 
                     susp = suspendableToSuperIfAbstract(access, susp);
@@ -281,7 +282,7 @@ class InstrumentClass extends ClassVisitor {
     }
 
     private void emitInstrumentedAnn() {
-        final AnnotationVisitor instrumentedAV = visitAnnotation(INSTRUMENTED_DESC, true);
+        final AnnotationVisitor instrumentedAV = visitAnnotation(getTypeDesc(Classes.TYPE_DESC_ID.INSTRUMENTED), true);
         instrumentedAV.visitEnd();
     }
 
@@ -291,7 +292,7 @@ class InstrumentClass extends ClassVisitor {
         if (ans == null)
             return false;
         for (AnnotationNode an : ans) {
-            if (an.desc.equals(SUSPENDABLE_DESC))
+            if (an.desc.equals(getTypeDesc(Classes.TYPE_DESC_ID.SUSPENDABLE)))
                 return true;
         }
         return false;
