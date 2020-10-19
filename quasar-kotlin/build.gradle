@@ -1,0 +1,44 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.javamodularity.moduleplugin'
+}
+
+ext {
+    moduleName = 'co.paralleluniverse.quasar.kotlin'
+}
+
+sourceCompatibility = '11'
+targetCompatibility = '11'
+
+dependencies {
+
+    configurations.all {
+        resolutionStrategy {
+            dependencySubstitution {
+                substitute module('org.jetbrains.kotlin:kotlin-stdlib') with module("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
+                substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') with module("org.jetbrains.kotlin:kotlin-stdlib-common:$kotlinVersion")
+            }
+        }
+    }
+
+    implementation project(path: ':quasar-core', configuration: 'shadowedJar')
+    implementation project(':quasar-actors')
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion"
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+}
+
+classes {
+    doLast {
+        scanAndInstrument(sourceSets.main, [configurations.provided, configurations.runtimeClasspath])
+    }
+}
