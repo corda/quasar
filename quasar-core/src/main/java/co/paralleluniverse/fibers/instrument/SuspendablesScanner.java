@@ -63,7 +63,6 @@ import java.util.function.Function;
 import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToResource;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.isClassFile;
-import static co.paralleluniverse.fibers.instrument.Classes.getTypeDesc;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPEND_EXECUTION_NAME;
 
 public class SuspendablesScanner extends Task {
@@ -323,7 +322,7 @@ public class SuspendablesScanner extends Task {
         @Override
         public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
             final AnnotationVisitor av = super.visitAnnotation(adesc, visible);
-            if (Classes.getTypeDesc().contains(Classes.TypeDesc.ID.SUSPENDABLE, adesc)) {
+            if (Classes.getTypeDescs().contains(Classes.TypeDescs.ID.SUSPENDABLE, adesc)) {
                 suspendableClass = true;
             }
             return av;
@@ -352,9 +351,9 @@ public class SuspendablesScanner extends Task {
                 public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
                     final AnnotationVisitor av = super.visitAnnotation(desc, visible);
 
-                    if (Classes.getTypeDesc().contains(Classes.TypeDesc.ID.SUSPENDABLE, adesc))
+                    if (Classes.getTypeDescs().contains(Classes.TypeDescs.ID.SUSPENDABLE, adesc))
                         susp = noImpl ? SuspendableType.SUSPENDABLE_SUPER : SuspendableType.SUSPENDABLE;
-                    else if (Classes.getTypeDesc().contains(Classes.TypeDesc.ID.DONT_INSTRUMENT, adesc))
+                    else if (Classes.getTypeDescs().contains(Classes.TypeDescs.ID.DONT_INSTRUMENT, adesc))
                         susp = SuspendableType.NON_SUSPENDABLE;
 
                     return av;

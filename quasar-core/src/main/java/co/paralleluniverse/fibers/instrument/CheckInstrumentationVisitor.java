@@ -53,7 +53,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
-import static co.paralleluniverse.fibers.instrument.Classes.getTypeDesc;
 
 /**
  * Check if a class contains suspendable methods.
@@ -118,9 +117,9 @@ class CheckInstrumentationVisitor extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        if (Classes.getTypeDesc().contains(Classes.TypeDesc.ID.INSTRUMENTED, desc))
+        if (Classes.getTypeDescs().contains(Classes.TypeDescs.ID.INSTRUMENTED, desc))
             this.alreadyInstrumented = true;
-        else if (isInterface && Classes.getTypeDesc().contains(Classes.TypeDesc.ID.SUSPENDABLE, desc))
+        else if (isInterface && Classes.getTypeDescs().contains(Classes.TypeDescs.ID.SUSPENDABLE, desc))
             this.suspendableInterface = true;
         return null;
     }
@@ -153,7 +152,7 @@ class CheckInstrumentationVisitor extends ClassVisitor {
 
                 @Override
                 public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
-                    if (Classes.getTypeDesc().contains(Classes.TypeDesc.ID.SUSPENDABLE, adesc))
+                    if (Classes.getTypeDescs().contains(Classes.TypeDescs.ID.SUSPENDABLE, adesc))
                         susp = true;
                     return super.visitAnnotation(adesc, visible);
                 }

@@ -42,7 +42,7 @@
 package co.paralleluniverse.fibers.instrument;
 
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
-import static co.paralleluniverse.fibers.instrument.Classes.getTypeDesc;
+
 import static co.paralleluniverse.fibers.instrument.Classes.EXCEPTION_NAME;
 import static co.paralleluniverse.fibers.instrument.Classes.THROWABLE_NAME;
 import static co.paralleluniverse.fibers.instrument.Classes.RUNTIME_EXCEPTION_NAME;
@@ -655,7 +655,7 @@ class InstrumentMethod {
             int[] suspCallsSourceLines, String[] instrumentedCalls, int[] postInstrOffsets) {
 
         final StringBuilder sb = db.isDebug() ? new StringBuilder() : null;
-        final AnnotationVisitor instrumentedAV = mv.visitAnnotation(Classes.getTypeDesc().get(Classes.TypeDesc.ID.INSTRUMENTED), true);
+        final AnnotationVisitor instrumentedAV = mv.visitAnnotation(Classes.getTypeDescs().get(Classes.TypeDescs.ID.INSTRUMENTED), true);
         if (sb != null)
             sb.append("@Instrumented(");
 

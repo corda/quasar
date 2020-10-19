@@ -21,8 +21,6 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.EnumMap;
 
-import co.paralleluniverse.fibers.Instrumented;
-import co.paralleluniverse.fibers.Suspendable;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
@@ -59,7 +57,7 @@ final class Classes {
     static final String LAMBDA_METHOD_PREFIX = "lambda$";
 
     // CORE-21 : Provide getter and setter for annotation types.
-    static class TypeDesc {
+    static class TypeDescs {
 
         enum ID {
             SUSPENDABLE,
@@ -70,10 +68,12 @@ final class Classes {
         // On TYPE_DESC_ID can map to more than one type.
         private EnumMap<ID, Set<String>> descIds = new EnumMap<>(ID.class);
 
-        TypeDesc() {
-            set(ID.SUSPENDABLE, Type.getDescriptor(Suspendable.class));
+        TypeDescs() {
+            // We use string literals rather than Type.getDescriptor as we do not want
+            // to create a dependency on fibers.
+            set(ID.SUSPENDABLE, "Lco/paralleluniverse/fibers/Suspendable;");
             set(ID.DONT_INSTRUMENT, Type.getDescriptor(DontInstrument.class));
-            set(ID.INSTRUMENTED, Type.getDescriptor(Instrumented.class));
+            set(ID.INSTRUMENTED, "Lco/paralleluniverse/fibers/Instrumented;");
         }
 
         boolean contains(ID id, String s) {
@@ -118,9 +118,9 @@ final class Classes {
         }
     };
 
-    private static final TypeDesc typeDesc = new TypeDesc();
-    static TypeDesc getTypeDesc() {
-        return typeDesc;
+    private static final TypeDescs TYPE_DESCS = new TypeDescs();
+    static TypeDescs getTypeDescs() {
+        return TYPE_DESCS;
     }
 
     static boolean isYieldMethod(String className, String methodName) {

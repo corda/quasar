@@ -533,7 +533,6 @@ Import-Package: \
             include 'co/paralleluniverse/common/asm/**'
             include 'co/paralleluniverse/common/resource/**'
             include 'co/paralleluniverse/fibers/instrument/**'
-            exclude 'co/paralleluniverse/fibers/instrument/Classes*'
             exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTask*'
             exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTKB*'
             exclude 'co/paralleluniverse/fibers/instrument/ModuleFilterTask*'
