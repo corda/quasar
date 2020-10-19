@@ -655,7 +655,7 @@ class InstrumentMethod {
             int[] suspCallsSourceLines, String[] instrumentedCalls, int[] postInstrOffsets) {
 
         final StringBuilder sb = db.isDebug() ? new StringBuilder() : null;
-        final AnnotationVisitor instrumentedAV = mv.visitAnnotation(getTypeDesc(Classes.TYPE_DESC_ID.INSTRUMENTED), true);
+        final AnnotationVisitor instrumentedAV = mv.visitAnnotation(Classes.getTypeDesc().get(Classes.TypeDesc.ID.INSTRUMENTED), true);
         if (sb != null)
             sb.append("@Instrumented(");
 

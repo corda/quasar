@@ -118,9 +118,9 @@ class CheckInstrumentationVisitor extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        if (desc.equals(getTypeDesc(Classes.TYPE_DESC_ID.INSTRUMENTED)))
+        if (Classes.getTypeDesc().contains(Classes.TypeDesc.ID.INSTRUMENTED, desc))
             this.alreadyInstrumented = true;
-        else if (isInterface && desc.equals(getTypeDesc(Classes.TYPE_DESC_ID.SUSPENDABLE)))
+        else if (isInterface && Classes.getTypeDesc().contains(Classes.TypeDesc.ID.SUSPENDABLE, desc))
             this.suspendableInterface = true;
         return null;
     }
@@ -153,7 +153,7 @@ class CheckInstrumentationVisitor extends ClassVisitor {
 
                 @Override
                 public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
-                    if (adesc.equals(getTypeDesc(Classes.TYPE_DESC_ID.SUSPENDABLE)))
+                    if (Classes.getTypeDesc().contains(Classes.TypeDesc.ID.SUSPENDABLE, adesc))
                         susp = true;
                     return super.visitAnnotation(adesc, visible);
                 }

@@ -77,7 +77,7 @@ class SuspOffsetsAfterInstrClassVisitor extends ClassVisitor {
 
                 @Override
                 public AnnotationVisitor visitAnnotation(final String adesc, boolean visible) {
-                    if (adesc.equals(getTypeDesc(Classes.TYPE_DESC_ID.INSTRUMENTED))) {
+                    if (Classes.getTypeDesc().contains(Classes.TypeDesc.ID.INSTRUMENTED, adesc)) {
                         instrumented = true;
 
                         return new AnnotationVisitor(ASMAPI) { // Only collect info

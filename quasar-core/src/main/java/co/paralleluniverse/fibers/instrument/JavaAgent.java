@@ -126,15 +126,11 @@ public class JavaAgent {
                 switch (c) {
                     case 'a': {
                             final String s = parseArgBrackets(agentArguments, ++i);
-                            i += s.length()+1;
-                            String[] attr = s.split("\\=");
+                            i += s.length() + 1;
+                            final String[] attr = s.split("\\=");
                             if (attr.length > 1) {
-                                try {
-                                    Classes.setTypeDesc(Classes.TYPE_DESC_ID.valueOf(attr[0]), attr[1]);
-                                }
-                                catch (IllegalArgumentException e) {
-                                    instrumentor.log(LogLevel.INFO, "Failed to set type desc '%s' = '%s'", attr[0], attr[1]);
-                                }
+                                final String[] types = attr[1].split(",");
+                                instrumentor.addTypeDesc(attr[0], types);
                             }
                         }
                         break;

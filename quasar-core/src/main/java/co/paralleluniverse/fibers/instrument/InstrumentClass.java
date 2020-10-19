@@ -134,9 +134,10 @@ class InstrumentClass extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        if (desc.equals(getTypeDesc(Classes.TYPE_DESC_ID.INSTRUMENTED)) || desc.equals(getTypeDesc(Classes.TYPE_DESC_ID.DONT_INSTRUMENT)))
+        if (Classes.getTypeDesc().contains(Classes.TypeDesc.ID.INSTRUMENTED, desc) ||
+            Classes.getTypeDesc().contains(Classes.TypeDesc.ID.DONT_INSTRUMENT, desc))
             this.alreadyInstrumented = true;
-        else if (isInterface && desc.equals(getTypeDesc(Classes.TYPE_DESC_ID.SUSPENDABLE)))
+        else if (isInterface && Classes.getTypeDesc().contains(Classes.TypeDesc.ID.SUSPENDABLE, desc))
             this.suspendableInterface = true;
 
         return super.visitAnnotation(desc, visible);
@@ -166,9 +167,9 @@ class InstrumentClass extends ClassVisitor {
                 @Override
                 public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
                     // look for @Suspendable or @DontInstrument annotation
-                    if (adesc.equals(getTypeDesc(Classes.TYPE_DESC_ID.SUSPENDABLE)))
+                    if (Classes.getTypeDesc().contains(Classes.TypeDesc.ID.SUSPENDABLE, adesc))
                         susp = SuspendableType.SUSPENDABLE;
-                    else if (adesc.equals(getTypeDesc(Classes.TYPE_DESC_ID.DONT_INSTRUMENT)))
+                    else if (Classes.getTypeDesc().contains(Classes.TypeDesc.ID.DONT_INSTRUMENT, adesc))
                         susp = SuspendableType.NON_SUSPENDABLE;
 
                     susp = suspendableToSuperIfAbstract(access, susp);
@@ -282,7 +283,7 @@ class InstrumentClass extends ClassVisitor {
     }
 
     private void emitInstrumentedAnn() {
-        final AnnotationVisitor instrumentedAV = visitAnnotation(getTypeDesc(Classes.TYPE_DESC_ID.INSTRUMENTED), true);
+        final AnnotationVisitor instrumentedAV = visitAnnotation(Classes.getTypeDesc().get(Classes.TypeDesc.ID.INSTRUMENTED), true);
         instrumentedAV.visitEnd();
     }
 
@@ -292,7 +293,7 @@ class InstrumentClass extends ClassVisitor {
         if (ans == null)
             return false;
         for (AnnotationNode an : ans) {
-            if (an.desc.equals(getTypeDesc(Classes.TYPE_DESC_ID.SUSPENDABLE)))
+            if (Classes.getTypeDesc().contains(Classes.TypeDesc.ID.SUSPENDABLE, an.desc))
                 return true;
         }
         return false;

@@ -14,10 +14,7 @@
 package co.paralleluniverse.fibers.instrument;
 
 import java.lang.reflect.UndeclaredThrowableException;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import co.paralleluniverse.fibers.Instrumented;
 import co.paralleluniverse.fibers.Suspendable;
@@ -56,27 +53,69 @@ final class Classes {
 
     static final String LAMBDA_METHOD_PREFIX = "lambda$";
 
-    // CORE-17 : Provide getter and setter for attribute types.
-    enum TYPE_DESC_ID {
-        SUSPENDABLE,
-        DONT_INSTRUMENT,
-        INSTRUMENTED,
+    // CORE-21 : Provide getter and setter for annotation types.
+    static class TypeDesc {
+
+        enum ID {
+            SUSPENDABLE,
+            DONT_INSTRUMENT,
+            INSTRUMENTED,
+        };
+
+        // On TYPE_DESC_ID can map to more than one type.
+        private EnumMap<ID, Set<String>> descIds = new EnumMap<>(ID.class);
+
+        TypeDesc() {
+            set(ID.SUSPENDABLE, Type.getDescriptor(Suspendable.class));
+            set(ID.DONT_INSTRUMENT, Type.getDescriptor(DontInstrument.class));
+            set(ID.INSTRUMENTED, Type.getDescriptor(Instrumented.class));
+        }
+
+        boolean contains(ID id, String s) {
+            return descIds.get(id).contains(s);
+        }
+
+        void clear(ID id) {
+            descIds.get(id).clear();
+        }
+
+        String get(ID id) {
+            // Just return first element from iterator, fine for singletons, which is default.
+            return descIds.get(id).iterator().next();
+        }
+
+        void set(ID id, String s) {
+            descIds.put(id, new HashSet<>(Arrays.asList(s)));
+        }
+
+        void add(ID id, String s) {
+            descIds.get(id).add(s);
+        }
+
+        boolean clear(String id) {
+            try {
+                clear(ID.valueOf(id));
+            }
+            catch (IllegalArgumentException e) {
+                return false;
+            }
+            return true;
+        }
+
+        boolean add(String id, String s) {
+            try {
+                add(ID.valueOf(id), s);
+            }
+            catch (IllegalArgumentException e) {
+                return false;
+            }
+            return true;
+        }
     };
 
-    private static EnumMap<TYPE_DESC_ID, String> descIds = new EnumMap<>(TYPE_DESC_ID.class);
-
-    static String getTypeDesc(TYPE_DESC_ID id) {
-        return descIds.get(id);
-    }
-
-    static void setTypeDesc(TYPE_DESC_ID id, String s) {
-        descIds.put(id,s);
-    }
-
-    static {
-        setTypeDesc(TYPE_DESC_ID.SUSPENDABLE, Type.getDescriptor(Suspendable.class));
-        setTypeDesc(TYPE_DESC_ID.DONT_INSTRUMENT, Type.getDescriptor(DontInstrument.class));
-        setTypeDesc(TYPE_DESC_ID.INSTRUMENTED, Type.getDescriptor(Instrumented.class));
+    private static final TypeDesc typeDesc = new TypeDesc();
+    static TypeDesc getTypeDesc() {
+        return typeDesc;
     }
 
     static boolean isYieldMethod(String className, String methodName) {
