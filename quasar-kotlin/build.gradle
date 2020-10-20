@@ -10,17 +10,16 @@ ext {
 sourceCompatibility = '11'
 targetCompatibility = '11'
 
-dependencies {
-
-    configurations.all {
-        resolutionStrategy {
-            dependencySubstitution {
-                substitute module('org.jetbrains.kotlin:kotlin-stdlib') with module("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
-                substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') with module("org.jetbrains.kotlin:kotlin-stdlib-common:$kotlinVersion")
-            }
+configurations.all {
+    resolutionStrategy {
+        dependencySubstitution {
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib') with module("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') with module("org.jetbrains.kotlin:kotlin-stdlib-common:$kotlinVersion")
         }
     }
+}
 
+dependencies {
     implementation project(path: ':quasar-core', configuration: 'shadowedJar')
     implementation project(':quasar-actors')
 
