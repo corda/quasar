@@ -54,15 +54,16 @@ final class Classes {
     static final String UNDECLARED_THROWABLE_NAME      = UndeclaredThrowableException.class.getName().replace('.', '/');
     static final String SUSPEND_EXECUTION_NAME         = "co/paralleluniverse/fibers/SuspendExecution";
 
-    static final String LAMBDA_METHOD_PREFIX = "lambda$";
+    static final String LAMBDA_METHOD_PREFIX            = "lambda$";
+
+    static final String INSTRUMENTED_DESC               = "Lco/paralleluniverse/fibers/Instrumented;";
 
     // CORE-21 : Provide getter and setter for annotation types.
     static class TypeDescs {
 
         enum ID {
             SUSPENDABLE,
-            DONT_INSTRUMENT,
-            INSTRUMENTED,
+            DONT_INSTRUMENT
         };
 
         // On TYPE_DESC_ID can map to more than one type.
@@ -73,7 +74,6 @@ final class Classes {
             // to create a dependency on fibers.
             set(ID.SUSPENDABLE, "Lco/paralleluniverse/fibers/Suspendable;");
             set(ID.DONT_INSTRUMENT, Type.getDescriptor(DontInstrument.class));
-            set(ID.INSTRUMENTED, "Lco/paralleluniverse/fibers/Instrumented;");
         }
 
         boolean contains(ID id, String s) {

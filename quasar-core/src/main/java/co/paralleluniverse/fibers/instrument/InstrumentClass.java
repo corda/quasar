@@ -55,6 +55,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
+import static co.paralleluniverse.fibers.instrument.Classes.INSTRUMENTED_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 
 /**
@@ -133,7 +134,7 @@ class InstrumentClass extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        if (Classes.getTypeDescs().contains(Classes.TypeDescs.ID.INSTRUMENTED, desc) ||
+        if (desc.equals(INSTRUMENTED_DESC) ||
             Classes.getTypeDescs().contains(Classes.TypeDescs.ID.DONT_INSTRUMENT, desc))
             this.alreadyInstrumented = true;
         else if (isInterface && Classes.getTypeDescs().contains(Classes.TypeDescs.ID.SUSPENDABLE, desc))
@@ -282,7 +283,7 @@ class InstrumentClass extends ClassVisitor {
     }
 
     private void emitInstrumentedAnn() {
-        final AnnotationVisitor instrumentedAV = visitAnnotation(Classes.getTypeDescs().get(Classes.TypeDescs.ID.INSTRUMENTED), true);
+        final AnnotationVisitor instrumentedAV = visitAnnotation(INSTRUMENTED_DESC, true);
         instrumentedAV.visitEnd();
     }
 
