@@ -322,7 +322,7 @@ public class SuspendablesScanner extends Task {
         @Override
         public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
             final AnnotationVisitor av = super.visitAnnotation(adesc, visible);
-            if (Classes.getTypeDescs().contains(Classes.TypeDescs.ID.SUSPENDABLE, adesc)) {
+            if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, adesc)) {
                 suspendableClass = true;
             }
             return av;
@@ -351,9 +351,9 @@ public class SuspendablesScanner extends Task {
                 public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
                     final AnnotationVisitor av = super.visitAnnotation(desc, visible);
 
-                    if (Classes.getTypeDescs().contains(Classes.TypeDescs.ID.SUSPENDABLE, adesc))
+                    if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, adesc))
                         susp = noImpl ? SuspendableType.SUSPENDABLE_SUPER : SuspendableType.SUSPENDABLE;
-                    else if (Classes.getTypeDescs().contains(Classes.TypeDescs.ID.DONT_INSTRUMENT, adesc))
+                    else if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.DONT_INSTRUMENT, adesc))
                         susp = SuspendableType.NON_SUSPENDABLE;
 
                     return av;

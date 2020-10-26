@@ -135,9 +135,9 @@ class InstrumentClass extends ClassVisitor {
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
         if (desc.equals(INSTRUMENTED_DESC) ||
-            Classes.getTypeDescs().contains(Classes.TypeDescs.ID.DONT_INSTRUMENT, desc))
+            Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.DONT_INSTRUMENT, desc))
             this.alreadyInstrumented = true;
-        else if (isInterface && Classes.getTypeDescs().contains(Classes.TypeDescs.ID.SUSPENDABLE, desc))
+        else if (isInterface && Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, desc))
             this.suspendableInterface = true;
 
         return super.visitAnnotation(desc, visible);
@@ -167,9 +167,9 @@ class InstrumentClass extends ClassVisitor {
                 @Override
                 public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
                     // look for @Suspendable or @DontInstrument annotation
-                    if (Classes.getTypeDescs().contains(Classes.TypeDescs.ID.SUSPENDABLE, adesc))
+                    if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, adesc))
                         susp = SuspendableType.SUSPENDABLE;
-                    else if (Classes.getTypeDescs().contains(Classes.TypeDescs.ID.DONT_INSTRUMENT, adesc))
+                    else if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.DONT_INSTRUMENT, adesc))
                         susp = SuspendableType.NON_SUSPENDABLE;
 
                     susp = suspendableToSuperIfAbstract(access, susp);
@@ -293,7 +293,7 @@ class InstrumentClass extends ClassVisitor {
         if (ans == null)
             return false;
         for (AnnotationNode an : ans) {
-            if (Classes.getTypeDescs().contains(Classes.TypeDescs.ID.SUSPENDABLE, an.desc))
+            if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, an.desc))
                 return true;
         }
         return false;

@@ -59,17 +59,17 @@ final class Classes {
     static final String INSTRUMENTED_DESC               = "Lco/paralleluniverse/fibers/Instrumented;";
 
     // CORE-21 : Provide getter and setter for annotation types.
-    static class TypeDescs {
+    static class AnnotationDescriptors {
 
         enum ID {
             SUSPENDABLE,
             DONT_INSTRUMENT
         };
 
-        // On TYPE_DESC_ID can map to more than one type.
+        // Keep as non volatile for now as should only be modified by the agent on initialisation.
         private EnumMap<ID, Set<String>> descIds = new EnumMap<>(ID.class);
 
-        TypeDescs() {
+        AnnotationDescriptors() {
             // We use string literals rather than Type.getDescriptor as we do not want
             // to create a dependency on fibers.
             set(ID.SUSPENDABLE, "Lco/paralleluniverse/fibers/Suspendable;");
@@ -80,7 +80,7 @@ final class Classes {
             return descIds.get(id).contains(s);
         }
 
-        void clear(ID id) {
+        private void clear(ID id) {
             descIds.get(id).clear();
         }
 
@@ -89,11 +89,9 @@ final class Classes {
             return descIds.get(id).iterator().next();
         }
 
-        void set(ID id, String s) {
-            descIds.put(id, new HashSet<>(Arrays.asList(s)));
-        }
+        private void set(ID id, String s) { descIds.put(id, new HashSet<>(Arrays.asList(s))); }
 
-        void add(ID id, String s) {
+        private void add(ID id, String s) {
             descIds.get(id).add(s);
         }
 
@@ -118,8 +116,8 @@ final class Classes {
         }
     };
 
-    private static final TypeDescs TYPE_DESCS = new TypeDescs();
-    static TypeDescs getTypeDescs() {
+    private static final AnnotationDescriptors TYPE_DESCS = new AnnotationDescriptors();
+    static AnnotationDescriptors getTypeDescs() {
         return TYPE_DESCS;
     }
 
