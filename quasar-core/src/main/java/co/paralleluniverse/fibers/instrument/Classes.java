@@ -56,14 +56,14 @@ final class Classes {
 
     static final String LAMBDA_METHOD_PREFIX            = "lambda$";
 
-    static final String INSTRUMENTED_DESC               = "Lco/paralleluniverse/fibers/Instrumented;";
+    static final String DONT_INSTRUMENT_DESC = Type.getDescriptor(DontInstrument.class);
+    static final String INSTRUMENTED_DESC    = "Lco/paralleluniverse/fibers/Instrumented;";
 
     // CORE-21 : Provide getter and setter for annotation types.
     static class AnnotationDescriptors {
 
         enum ID {
-            SUSPENDABLE,
-            DONT_INSTRUMENT
+            SUSPENDABLE
         };
 
         // Keep as non volatile for now as should only be modified by the agent on initialisation.
@@ -73,7 +73,6 @@ final class Classes {
             // We use string literals rather than Type.getDescriptor as we do not want
             // to create a dependency on fibers.
             set(ID.SUSPENDABLE, "Lco/paralleluniverse/fibers/Suspendable;");
-            set(ID.DONT_INSTRUMENT, Type.getDescriptor(DontInstrument.class));
         }
 
         boolean contains(ID id, String s) {

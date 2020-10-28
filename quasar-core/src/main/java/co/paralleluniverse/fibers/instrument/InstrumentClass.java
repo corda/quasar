@@ -55,6 +55,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
+import static co.paralleluniverse.fibers.instrument.Classes.DONT_INSTRUMENT_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.INSTRUMENTED_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 
@@ -134,8 +135,7 @@ class InstrumentClass extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        if (desc.equals(INSTRUMENTED_DESC) ||
-            Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.DONT_INSTRUMENT, desc))
+        if (desc.equals(INSTRUMENTED_DESC) || desc.equals(DONT_INSTRUMENT_DESC))
             this.alreadyInstrumented = true;
         else if (isInterface && Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, desc))
             this.suspendableInterface = true;
@@ -169,7 +169,7 @@ class InstrumentClass extends ClassVisitor {
                     // look for @Suspendable or @DontInstrument annotation
                     if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, adesc))
                         susp = SuspendableType.SUSPENDABLE;
-                    else if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.DONT_INSTRUMENT, adesc))
+                    else if (DONT_INSTRUMENT_DESC.equals(adesc))
                         susp = SuspendableType.NON_SUSPENDABLE;
 
                     susp = suspendableToSuperIfAbstract(access, susp);

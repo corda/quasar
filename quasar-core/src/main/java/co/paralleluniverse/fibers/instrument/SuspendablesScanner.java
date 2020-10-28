@@ -64,6 +64,7 @@ import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToResource;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.isClassFile;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPEND_EXECUTION_NAME;
+import static co.paralleluniverse.fibers.instrument.Classes.DONT_INSTRUMENT_DESC;
 
 public class SuspendablesScanner extends Task {
     private final Map<String, MethodNode> methods = new HashMap<>();
@@ -353,7 +354,7 @@ public class SuspendablesScanner extends Task {
 
                     if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, adesc))
                         susp = noImpl ? SuspendableType.SUSPENDABLE_SUPER : SuspendableType.SUSPENDABLE;
-                    else if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.DONT_INSTRUMENT, adesc))
+                    else if (DONT_INSTRUMENT_DESC.equals(adesc))
                         susp = SuspendableType.NON_SUSPENDABLE;
 
                     return av;
