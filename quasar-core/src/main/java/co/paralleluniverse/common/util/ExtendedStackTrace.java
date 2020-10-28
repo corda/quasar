@@ -12,10 +12,13 @@
  */
 package co.paralleluniverse.common.util;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.security.PrivilegedAction;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReference;
@@ -89,22 +92,11 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
             }
         }
 
-        final int targetLineNumber = este.getLineNumber();
-        if (method == null && targetLineNumber >= 0) {
+        if (method == null && este.getLineNumber() >= 0) {
             try {
-                final AtomicReference<String> exactMatch = new AtomicReference<>();
-                final AtomicReference<String> descriptor = new AtomicReference<>();
-                findMethod(este.getDeclaringClass(), targetMethodName, targetLineNumber, exactMatch, descriptor);
-
-                String exactMatchValue = exactMatch.get();
-                String descriptorValue = descriptor.get();
-                if (exactMatchValue != null){
-                    method = getMatchingMethod(ms, targetMethodName, exactMatchValue);
-                }
-                else if (descriptorValue != null) {
-                    method = getMatchingMethod(ms, targetMethodName, descriptorValue);
-                }
-            } catch (Exception e) {
+                method = doPrivileged(new FindMethod(este, ms, targetMethodName));
+            } catch (PrivilegedActionException pae) {
+                Exception e = pae.getException();
                 if (!(e instanceof UnsupportedOperationException))
                     e.printStackTrace();
             }
@@ -113,13 +105,43 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
         return method;
     }
 
-    private Member getMatchingMethod(Member[] methods, String methodName, String desc) {
-        for (Member m : methods) {
-            if (methodName.equals(getName(m)) && desc.equals(getDescriptor(m))) {
-                return m;
+    private static class FindMethod implements PrivilegedExceptionAction<Member> {
+        private final ExtendedStackTraceElement este;
+        private final Member[] methods;
+        private final String targetName;
+
+        FindMethod(ExtendedStackTraceElement este, Member[] methods, String targetName) {
+            this.este = este;
+            this.methods = methods;
+            this.targetName = targetName;
+        }
+
+        @Override
+        public Member run() throws IOException {
+            final AtomicReference<String> exactMatch = new AtomicReference<>();
+            final AtomicReference<String> descriptor = new AtomicReference<>();
+            findMethod(este.getDeclaringClass(), targetName, este.getLineNumber(), exactMatch, descriptor);
+
+            String exactMatchValue = exactMatch.get();
+            String descriptorValue = descriptor.get();
+            if (exactMatchValue != null){
+                return getMatchingMethod(exactMatchValue);
+            }
+            else if (descriptorValue != null) {
+                return getMatchingMethod(descriptorValue);
+            } else {
+                return null;
             }
         }
-        return null;
+
+        private Member getMatchingMethod(String targetDescriptor) {
+            for (Member m : methods) {
+                if (targetName.equals(getName(m)) && targetDescriptor.equals(getDescriptor(m))) {
+                    return m;
+                }
+            }
+            return null;
+        }
     }
 
     protected static String getName(Member m) {

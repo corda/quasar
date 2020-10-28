@@ -42,6 +42,7 @@
 package co.paralleluniverse.fibers.instrument;
 
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
+import static java.security.AccessController.doPrivileged;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -51,9 +52,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -270,9 +273,9 @@ public class MethodDatabase {
         }
     }
 
-    public String getCommonSuperClass(String classA, String classB) {
-        ArrayList<String> listA = getSuperClasses(classA);
-        ArrayList<String> listB = getSuperClasses(classB);
+    String getCommonSuperClass(String classA, String classB) {
+        List<String> listA = getSuperClasses(classA);
+        List<String> listB = getSuperClasses(classB);
         if (listA == null || listB == null) {
             return null;
         }
@@ -315,8 +318,13 @@ public class MethodDatabase {
             return null;
         }
 
+        if (className.startsWith("[")) {
+            // Don't try looking for an "array" class.
+            return null;
+        }
+
         log(LogLevel.INFO, "Reading class: %s", className);
-        final InputStream is = cl.getResourceAsStream(className + ".class");
+        final InputStream is = doPrivileged(new GetResourceAsStream(cl, className + ".class"));
         if (is == null) {
             log(LogLevel.INFO, "Class not found: %s", className);
             return null;
@@ -365,7 +373,7 @@ public class MethodDatabase {
         if (cl == null)
             return null;
 
-        final InputStream is = cl.getResourceAsStream(className + ".class");
+        final InputStream is = doPrivileged(new GetResourceAsStream(cl, className + ".class"));
         if (is != null) {
             try {
                 try {
@@ -383,8 +391,8 @@ public class MethodDatabase {
         return null;
     }
 
-    private ArrayList<String> getSuperClasses(String className) {
-        ArrayList<String> result = new ArrayList<String>();
+    private List<String> getSuperClasses(String className) {
+        List<String> result = new ArrayList<>();
         for (;;) {
             result.add(0, className);
             if ("java/lang/Object".equals(className)) {
@@ -460,7 +468,22 @@ public class MethodDatabase {
 
     public enum SuspendableType {
         NON_SUSPENDABLE, SUSPENDABLE_SUPER, SUSPENDABLE
-    };
+    }
+
+    private static final class GetResourceAsStream implements PrivilegedAction<InputStream> {
+        private final ClassLoader cl;
+        private final String resourceName;
+
+        GetResourceAsStream(ClassLoader cl, String resourceName) {
+            this.cl = cl;
+            this.resourceName = resourceName;
+        }
+
+        @Override
+        public InputStream run() {
+            return cl.getResourceAsStream(resourceName);
+        }
+    }
 
     public static final class ClassEntry {
         private final HashMap<String, SuspendableType> methods;

@@ -81,10 +81,6 @@ public final class ASMUtil {
         return cn;
     }
 
-    public static ClassNode getClassNode(Class<?> clazz, boolean skipCode) throws IOException {
-        return getClassNode(getClassInputStream(clazz), skipCode);
-    }
-
     public static boolean hasAnnotation(String annDesc, List<AnnotationNode> anns) {
         if (anns == null)
             return false;
