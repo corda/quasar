@@ -464,10 +464,6 @@ project (':quasar-core') {
             }
         }
 
-        ext {
-            shadowJarURI = shadowJarTask.archiveFile.map { it.asFile.toURI() }
-        }
-
         def bundleTask = tasks.register("${set.name}Bundle", Bundle) {
             dependsOn shadowJarTask
             from(zipTree(shadowJarTask.archiveFile)) {
@@ -502,9 +498,9 @@ Import-Package: \
         def validateBundle = tasks.register("${set.name}ValidateBundle") {
             dependsOn bundleTask
             doLast {
-                String exportPackages = fetchManifestAttributeFrom(bundleTask, 'Export-Package')
-                if (exportPackages && exportPackages.contains('co.paralleluniverse.asm')) {
-                    throw new InvalidUserCodeException("OSGi bundle should not import shaded ASM package: " + exportPackages)
+                String importPackages = fetchManifestAttributeFrom(bundleTask, 'Import-Package')
+                if (importPackages && importPackages.contains('co.paralleluniverse.asm')) {
+                    throw new InvalidUserCodeException("OSGi bundle should not import shaded ASM package: " + importPackages)
                 }
             }
         }
@@ -529,8 +525,11 @@ Import-Package: \
             archiveAppendix = 'osgi'
             archiveClassifier = 'agent'
 
+            bnd shadowJarTask.archiveFile.map { file ->
+                "-include: jar:${file.asFile.toURI()}!/META-INF/MANIFEST.MF"
+            }
+
             bnd """
--include: "jar:\${project.shadowJarURI}!/META-INF/MANIFEST.MF"
 Bundle-SymbolicName: co.paralleluniverse.quasar-core.agent
 Bundle-Name: Quasar Agent
 Bundle-Version: \${project.version}
