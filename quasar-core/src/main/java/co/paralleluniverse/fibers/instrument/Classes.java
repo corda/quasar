@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.EnumMap;
 
-import co.paralleluniverse.common.resource.ClassLoaderUtil;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
@@ -89,17 +88,10 @@ final class Classes {
             return descIds.get(id).iterator().next();
         }
 
-        private String toDescriptor(String s) {
-            // If string does not end in ';' then assume simple class name.
-            return ((s != null) && !s.isEmpty() && (s.charAt(s.length()-1) != ';'))
-                    ? "L" + ClassLoaderUtil.classToSlashed(s) + ";"
-                    : s;
-        }
-
-        private void set(ID id, String s) { descIds.put(id, new HashSet<>(Arrays.asList(toDescriptor(s)))); }
+        private void set(ID id, String s) { descIds.put(id, new HashSet<>(Arrays.asList(s))); }
 
         private void add(ID id, String s) {
-            descIds.get(id).add(toDescriptor(s));
+            descIds.get(id).add(s);
         }
 
         boolean clear(String id) {
