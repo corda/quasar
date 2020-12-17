@@ -21,11 +21,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  *
@@ -93,7 +94,7 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
 
     private static void parse(URL file, Set<String> set, Set<String> classSet) {
         try (InputStream is = file.openStream();
-             BufferedReader reader = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")))) {
+             BufferedReader reader = new BufferedReader(new InputStreamReader(is, UTF_8))) {
             String line;
 
             for (int linenum = 1; (line = reader.readLine()) != null; linenum++) {
@@ -122,7 +123,7 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
         }
     }
 
-    // test if the given method exists expicitly in the suspendables files
+    // test if the given method exists explicitly in the suspendables files
     public boolean isSuspendable(String className, String methodName, String methodDesc) {
         return (suspendables.contains(className + '.' + methodName + methodDesc)
                 || suspendables.contains(className + '.' + methodName)

@@ -137,8 +137,8 @@ public class SuspendablesScanner extends Task {
             log("OUTPUT: " + suspendablesFile, Project.MSG_INFO);
 
             // output results
-            final ArrayList<String> suspendables = suspendablesFile != null ? new ArrayList<String>() : null;
-            final ArrayList<String> suspendableSupers = supersFile != null ? new ArrayList<String>() : null;
+            final List<String> suspendables = suspendablesFile != null ? new ArrayList<>() : null;
+            final List<String> suspendableSupers = supersFile != null ? new ArrayList<>() : null;
             putSuspendablesAndSupers(suspendables, suspendableSupers);
 
             if (suspendablesFile != null) {
@@ -284,8 +284,7 @@ public class SuspendablesScanner extends Task {
         // scan classes in suspendables file
         if (suspendablesFile != null) {
             SimpleSuspendableClassifier tssc = new SimpleSuspendableClassifier(suspendablesFile);
-            final Set<String> cs = new HashSet<>();
-            cs.addAll(tssc.getSuspendableClasses());
+            final Set<String> cs = new HashSet<>(tssc.getSuspendableClasses());
             for (String susMethod : tssc.getSuspendables())
                 cs.add(susMethod.substring(0, susMethod.indexOf('.')));
 
@@ -502,8 +501,8 @@ public class SuspendablesScanner extends Task {
     }
 
     private void walkGraph() {
-        final Queue<MethodNode> q = new ArrayDeque<>();
-        q.addAll(knownSuspendablesOrSupers); // start the bfs from the manualSusp (all classpath)
+        // start the bfs from the manualSusp (all classpath)
+        final Queue<MethodNode> q = new ArrayDeque<>(knownSuspendablesOrSupers);
 
         while (!q.isEmpty()) {
             final MethodNode m = q.poll();
@@ -713,7 +712,7 @@ public class SuspendablesScanner extends Task {
         }
 
         void setMethods(Collection<String> ms) {
-            this.methods = ms.toArray(new String[ms.size()]);
+            this.methods = ms.toArray(new String[0]);
             for (int i = 0; i < methods.length; i++)
                 methods[i] = methods[i].intern();
         }
@@ -778,27 +777,31 @@ public class SuspendablesScanner extends Task {
             numCallers++;
         }
 
-        @SuppressWarnings("override")
         public Collection<MethodNode> getCallers() {
             if (callers == null)
                 return Collections.emptyList();
             return new AbstractCollection<MethodNode>() {
+                @Override
                 public int size() {
                     return numCallers;
                 }
 
+                @Override
                 public Iterator<MethodNode> iterator() {
                     return new Iterator<MethodNode>() {
                         private int i;
 
+                        @Override
                         public boolean hasNext() {
                             return i < numCallers;
                         }
 
+                        @Override
                         public MethodNode next() {
                             return callers[i++];
                         }
 
+                        @Override
                         public void remove() {
                             throw new UnsupportedOperationException("remove");
                         }

@@ -289,7 +289,7 @@ subprojects {
     }
 }
 
-def scanAndInstrument(sset, configs) {
+def scanAndInstrument(SourceSet sset, configs) {
 
     def cp = sset.output.classesDirs.getAsPath() + ':' + sset.output.resourcesDir + ':' + configs*.asPath.join(':')
 
@@ -425,7 +425,7 @@ project (':quasar-core') {
     def ssets = [sourceSets.jdk8]
 
     ssets.each { set ->
-        configure(project.tasks["compile${capitalize(set.name)}Java"]) {
+        project.tasks.named("compile${capitalize(set.name)}Java", JavaCompile) {
             doLast {
                 rootProject.scanAndInstrument(set, [configurations["${set.name}Runtime"], configurations.provided, configurations.runtimeClasspath])
             }
@@ -467,6 +467,7 @@ project (':quasar-core') {
         def bundleTask = tasks.register("${set.name}Bundle", Bundle) {
             dependsOn shadowJarTask
             from(zipTree(shadowJarTask.archiveFile)) {
+                exclude 'META-INF/suspendable*'
                 exclude 'co/paralleluniverse/asm/**'
                 exclude 'co/paralleluniverse/common/asm/**'
                 exclude 'co/paralleluniverse/common/resource/**'
@@ -512,6 +513,7 @@ Import-Package: \
         def bundleAgentTask = tasks.register("${set.name}AgentBundle", Bundle) {
             dependsOn shadowJarTask
             from(zipTree(shadowJarTask.archiveFile)) {
+                include 'META-INF/suspendable*'
                 include 'co/paralleluniverse/asm/**'
                 include 'co/paralleluniverse/common/asm/**'
                 include 'co/paralleluniverse/common/resource/**'
