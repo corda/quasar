@@ -302,7 +302,7 @@ def scanAndInstrument(SourceSet sset, configs) {
         classpath: cp)
     ant.scanSuspendables(
         auto: false,
-        supersFile:"$sset.output.resourcesDir/META-INF/suspendable-supers",
+        supersFile:"${sset.output.resourcesDir}/META-INF/suspendable-supers",
         append: true) {
         for (File f : sset.output.classesDirs) {
             fileset(dir: f)
@@ -426,6 +426,8 @@ project (':quasar-core') {
 
     ssets.each { set ->
         project.tasks.named("compile${capitalize(set.name)}Java", JavaCompile) {
+            // Ensure that the resources output directory has already been created.
+            dependsOn "process${capitalize(set.name)}Resources"
             doLast {
                 rootProject.scanAndInstrument(set, [configurations["${set.name}Runtime"], configurations.provided, configurations.runtimeClasspath])
             }
