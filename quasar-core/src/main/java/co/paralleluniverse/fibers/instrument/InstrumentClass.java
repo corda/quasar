@@ -108,9 +108,11 @@ class InstrumentClass extends ClassVisitor {
 
         this.forceInstrumentation |= classEntry.requiresInstrumentation();
 
-        // need at least 1.5 for annotations to work
-        if (version < Opcodes.V1_5)
-            version = Opcodes.V1_5;
+        // need at least 1.5 for annotations to work,
+        // and 1.8 for static interface methods.
+        if (version < Opcodes.V1_8) {
+            version = Opcodes.V1_8;
+        }
 
 // When Java allows adding interfaces in retransformation, we can mark the class with an interface, which makes checking whether it's instrumented faster (with instanceof)       
 //        if(classEntry.requiresInstrumentation() && !contains(interfaces, SUSPENDABLE_NAME)) {

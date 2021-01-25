@@ -14,10 +14,20 @@
 package co.paralleluniverse.fibers;
 
 import co.paralleluniverse.fibers.instrument.Constants;
+import co.paralleluniverse.fibers.suspend.StackOps;
+import co.paralleluniverse.fibers.suspend.Stacks;
 import co.paralleluniverse.fibers.suspend.SuspendExecution;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
+import java.util.function.Supplier;
+
+import static java.security.AccessController.doPrivileged;
 
 /**
  * Internal Class - DO NOT USE! (Public so that instrumented code can access it)
@@ -27,7 +37,7 @@ import java.util.Arrays;
  * @author Matthias Mann
  * @author Ron Pressler
  */
-public final class Stack implements Serializable {
+public final class Stack implements StackOps, Serializable {
     /**
      * sp points to the first slot to contain data.
      * The _previous_ FRAME_RECORD_SIZE slots contain the frame record.
@@ -47,6 +57,24 @@ public final class Stack implements Serializable {
     private transient boolean pushed;
     private long[] dataLong;        // holds primitives on stack as well as each method's entry point and the stack pointer
     private Object[] dataObject;    // holds refs on stack
+
+    static {
+        try {
+            doPrivileged((PrivilegedExceptionAction<Void>) () -> {
+                Lookup lookup = MethodHandles.privateLookupIn(Stacks.class, MethodHandles.lookup());
+                MethodHandle setter = lookup.findStaticSetter(Stacks.class, "GET_STACK", Supplier.class);
+                try {
+                    setter.invokeExact((Supplier<? extends StackOps>)Stack::getStack);
+                } catch (Throwable t) {
+                    throw new InternalError(t.getMessage(), t);
+                }
+                return null;
+            });
+        } catch (PrivilegedActionException e) {
+            Throwable cause = e.getCause();
+            throw new InternalError(cause.getMessage(), cause);
+        }
+    }
 
     Stack(Fiber<?> fiber, int stackSize) {
         if (stackSize <= 0)
@@ -85,6 +113,7 @@ public final class Stack implements Serializable {
      *
      * @return the entry point of this method
      */
+    @Override
     public final int nextMethodEntry() {
         int idx = 0;
         int slots = 0;
@@ -105,6 +134,7 @@ public final class Stack implements Serializable {
     /**
      * called when nextMethodEntry returns 0
      */
+    @Override
     public final boolean isFirstInStackOrPushed() {
         boolean p = pushed;
         pushed = false;
@@ -124,6 +154,7 @@ public final class Stack implements Serializable {
      * @param entry      the entry point in the current method for resume
      * @param numSlots   the number of required stack slots for storing the state of the current method
      */
+    @Override
     public final void pushMethod(int entry, int numSlots) {
         pushed = true;
 
@@ -147,6 +178,7 @@ public final class Stack implements Serializable {
             fiber.record(2, "Stack", "pushMethod     ", "%s %d %d", Thread.currentThread().getStackTrace()[2], entry, sp /*Arrays.toString(fiber.getStackTrace())*/);
     }
 
+    @Override
     public final void popMethod(int slots) {
         pushed = false;
 
@@ -170,6 +202,7 @@ public final class Stack implements Serializable {
             fiber.record(2, "Stack", "popMethod      ", "%s %d", Thread.currentThread().getStackTrace()[2], sp /*Arrays.toString(fiber.getStackTrace())*/);        
     }
 
+    @Override
     public final void postRestore() throws SuspendExecution, InterruptedException {
         fiber.onResume();
     }
@@ -201,36 +234,42 @@ public final class Stack implements Serializable {
         }
     }
 
-    public static void push(int value, Stack s, int idx) {
+    @Override
+    public final void push(int value, int idx) {
 //        if (s.fiber.isRecordingLevel(3))
 //            s.fiber.record(3, "Stack", "push", "%d (%d) %s", idx, s.sp + idx, value);
-        s.dataLong[s.sp + idx] = value;
+        dataLong[sp + idx] = value;
     }
 
-    public static void push(float value, Stack s, int idx) {
+    @Override
+    public final void push(float value, int idx) {
 //        if (s.fiber.isRecordingLevel(3))
 //            s.fiber.record(3, "Stack", "push", "%d (%d) %s", idx, s.sp + idx, value);
-        s.dataLong[s.sp + idx] = Float.floatToRawIntBits(value);
+        dataLong[sp + idx] = Float.floatToRawIntBits(value);
     }
 
-    public static void push(long value, Stack s, int idx) {
+    @Override
+    public final void push(long value, int idx) {
 //        if (s.fiber.isRecordingLevel(3))
 //            s.fiber.record(3, "Stack", "push", "%d (%d) %s", idx, s.sp + idx, value);
-        s.dataLong[s.sp + idx] = value;
+        dataLong[sp + idx] = value;
     }
 
-    public static void push(double value, Stack s, int idx) {
+    @Override
+    public final void push(double value, int idx) {
 //        if (s.fiber.isRecordingLevel(3))
 //            s.fiber.record(3, "Stack", "push", "%d (%d) %s", idx, s.sp + idx, value);
-        s.dataLong[s.sp + idx] = Double.doubleToRawLongBits(value);
+        dataLong[sp + idx] = Double.doubleToRawLongBits(value);
     }
 
-    public static void push(Object value, Stack s, int idx) {
+    @Override
+    public final void push(Object value, int idx) {
 //        if (s.fiber.isRecordingLevel(3))
 //            s.fiber.record(3, "Stack", "push", "%d (%d) %s", idx, s.sp + idx, value);
-        s.dataObject[s.sp + idx] = value;
+        dataObject[sp + idx] = value;
     }
 
+    @Override
     public final int getInt(int idx) {
         return (int) dataLong[sp + idx];
 //        final int value = (int) dataLong[sp + idx];
@@ -239,6 +278,7 @@ public final class Stack implements Serializable {
 //        return value;
     }
 
+    @Override
     public final float getFloat(int idx) {
         return Float.intBitsToFloat((int) dataLong[sp + idx]);
 //        final float value = Float.intBitsToFloat((int) dataLong[sp + idx]);
@@ -247,6 +287,7 @@ public final class Stack implements Serializable {
 //        return value;
     }
 
+    @Override
     public final long getLong(int idx) {
         return dataLong[sp + idx];
 //        final long value = dataLong[sp + idx];
@@ -255,6 +296,7 @@ public final class Stack implements Serializable {
 //        return value;
     }
 
+    @Override
     public final double getDouble(int idx) {
         return Double.longBitsToDouble(dataLong[sp + idx]);
 //        final double value = Double.longBitsToDouble(dataLong[sp + idx]);
@@ -263,6 +305,7 @@ public final class Stack implements Serializable {
 //        return value;
     }
 
+    @Override
     public final Object getObject(int idx) {
         return dataObject[sp + idx];
 //        final Object value = dataObject[sp + idx];
