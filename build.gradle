@@ -601,7 +601,7 @@ Bundle-Version: \${project.version}
         dependsOn agentBundle
         doLast {
             String importPackages = fetchManifestAttributeFrom(agentBundle, 'Import-Package')
-            if (importPackages && !containsOnly(importPackages, ['co.paralleluniverse.common.resource'])) {
+            if (importPackages && !containsOnly(importPackages, ['co.paralleluniverse.common.resource', 'co.paralleluniverse.fibers.suspend'])) {
                 throw new InvalidUserDataException("OSGi bundle for Java agent should only import from Java or itself: " + importPackages)
             }
         }

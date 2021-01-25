@@ -27,6 +27,7 @@ import co.paralleluniverse.common.util.VisibleForTesting;
 import co.paralleluniverse.concurrent.util.ThreadAccess;
 import co.paralleluniverse.concurrent.util.ThreadUtil;
 import co.paralleluniverse.fibers.FiberForkJoinScheduler.FiberForkJoinTask;
+import co.paralleluniverse.fibers.suspend.Instrumented;
 import co.paralleluniverse.fibers.suspend.RuntimeSuspendExecution;
 import co.paralleluniverse.fibers.suspend.SuspendExecution;
 import co.paralleluniverse.io.serialization.ByteArraySerializer;
