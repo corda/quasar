@@ -50,9 +50,9 @@ final class Classes {
     static final String EXCEPTION_NAME         = Exception.class.getName().replace('.', '/');
     static final String RUNTIME_EXCEPTION_NAME = RuntimeException.class.getName().replace('.', '/');
 
-    static final String RUNTIME_SUSPEND_EXECUTION_NAME = "co/paralleluniverse/fibers/RuntimeSuspendExecution";
+    static final String RUNTIME_SUSPEND_EXECUTION_NAME = "co/paralleluniverse/fibers/suspend/RuntimeSuspendExecution";
     static final String UNDECLARED_THROWABLE_NAME      = UndeclaredThrowableException.class.getName().replace('.', '/');
-    static final String SUSPEND_EXECUTION_NAME         = "co/paralleluniverse/fibers/SuspendExecution";
+    static final String SUSPEND_EXECUTION_NAME         = "co/paralleluniverse/fibers/suspend/SuspendExecution";
 
     static final String LAMBDA_METHOD_PREFIX            = "lambda$";
 

@@ -524,6 +524,7 @@ project (':quasar-core') {
             exclude 'co/paralleluniverse/common/asm/**'
             exclude 'co/paralleluniverse/common/resource/**'
             exclude 'co/paralleluniverse/fibers/instrument/**'
+            exclude 'co/paralleluniverse/fibers/suspend/**'
             exclude 'module-info.class'
         }
         from(sourceSets.bundle.output)
@@ -577,6 +578,7 @@ Import-Package: \
             exclude 'co/paralleluniverse/fibers/instrument/ModuleFilterTask*'
             exclude 'co/paralleluniverse/fibers/instrument/OldSuspendablesScanner*'
             exclude 'co/paralleluniverse/fibers/instrument/SuspendablesScanner*'
+            include 'co/paralleluniverse/fibers/suspend/**'
         }
         from(sourceSets.agent.output)
         archiveAppendix = 'osgi'
