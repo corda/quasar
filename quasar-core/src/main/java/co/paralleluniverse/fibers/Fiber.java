@@ -1713,10 +1713,6 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
                 + "[task: " + task + ", target: " + Objects.systemToString(target) + ", scheduler: " + scheduler + ']';
     }
 
-    final Stack getStack() {
-        return stack;
-    }
-
     /**
      * An action to perform before or after a park (but always before the fiber has woken up)
      */
