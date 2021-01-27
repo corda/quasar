@@ -15,7 +15,6 @@ package co.paralleluniverse.fibers;
 
 import co.paralleluniverse.fibers.instrument.Constants;
 import co.paralleluniverse.fibers.suspend.StackOps;
-import co.paralleluniverse.fibers.suspend.Stacks;
 import co.paralleluniverse.fibers.suspend.SuspendExecution;
 
 import java.io.Serializable;
@@ -37,7 +36,7 @@ import static java.security.AccessController.doPrivileged;
  * @author Matthias Mann
  * @author Ron Pressler
  */
-public final class Stack implements StackOps, Serializable {
+public final class Stack extends StackOps implements Serializable {
     /**
      * sp points to the first slot to contain data.
      * The _previous_ FRAME_RECORD_SIZE slots contain the frame record.
@@ -61,8 +60,8 @@ public final class Stack implements StackOps, Serializable {
     static {
         try {
             doPrivileged((PrivilegedExceptionAction<Void>) () -> {
-                Lookup lookup = MethodHandles.privateLookupIn(Stacks.class, MethodHandles.lookup());
-                MethodHandle setter = lookup.findStaticSetter(Stacks.class, "GET_STACK", Supplier.class);
+                Lookup lookup = MethodHandles.privateLookupIn(StackOps.class, MethodHandles.lookup());
+                MethodHandle setter = lookup.findStaticSetter(StackOps.class, "GET_STACK", Supplier.class);
                 try {
                     setter.invokeExact((Supplier<? extends StackOps>)Stack::getStack);
                 } catch (Throwable t) {

@@ -46,7 +46,6 @@ import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import static co.paralleluniverse.fibers.instrument.Classes.INSTRUMENTED_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.EXCEPTION_NAME;
 import static co.paralleluniverse.fibers.instrument.Classes.LAMBDA_METHOD_PREFIX;
-import static co.paralleluniverse.fibers.instrument.Classes.STACKS_NAME;
 import static co.paralleluniverse.fibers.instrument.Classes.STACK_OPS_NAME;
 import static co.paralleluniverse.fibers.instrument.Classes.THROWABLE_NAME;
 import static co.paralleluniverse.fibers.instrument.Classes.RUNTIME_EXCEPTION_NAME;
@@ -424,7 +423,7 @@ class InstrumentMethod {
 
         mv.visitTryCatchBlock(lMethodStart, lMethodEnd, lCatchAll, null);
 
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, STACKS_NAME, "getStack", "()L" + STACK_OPS_NAME + ";", false);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, STACK_OPS_NAME, "getStack", "()L" + STACK_OPS_NAME + ";", false);
         mv.visitInsn(Opcodes.DUP);
         mv.visitVarInsn(Opcodes.ASTORE, lvarStack);
 
@@ -436,7 +435,7 @@ class InstrumentMethod {
 
         emitStoreResumed(mv, true); // we'll assume we have been resumed
 
-        mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "nextMethodEntry", "()I", true);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "nextMethodEntry", "()I", false);
         mv.visitTableSwitchInsn(1, numCodeBlocks - 1, lMethodStart2, lMethodCalls);
 
         mv.visitLabel(lMethodStart2);
@@ -444,7 +443,7 @@ class InstrumentMethod {
         // the following code handles the case of an instrumented method called not as part of a suspendable code path
         // isFirstInStack will return false in that case.
         mv.visitVarInsn(Opcodes.ALOAD, lvarStack);
-        mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "isFirstInStackOrPushed", "()Z", true);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "isFirstInStackOrPushed", "()Z", false);
         mv.visitJumpInsn(Opcodes.IFNE, lMethodStart); // if true
 
         // This will reset the fiber stack local if isFirstStack returns false.
@@ -937,7 +936,7 @@ class InstrumentMethod {
 
         mv.visitVarInsn(Opcodes.ALOAD, lvarStack);
         emitConst(mv, maxRefSlots);
-        mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "popMethod", "(I)V", true);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "popMethod", "(I)V", false);
 
         // DUAL
         mv.visitLabel(lbl);
@@ -957,7 +956,7 @@ class InstrumentMethod {
         mv.visitVarInsn(Opcodes.ALOAD, lvarStack);
         emitConst(mv, idx);
         emitConst(mv, fi.numSlots);
-        mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "pushMethod", "(II)V", true);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "pushMethod", "(II)V", false);
 
         // store operand stack
         for (int i = f.getStackSize(); i-- > 0;) {
@@ -1035,7 +1034,7 @@ class InstrumentMethod {
 
     private void emitPostRestore(MethodVisitor mv) {
         mv.visitVarInsn(Opcodes.ALOAD, lvarStack);
-        mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "postRestore", "()V", true);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "postRestore", "()V", false);
     }
 
     /*
@@ -1092,7 +1091,7 @@ class InstrumentMethod {
 //        if (v.getType().getSort() == Type.OBJECT || v.getType().getSort() == Type.ARRAY)
 //            println(mv, "STORE " + (lvar >= 0 ? ("VAR " + lvar + ": ") : "OPRND: "));
         emitConst(mv, idx);
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, STACK_OPS_NAME, "push", desc, true);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, STACK_OPS_NAME, "push", desc, false);
     }
 
     private void emitRestoreValue(MethodVisitor mv, BasicValue v, int lvarStack, int idx, @SuppressWarnings("UnusedParameters") int lvar) {
@@ -1102,39 +1101,39 @@ class InstrumentMethod {
         switch (v.getType().getSort()) {
             case Type.OBJECT:
                 String internalName = v.getType().getInternalName();
-                mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "getObject", "(I)Ljava/lang/Object;", true);
+                mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "getObject", "(I)Ljava/lang/Object;", false);
                 if (!internalName.equals("java/lang/Object"))  // don't cast to Object ;)
                     mv.visitTypeInsn(Opcodes.CHECKCAST, internalName);
 //                println(mv, "RESTORE " + (lvar >= 0 ? ("VAR " + lvar + ": ") : "OPRND: "));
                 break;
             case Type.ARRAY:
-                mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "getObject", "(I)Ljava/lang/Object;", true);
+                mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "getObject", "(I)Ljava/lang/Object;", false);
                 mv.visitTypeInsn(Opcodes.CHECKCAST, v.getType().getDescriptor());
                 break;
             case Type.BYTE:
-                mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "getInt", "(I)I", true);
+                mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "getInt", "(I)I", false);
                 mv.visitInsn(Opcodes.I2B);
                 break;
             case Type.SHORT:
-                mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "getInt", "(I)I", true);
+                mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "getInt", "(I)I", false);
                 mv.visitInsn(Opcodes.I2S);
                 break;
             case Type.CHAR:
-                mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "getInt", "(I)I", true);
+                mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "getInt", "(I)I", false);
                 mv.visitInsn(Opcodes.I2C);
                 break;
             case Type.BOOLEAN:
             case Type.INT:
-                mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "getInt", "(I)I", true);
+                mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "getInt", "(I)I", false);
                 break;
             case Type.FLOAT:
-                mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "getFloat", "(I)F", true);
+                mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "getFloat", "(I)F", false);
                 break;
             case Type.LONG:
-                mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "getLong", "(I)J", true);
+                mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "getLong", "(I)J", false);
                 break;
             case Type.DOUBLE:
-                mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, STACK_OPS_NAME, "getDouble", "(I)D", true);
+                mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, STACK_OPS_NAME, "getDouble", "(I)D", false);
                 break;
             default:
                 throw new InternalError("Unexpected type: " + v.getType());

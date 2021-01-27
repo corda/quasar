@@ -55,7 +55,6 @@ final class Classes {
     static final String UNDECLARED_THROWABLE_NAME      = UndeclaredThrowableException.class.getName().replace('.', '/');
     static final String SUSPEND_EXECUTION_NAME         = "co/paralleluniverse/fibers/suspend/SuspendExecution";
     static final String STACK_OPS_NAME                 = "co/paralleluniverse/fibers/suspend/StackOps";
-    static final String STACKS_NAME                    = "co/paralleluniverse/fibers/suspend/Stacks";
 
     static final String LAMBDA_METHOD_PREFIX            = "lambda$";
 
