@@ -43,7 +43,7 @@ subprojects {
     ext.quasarJar = "${rootProject.projectDir}/quasar-core/build/libs/quasar-core-${version}${ext.java8 ? "" : "-jdk7"}.jar" // project(':quasar-core').jar.archivePath
 
     ext.drpWizVer = '3.2.3'
-    ext.slf4jVer  = '1.7.25'
+    ext.slf4jVer  = '1.7.30'
     ext.asmVer    = '5.2'
     ext.kotlinVer = kotlinVersion
     ext.osgiVer   = '7.0.0'
@@ -229,7 +229,7 @@ subprojects {
     }
 
     tasks.withType(JavaExec).configureEach {
-        classpath += sourceSets.test.runtimeClasspath + sourceSets.test.output + sourceSets.jmh.runtimeClasspath + sourceSets.jmh.output
+        classpath += files(sourceSets.test.runtimeClasspath, sourceSets.test.output, sourceSets.jmh.runtimeClasspath, sourceSets.jmh.output)
     }
 
     //    tasks.withType(Debug) {
@@ -596,7 +596,7 @@ Bundle-Version: \${project.version}
         }
 
         tasks.withType(JavaExec).configureEach {
-            classpath += sourceSets.jdk8test.runtimeClasspath + sourceSets.jdk8test.output
+            classpath += files(sourceSets.jdk8test.runtimeClasspath, sourceSets.jdk8test.output)
         }
         run.dependsOn compileJdk8Java, jdk8testClasses
     }
