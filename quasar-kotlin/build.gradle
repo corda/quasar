@@ -42,18 +42,21 @@ configurations {
     AnnotationTestRuntimeOnly.extendsFrom runtimeOnly
 }
 
-task AnnotationTest(type: Test) {
+def annotationTest = tasks.register('annotationTest', Test) {
     description = 'Custom Annotation Tests'
     group = 'verification'
 
     testClassesDirs = sourceSets.AnnotationTest.output.classesDirs
     classpath = sourceSets.AnnotationTest.runtimeClasspath
+    shouldRunAfter tasks.named('test')
 
     jvmArgs = jvmArgs.findAll {!it.contains("javaagent")}
     jvmArgs "-javaagent:${quasarJar}=a(SUSPENDABLE=co.paralleluniverse.kotlin.fibers.MySuspendable,co.paralleluniverse.kotlin.fibers.DennisSuspendable)"
 }
 
-test.dependsOn AnnotationTest
+tasks.named('check') {
+    dependsOn annotationTest
+}
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     kotlinOptions {
