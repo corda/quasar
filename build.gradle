@@ -12,7 +12,7 @@ plugins {
 ext.java8 = gradle.ext.java8 // See settings.gradle
 
 subprojects {
-    apply plugin: 'java'
+    apply plugin: 'java-library'
     apply plugin: 'maven-publish'
     apply plugin: 'com.jfrog.artifactory'
 
@@ -45,7 +45,6 @@ subprojects {
     ext.drpWizVer = '3.2.3'
     ext.slf4jVer  = '1.7.30'
     ext.asmVer    = '5.2'
-    ext.kotlinVer = kotlinVersion
     ext.osgiVer   = '7.0.0'
 
     if (!project.hasProperty('mainClass')) { // must use project.hasProperty() rather than hasProperty in subprojects (gradle bug)
@@ -685,12 +684,12 @@ project (':quasar-reactive-streams') {
 
     dependencies {
         provided project(path: ':quasar-core', configuration: "jdk${jdkVer}Archives")
-        compile "org.reactivestreams:reactive-streams:1.0.0"
-        testCompile("org.reactivestreams:reactive-streams-tck:1.0.0") {
+        implementation "org.reactivestreams:reactive-streams:1.0.0"
+        testImplementation("org.reactivestreams:reactive-streams-tck:1.0.0") {
             exclude group: "junit", module: "*"
             exclude group: "org.testng", module: "testng"
         }
-        testCompile('org.testng:testng:6.12') {
+        testImplementation('org.testng:testng:6.12') {
             exclude group: "com.google.guava", module: "*"
             exclude group: "junit", module: "*"
         }
@@ -706,7 +705,7 @@ project (':quasar-disruptor') {
 
     dependencies {
         provided project(path: ':quasar-core', configuration: "jdk${jdkVer}Archives")
-        compile "com.lmax:disruptor:3.3.6"
+        implementation "com.lmax:disruptor:3.3.6"
     }
 }
 
