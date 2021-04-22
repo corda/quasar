@@ -7,9 +7,6 @@ ext {
     moduleName = 'co.paralleluniverse.quasar.kotlin'
 }
 
-sourceCompatibility = '11'
-targetCompatibility = '11'
-
 configurations.all {
     resolutionStrategy {
         dependencySubstitution {
