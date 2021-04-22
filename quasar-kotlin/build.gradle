@@ -57,7 +57,10 @@ test.dependsOn AnnotationTest
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = '11'
+        apiVersion = '1.4'
+        languageVersion = '1.4'
+        freeCompilerArgs = ['-Xjvm-default=all']
     }
 }
 
