@@ -63,7 +63,9 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         jvmTarget = '11'
         apiVersion = '1.4'
         languageVersion = '1.4'
-        freeCompilerArgs = ['-Xjvm-default=all']
+        // We should enable this, but are currently blocked by a Kotlin bug!
+        // See https://youtrack.jetbrains.com/issue/KT-46253
+        //freeCompilerArgs = ['-Xjvm-default=all']
     }
 }
 
