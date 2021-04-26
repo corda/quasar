@@ -23,6 +23,10 @@ subprojects {
         options.encoding = 'UTF-8'
     }
 
+    tasks.register('install') {
+        dependsOn tasks.named('publishToMavenLocal')
+    }
+
     group               = "co.paralleluniverse"
     version             = quasarVersion
     status              = "integration"
@@ -61,7 +65,6 @@ subprojects {
             mavenCentral()
             maven { url "https://oss.sonatype.org/content/repositories/releases" }
             maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-            jcenter()
         }
     }
 
@@ -277,7 +280,6 @@ subprojects {
     }
 
     ///////// Publish Artifacts
-    apply plugin: 'maven'
     apply plugin: 'signing'
 
     artifacts {
@@ -345,14 +347,7 @@ project (':quasar-core') {
      *   https://softnoise.wordpress.com/2014/09/07/gradle-sub-project-test-dependencies-in-multi-project-builds/
      */
 
-    // remove default artifact
-    configurations.runtime.artifacts.with { archives ->
-        archives.each {
-            archives.remove(it)
-        }
-    }
-
-    [compileJava, compileTestJava, classes, jar]*.enabled = false
+    [compileJava, compileTestJava, classes]*.enabled = false
 
     sourceSets {
         main {
@@ -423,6 +418,11 @@ project (':quasar-core') {
         provided 'junit:junit:4.12'
 
         compileOnly "org.osgi:osgi.annotation:$osgiVer"
+    }
+
+    tasks.named('jar', Jar) {
+        archiveClassifier = 'ignore'
+        enabled = false
     }
 
     def ssets = [sourceSets.jdk8]
@@ -605,16 +605,6 @@ Bundle-Version: \${project.version}
         source = sourceSets.jdk8.allJava
     }
 
-    def installer = install.repositories.mavenInstaller
-
-    [installer]*.pom*.whenConfigured {
-        it.dependencies.removeAll { dep ->
-            dep.artifactId.startsWith('jsr166e') ||
-            dep.artifactId.startsWith('high-scale-lib') ||
-            dep.groupId == 'org.ow2.asm'
-        }
-    }
-
     if (ext) {
         artifacts {
             archives sourcesJar
@@ -689,7 +679,7 @@ project (':quasar-reactive-streams') {
             exclude group: "junit", module: "*"
             exclude group: "org.testng", module: "testng"
         }
-        testImplementation('org.testng:testng:6.12') {
+        testImplementation('org.testng:testng:6.13.1') {
             exclude group: "com.google.guava", module: "*"
             exclude group: "junit", module: "*"
         }
