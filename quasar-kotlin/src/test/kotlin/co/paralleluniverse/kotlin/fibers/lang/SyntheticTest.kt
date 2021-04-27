@@ -16,11 +16,10 @@ package co.paralleluniverse.kotlin.fibers.lang
 import co.paralleluniverse.common.util.SystemProperties
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.Suspendable
-import org.junit.Assume
-import org.junit.Test
-import kotlin.test.assertEquals
-
 import co.paralleluniverse.kotlin.fibers.StaticPropertiesTest
+import org.junit.Assert.assertEquals
+import org.junit.Assume.assumeTrue
+import org.junit.Test
 
 typealias MyMap = Map<Int, Int>
 
@@ -50,7 +49,7 @@ class SyntheticTest {
     private fun defFun() : Int {
         return  defFun1() + defFun1(10) +
                 defFun2(4) + defFun2(4,2) +
-                defFun3() + defFun3(4) + defFun3(6,1);
+                defFun3() + defFun3(4) + defFun3(6,1)
     }
 
     @Suspendable
@@ -59,7 +58,7 @@ class SyntheticTest {
         return if (b) {
             m
         } else {
-            mapOf<Int, Int>(1 to 3)
+            mapOf(1 to 3)
         }
     }
 
@@ -67,7 +66,7 @@ class SyntheticTest {
 
         StaticPropertiesTest.withVerifyInstrumentationOn {
 
-            Assume.assumeTrue(SystemProperties.isEmptyOrTrue(StaticPropertiesTest.verifyInstrumentationKey))
+            assumeTrue(SystemProperties.isEmptyOrTrue(StaticPropertiesTest.verifyInstrumentationKey))
 
             val fiber = object : Fiber<Any>() {
                 @Suspendable
@@ -84,7 +83,7 @@ class SyntheticTest {
     @Test fun `synthetic complex`() {
         StaticPropertiesTest.withVerifyInstrumentationOn {
 
-            Assume.assumeTrue(SystemProperties.isEmptyOrTrue(StaticPropertiesTest.verifyInstrumentationKey))
+            assumeTrue(SystemProperties.isEmptyOrTrue(StaticPropertiesTest.verifyInstrumentationKey))
 
             val fiber = object : Fiber<MyMap>() {
                 @Suspendable
@@ -100,7 +99,7 @@ class SyntheticTest {
     @Test fun `synthetic complex default`() {
         StaticPropertiesTest.withVerifyInstrumentationOn {
 
-            Assume.assumeTrue(SystemProperties.isEmptyOrTrue(StaticPropertiesTest.verifyInstrumentationKey))
+            assumeTrue(SystemProperties.isEmptyOrTrue(StaticPropertiesTest.verifyInstrumentationKey))
 
             val fiber = object : Fiber<MyMap>() {
                 @Suspendable

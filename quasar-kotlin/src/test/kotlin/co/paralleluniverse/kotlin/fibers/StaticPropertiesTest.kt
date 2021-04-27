@@ -1,19 +1,19 @@
 package co.paralleluniverse.kotlin.fibers
 
-import co.paralleluniverse.fibers.Fiber;
+import co.paralleluniverse.fibers.Fiber
 
 object StaticPropertiesTest {
 
     const val verifyInstrumentationKey = "co.paralleluniverse.fibers.verifyInstrumentation"
 
     fun <T> withVerifyInstrumentationOn(statement: () -> T): T {
-        return withKey(verifyInstrumentationKey, statement);
+        return withKey(verifyInstrumentationKey, statement)
     }
 
     fun <T> withKey(key : String, statement: () -> T): T{
         val originalValue = System.getProperty(key)
         System.setProperty(key, "true")
-        Fiber.readSystemProperties();
+        Fiber.readSystemProperties()
         try {
             return statement()
         } finally {
@@ -22,7 +22,7 @@ object StaticPropertiesTest {
             } else {
                 System.setProperty(key, originalValue)
             }
-            Fiber.readSystemProperties();
+            Fiber.readSystemProperties()
         }
     }
 

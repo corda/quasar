@@ -13,13 +13,15 @@
  */
 package co.paralleluniverse.kotlin.fibers
 
-import co.paralleluniverse.kotlin.*
+import co.paralleluniverse.kotlin.Receive
+import co.paralleluniverse.kotlin.Send
+import co.paralleluniverse.kotlin.fiber
+import co.paralleluniverse.kotlin.select
 import co.paralleluniverse.strands.Strand
 import co.paralleluniverse.strands.channels.Channels
-
-import org.junit.Test
-import org.junit.Assert.*
 import java.util.concurrent.TimeUnit
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 /**
  * @author circlespainter
@@ -80,7 +82,7 @@ class FiberKotlinTest {
     return f()
   }
 
-  private fun dumpStack() : Unit {
+  private fun dumpStack() {
     Throwable().printStackTrace()
   }
 }

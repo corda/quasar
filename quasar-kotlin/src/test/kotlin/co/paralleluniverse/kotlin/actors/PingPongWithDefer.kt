@@ -22,7 +22,7 @@ import co.paralleluniverse.kotlin.register
 import co.paralleluniverse.kotlin.spawn
 import org.junit.Test
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
 import java.util.concurrent.TimeUnit.SECONDS
 
 /**

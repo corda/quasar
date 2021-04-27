@@ -17,12 +17,11 @@ import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberForkJoinScheduler
 import co.paralleluniverse.fibers.Suspendable
 import co.paralleluniverse.strands.SuspendableCallable
+import kotlin.reflect.KProperty
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Ignore
 import org.junit.Test
-import kotlin.reflect.KProperty
-import kotlin.test.assertFalse
-
 
 /**
  * @author circlespainter

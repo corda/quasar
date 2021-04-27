@@ -243,7 +243,7 @@ class FiberAsyncTest {
     @Test
     fun testRunBlocking() {
         val fiber = Fiber<Void>(scheduler, SuspendableRunnable @Suspendable {
-            val res = FiberAsync.runBlocking(Executors.newCachedThreadPool(), CheckedCallable<kotlin.String, java.lang.InterruptedException> @Suspendable {
+            val res = FiberAsync.runBlocking(Executors.newCachedThreadPool(), CheckedCallable<String, InterruptedException> @Suspendable {
                 Strand.sleep(300)
                 "ok"
             })
@@ -257,7 +257,7 @@ class FiberAsyncTest {
     fun testRunBlockingWithTimeout1() {
         val fiber = Fiber<Void>(scheduler, SuspendableRunnable @Suspendable {
             try {
-                val res = FiberAsync.runBlocking(Executors.newCachedThreadPool(), 400, TimeUnit.MILLISECONDS, CheckedCallable<kotlin.String, java.lang.InterruptedException> @Suspendable {
+                val res = FiberAsync.runBlocking(Executors.newCachedThreadPool(), 400, TimeUnit.MILLISECONDS, CheckedCallable<String, InterruptedException> @Suspendable {
                     Strand.sleep(300)
                     "ok"
                 })
@@ -274,7 +274,7 @@ class FiberAsyncTest {
     fun testRunBlockingWithTimeout2() {
         val fiber = Fiber<Void>(SuspendableRunnable @Suspendable {
             try {
-                FiberAsync.runBlocking(Executors.newCachedThreadPool(), 100, TimeUnit.MILLISECONDS, CheckedCallable<kotlin.String, java.lang.InterruptedException> @Suspendable {
+                FiberAsync.runBlocking(Executors.newCachedThreadPool(), 100, TimeUnit.MILLISECONDS, CheckedCallable<String, InterruptedException> @Suspendable {
                     Strand.sleep(300)
                     "ok"
                 })
