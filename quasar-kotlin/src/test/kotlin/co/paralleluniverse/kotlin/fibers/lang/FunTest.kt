@@ -54,63 +54,63 @@ class FunTest {
     val scheduler = FiberForkJoinScheduler("test", 4, null, false)
 
     @Test fun testSimpleFun() {
-        assertTrue(Fiber(scheduler, SuspendableCallable<kotlin.Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             f()
             true
         }).start().get())
     }
 
     @Test fun testDefaultFunWithAllArgs() {
-        assertTrue(Fiber(scheduler, SuspendableCallable<kotlin.Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             fDef(true)
             true
         }).start().get())
     }
 
     @Test fun testDefaultFunWithoutSomeArgs() {
-        assertTrue(Fiber(scheduler, SuspendableCallable<kotlin.Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             fDef()
             true
         }).start().get())
     }
 
     @Test fun testQuickFun() {
-        assertTrue(Fiber(scheduler, SuspendableCallable<kotlin.Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             fQuick()
             true
         }).start().get())
     }
 
     @Test fun testVarArgFun0() {
-        assertTrue(Fiber(scheduler, SuspendableCallable<kotlin.Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             fVarArg()
             true
         }).start().get())
     }
 
     @Test fun testVarArgFun1() {
-        assertTrue(Fiber(scheduler, SuspendableCallable<kotlin.Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             fVarArg(10)
             true
         }).start().get())
     }
 
     @Test fun testFunRefInvoke() {
-        assertTrue(Fiber(scheduler, SuspendableCallable<kotlin.Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             (::fQuick)()
             true
         }).start().get())
     }
 
     @Test fun testFunRefArg() {
-        assertTrue(Fiber(scheduler, SuspendableCallable<kotlin.Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             seq(::fQuick, ::fQuick)()
             true
         }).start().get())
     }
 
     @Test fun testFunLambda() {
-        assertTrue(Fiber(scheduler, SuspendableCallable<kotlin.Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             (@Suspendable { _ : Int -> Fiber.sleep(10) })(1)
             true
         }).start().get())
@@ -126,7 +126,7 @@ class FunTest {
     @Test fun testFunLambda2() = assertTrue(callSusLambda(@Suspendable { Fiber.sleep(10) }, 1))
 
     @Test fun testFunAnon() {
-        assertTrue(Fiber(scheduler, SuspendableCallable<kotlin.Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             (@Suspendable fun(_ : Int) { Fiber.sleep(10) })(1)
             true
         }).start().get())

@@ -18,10 +18,10 @@ import co.paralleluniverse.fibers.FiberForkJoinScheduler
 import co.paralleluniverse.fibers.Suspendable
 import co.paralleluniverse.kotlin.quasarLazy
 import co.paralleluniverse.strands.SuspendableCallable
-import org.junit.Assert
-import org.junit.Test
 import kotlin.properties.Delegates
-import kotlin.test.assertNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 /**
  * @author circlespainter
@@ -34,18 +34,18 @@ class StdDelegates {
             Fiber.sleep(1)
             true
         }
-        Assert.assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             ipLazySync
         }).start().get())
     }
 
-    private @get:Suspendable val ipLazySync by quasarLazy @Suspendable {
+    @get:Suspendable private val ipLazySync by quasarLazy @Suspendable {
         Fiber.sleep(1)
         true
     }
 
     @Test fun testValLazySyncDelegProp() {
-        Assert.assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             ipLazySync
         }).start().get())
     }
@@ -55,18 +55,18 @@ class StdDelegates {
             Fiber.sleep(1)
             true
         }
-        Assert.assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             ipLazyPub
         }).start().get())
     }
 
-    private @get:Suspendable val ipLazyPub by lazy(LazyThreadSafetyMode.PUBLICATION) @Suspendable {
+    @get:Suspendable private val ipLazyPub by lazy(LazyThreadSafetyMode.PUBLICATION) @Suspendable {
         Fiber.sleep(1)
         true
     }
 
     @Test fun testValLazyPubDelegProp() {
-        Assert.assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             ipLazyPub
         }).start().get())
     }
@@ -76,18 +76,18 @@ class StdDelegates {
             Fiber.sleep(1)
             true
         }
-        Assert.assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             ipLazyNone
         }).start().get())
     }
 
-    private @get:Suspendable val ipLazyNone by lazy(LazyThreadSafetyMode.NONE) @Suspendable {
+    @get:Suspendable private val ipLazyNone by lazy(LazyThreadSafetyMode.NONE) @Suspendable {
         Fiber.sleep(1)
         true
     }
 
     @Test fun testValLazyUnsafeDelegProp() {
-        Assert.assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             ipLazyNone
         }).start().get())
     }
@@ -98,7 +98,7 @@ class StdDelegates {
             Fiber.sleep(1)
             println("$old -> $new")
         }
-        Assert.assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             ivObs
         }).start().get())
     }
@@ -110,7 +110,7 @@ class StdDelegates {
     }
 
     @Test fun testValObservableDelegProp() {
-        Assert.assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             ivObs
         }).start().get())
     }
@@ -133,7 +133,7 @@ class StdDelegates {
             Fiber.sleep(1)
             println("$old -> $new")
         }
-        Assert.assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             mvObs = true
             mvObs
         }).start().get())
@@ -152,7 +152,7 @@ class StdDelegates {
     }
 
     @Test fun testVarObservableSetDelegProp() {
-        Assert.assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
+        assertTrue(Fiber(scheduler, SuspendableCallable<Boolean> @Suspendable {
             mvObs = true
             mvObs
         }).start().get())
