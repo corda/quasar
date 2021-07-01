@@ -23,9 +23,14 @@ import org.junit.Test
 
 class MethodOverloadTest {
 
+    // This inline method helps reproduce the issue. Kotlin adds bytecode with a source line > the end of the source
+    // file
+    @Suspendable
+    inline fun reproduceTheIssueUsingInlineMethod() = arrayOf(0)
+
     @Suspendable
     fun function() {
-        function(arrayOf(0))
+        function(reproduceTheIssueUsingInlineMethod())
     }
 
     @Suspendable
