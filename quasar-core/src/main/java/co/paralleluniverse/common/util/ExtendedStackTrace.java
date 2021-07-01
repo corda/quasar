@@ -114,15 +114,27 @@ public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
 
         @Override
         public Member run() throws IOException {
+            final AtomicReference<String> exactMatch = new AtomicReference<>();
             final AtomicReference<String> descriptor = new AtomicReference<>();
-            findMethod(este.getDeclaringClass(), este.getMethodName(), este.getLineNumber(), descriptor);
+            findMethod(este.getDeclaringClass(), este.getMethodName(), este.getLineNumber(), exactMatch, descriptor);
 
-            if (descriptor.get() != null) {
-                final String desc = descriptor.get();
-                for (Member m : methods) {
-                    if (este.getMethodName().equals(getName(m)) && desc.equals(getDescriptor(m))) {
-                        return m;
-                    }
+            String exactMatchValue = exactMatch.get();
+            String descriptorValue = descriptor.get();
+
+            if (exactMatchValue != null) {
+                return getMatchingMethod(exactMatchValue);
+            }
+            else if (descriptorValue != null) {
+                return getMatchingMethod(descriptorValue);
+            } else {
+                return null;
+            }
+        }
+
+        private Member getMatchingMethod(String targetDescriptor) {
+            for (Member m : methods) {
+                if (este.getMethodName().equals(getName(m)) && targetDescriptor.equals(getDescriptor(m))) {
+                    return m;
                 }
             }
             return null;

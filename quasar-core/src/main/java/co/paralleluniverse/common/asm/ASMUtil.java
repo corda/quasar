@@ -24,13 +24,14 @@ public final class ASMUtil {
         Class<?> clazz,
         String targetMethodName,
         int targetLineNumber,
+        AtomicReference<String> exactMatch,
         AtomicReference<String> descriptor
     ) throws IOException {
         co.paralleluniverse.asm.ASMUtil.accept(clazz, SKIP_FRAMES, new ClassVisitor(ASMAPI) {
             @Override
             public MethodVisitor visitMethod(int access, String name, final String desc, String signature, String[] exceptions) {
                 MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
-                if (descriptor.get() == null && targetMethodName.equals(name)) {
+                if (exactMatch.get() == null && targetMethodName.equals(name)) {
                     mv = new MethodVisitor(api, mv) {
                         int minLine = Integer.MAX_VALUE, maxLine = Integer.MIN_VALUE;
 
@@ -40,12 +41,14 @@ public final class ASMUtil {
                                 minLine = line;
                             if (line > maxLine)
                                 maxLine = line;
+                            if (targetLineNumber == line)
+                                exactMatch.set(desc);
                         }
 
                         @Override
                         public void visitEnd() {
                             if (minLine <= targetLineNumber && maxLine >= targetLineNumber)
-                                descriptor.set(desc);
+                                descriptor.compareAndSet(null, desc);
                             super.visitEnd();
                         }
                     };
