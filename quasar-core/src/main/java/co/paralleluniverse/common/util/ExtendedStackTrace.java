@@ -32,19 +32,11 @@ import static java.security.AccessController.doPrivileged;
  */
 public class ExtendedStackTrace implements Iterable<ExtendedStackTraceElement> {
     public static ExtendedStackTrace of(Throwable t) {
-        try {
-            return new ExtendedStackTraceHotSpot(t);
-        } catch (Throwable e) {
-            return new ExtendedStackTrace(t);
-        }
+        return new ExtendedStackTrace(t);
     }
 
     public static ExtendedStackTrace here() {
-        try {
-            return new ExtendedStackTraceHotSpot(new Throwable());
-        } catch (Throwable e) {
-            return new ExtendedStackTraceClassContext();
-        }
+        return new ExtendedStackTraceClassContext();
     }
 
     protected final Throwable t;
