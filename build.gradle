@@ -19,6 +19,8 @@ subprojects {
         toolchain {
             languageVersion = of(11)
         }
+        withSourcesJar()
+        withJavadocJar()
     }
 
     tasks.withType(JavaCompile).configureEach {
@@ -276,15 +278,6 @@ subprojects {
     }
 
     defaultTasks 'build'
-
-    task sourcesJar(type: Jar, dependsOn: classes) {
-        archiveClassifier = 'sources'
-        from sourceSets.main.allSource
-    }
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier = 'javadoc'
-        from javadoc.destinationDir
-    }
 
     task artifacts {
         group = "Help"
@@ -623,8 +616,6 @@ Import-Package: !org.osgi.framework.*,*
         archives bundle
         agentJar agentBundle
         archives agentBundle
-        archives sourcesJar
-        archives javadocJar
     }
 
     check.dependsOn test
@@ -779,7 +770,6 @@ clean {
 def publishedProjects = subprojects - project(':quasar-osgi-tests').allprojects
 
 configure(publishedProjects) { subproject ->
-    apply plugin: 'java'
     apply plugin: 'maven-publish'
     apply plugin: 'com.jfrog.artifactory'
 
@@ -787,79 +777,12 @@ configure(publishedProjects) { subproject ->
         dependsOn tasks.named('publishToMavenLocal')
     }
 
-    task sourceJar(type: Jar, dependsOn: subproject.classes) {
-        archiveClassifier = 'sources'
-        from sourceSets.main.allSource
-    }
-
-//  task javadocJar(type: Jar, dependsOn: subproject.javadoc) {
-//    classifier = 'javadoc'
-//    from javadoc.destinationDir
-//  }
-//
     publishing {
         publications {
-            if (subproject.hasProperty('osgiArtifacts')) {
-                create(subproject.name + '-osgi', MavenPublication) {
-                    subproject.osgiArtifacts.call(it)
-                    alias true
-
-                    groupId subproject.group
-                    artifactId subproject.name + '-osgi'
-                    artifact tasks.sourceJar
-                    artifact tasks.javadocJar
-
-                    pom {
-                        name = subproject.name + '-osgi'
-                        packaging = 'jar'
-                        description = subproject.description
-                        url = subproject.url
-
-                        scm {
-                            url = subproject.scmUrl
-                            connection = subproject.scmConnection
-                            developerConnection = subproject.scmConnection
-                        }
-                        licenses {
-                            license {
-                                name = subproject.licenseName1
-                                url = subproject.licenseUrl1
-                                distribution = 'repo'
-                            }
-                            license {
-                                name = subproject.licenseName2
-                                url = subproject.licenseUrl2
-                                distribution = 'repo'
-                            }
-                        }
-                        developers {
-                            developer {
-                                id = 'pron'
-                                name = 'Ron Pressler'
-                            }
-                        }
-                    }
-                    pom.withXml {
-                        Node pomNode = asNode()
-                        pomNode.dependencies.'*'.findAll() {
-                            it.artifactId.text().startsWith('org.ow2.asm')
-                        }.each() {
-                            it.parent().remove(it)
-                        }
-                    }
-                }
-            }
-
-            create(subproject.name, MavenPublication) {
-                from components.java
-
+            configureEach {
                 groupId subproject.group
-                artifactId subproject.name
-                artifact tasks.sourceJar
-                artifact tasks.javadocJar
 
                 pom {
-                    name = subproject.name
                     packaging = 'jar'
                     description = subproject.description
                     url = subproject.url
@@ -886,6 +809,11 @@ configure(publishedProjects) { subproject ->
                             id = 'pron'
                             name = 'Ron Pressler'
                         }
+                        developer {
+                            id = 'R3'
+                            name = 'R3'
+                            email = 'dev@corda.net'
+                        }
                     }
                 }
                 pom.withXml {
@@ -895,6 +823,35 @@ configure(publishedProjects) { subproject ->
                     }.each() {
                         it.parent().remove(it)
                     }
+                }
+            }
+
+            if (subproject.hasProperty('osgiArtifacts')) {
+                create(subproject.name + '-osgi', MavenPublication) {
+                    artifactId subproject.name + '-osgi'
+                    subproject.osgiArtifacts.call(it)
+                    alias true
+
+                    pluginManager.withPlugin('java') {
+                        artifact tasks.named('sourcesJar', Jar)
+                        artifact tasks.named('javadocJar', Jar)
+                    }
+
+                    pom {
+                        name = subproject.name + '-osgi'
+                    }
+                }
+            }
+
+            create(subproject.name, MavenPublication) {
+                artifactId subproject.name
+
+                pluginManager.withPlugin('java') {
+                    from components.java
+                }
+
+                pom {
+                    name = subproject.name
                 }
             }
         }
