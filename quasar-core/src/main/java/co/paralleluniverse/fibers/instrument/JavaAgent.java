@@ -83,12 +83,8 @@ import co.paralleluniverse.common.resource.ClassLoaderUtil;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
-import java.lang.ref.WeakReference;
 import java.security.ProtectionDomain;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 
@@ -100,7 +96,6 @@ import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 public class JavaAgent {
     private static final String USAGE = "Usage: vdmcbx(exclusion;...)l(exclusion;...) (verbose, debug, allow monitors, check class, allow blocking)";
     private static volatile boolean ACTIVE;
-    private static final Set<WeakReference<ClassLoader>> classLoaders = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public static void premain(String agentArguments, Instrumentation instrumentation) {
         if (!instrumentation.isRetransformClassesSupported())
@@ -130,7 +125,7 @@ public class JavaAgent {
                     case 'a': {
                             final String s = parseArgBrackets(agentArguments, ++i);
                             i += s.length() + 1;
-                            final String[] attr = s.split("\\=");
+                            final String[] attr = s.split("=");
                             if (attr.length > 1) {
                                 final String[] names = attr[1].split(",");
                                 instrumentor.addTypeDesc(attr[0], toTypeDescriptors(names));
@@ -196,7 +191,6 @@ public class JavaAgent {
 
         Retransform.instrumentation = instrumentation;
         Retransform.instrumentor = instrumentor;
-        Retransform.classLoaders = classLoaders;
 
         instrumentation.addTransformer(new Transformer(instrumentor), true);
     }
@@ -240,9 +234,6 @@ public class JavaAgent {
                 return null;
 
             Retransform.beforeTransform(className, classBeingRedefined, classfileBuffer);
-
-            if (loader != null)
-                classLoaders.add(new WeakReference<>(loader));
 
             try {
                 final byte[] transformed = instrumentor.instrumentClass(loader, className, classfileBuffer);
