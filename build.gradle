@@ -876,3 +876,8 @@ artifactory {
         }
     }
 }
+
+wrapper {
+    gradleVersion = '6.9.2'
+    distributionType = Wrapper.DistributionType.BIN
+}

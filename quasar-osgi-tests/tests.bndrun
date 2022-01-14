@@ -44,11 +44,11 @@ java: ${project.javaExecutable}
 	de.javakaffee.kryo-serializers;version='[0.43.0,0.43.1)',\
 	io.dropwizard.metrics.core;version='[4.1.0,4.1.1)',\
 	io.dropwizard.metrics.jmx;version='[4.1.0,4.1.1)',\
-	junit-jupiter-api;version='[5.7.1,5.7.2)',\
-	junit-jupiter-engine;version='[5.7.1,5.7.2)',\
-	junit-platform-commons;version='[1.7.1,1.7.2)',\
-	junit-platform-engine;version='[1.7.1,1.7.2)',\
-	junit-platform-launcher;version='[1.7.1,1.7.2)',\
+	junit-jupiter-api;version='[5.8.2,5.8.3)',\
+	junit-jupiter-engine;version='[5.8.2,5.8.3)',\
+	junit-platform-commons;version='[1.8.2,1.8.3)',\
+	junit-platform-engine;version='[1.8.2,1.8.3)',\
+	junit-platform-launcher;version='[1.8.2,1.8.3)',\
 	org.objenesis;version='[2.5.1,2.5.2)',\
 	org.opentest4j;version='[1.2.0,1.2.1)',\
 	osgi-base;version='[0.8.6,0.8.7)',\
