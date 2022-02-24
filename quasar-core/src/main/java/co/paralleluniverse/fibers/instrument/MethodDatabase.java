@@ -50,8 +50,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Constructor;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -126,7 +128,7 @@ public final class MethodDatabase {
     public String checkClass(File f) {
         try {
             FileInputStream fis = new FileInputStream(f);
-            CheckInstrumentationVisitor civ = checkFileAndClose(fis, f.getPath());
+            CheckInstrumentationVisitor civ = checkFileAndClose(fis);
 
             if (civ != null) {
                 recordSuspendableMethods(civ.getName(), civ.getClassEntry());
@@ -209,9 +211,7 @@ public final class MethodDatabase {
         SuspendableType susp1 = entry.check(methodName, methodDesc);
 
         int suspendable = UNKNOWN;
-        if (susp1 == null)
-            suspendable = UNKNOWN;
-        else if (susp1 == SuspendableType.SUSPENDABLE)
+        if (susp1 == SuspendableType.SUSPENDABLE)
             suspendable = SUSPENDABLE;
         else if (susp1 == SuspendableType.SUSPENDABLE_SUPER)
             suspendable = SUSPENDABLE_ABSTRACT;
@@ -326,7 +326,7 @@ public final class MethodDatabase {
         }
     }
 
-    protected ClassEntry checkClass(String className) {
+    private ClassEntry checkClass(String className) {
         ClassLoader cl = null;
         if (clRef != null) {
             cl = clRef.get();
@@ -349,7 +349,7 @@ public final class MethodDatabase {
             }
             ClassEntry entry = getClassEntry(className); // getResourceAsStream may have triggered instrumentation
             if (entry == null) {
-                final CheckInstrumentationVisitor civ = checkFileAndClose(is, className);
+                final CheckInstrumentationVisitor civ = checkFileAndClose(is);
                 if (civ != null) {
                     entry = civ.getClassEntry();
                     recordSuspendableMethods(className, entry);
@@ -362,12 +362,12 @@ public final class MethodDatabase {
         }
     }
 
-    private CheckInstrumentationVisitor checkFileAndClose(InputStream is, String name) throws IOException {
+    private CheckInstrumentationVisitor checkFileAndClose(InputStream is) throws IOException {
         try (is) {
             ClassReader r = new ClassReader(is);
 
             CheckInstrumentationVisitor civ = new CheckInstrumentationVisitor(this);
-            r.accept(civ, ClassReader.SKIP_FRAMES | ClassReader.SKIP_CODE);
+            r.accept(civ, ClassReader.SKIP_FRAMES | ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG);
 
             return civ;
         }
@@ -417,7 +417,7 @@ public final class MethodDatabase {
         }
     }
 
-    protected String getDirectSuperClass(String className) {
+    private String getDirectSuperClass(String className) {
         ClassEntry entry = getClassEntry(className);
         if (entry != null && entry != CLASS_NOT_FOUND)
             return entry.getSuperName();
@@ -445,19 +445,28 @@ public final class MethodDatabase {
             cl = clRef.get();
         }
         if (cl != null) {
-            try {
-                Map<String, String> osgiSuperClasses = doPrivileged(new ExtractOSGiSuperClasses(className, cl));
-                if (osgiSuperClasses != null) {
-                    synchronized(this) {
-                        // Do not replace any existing super classes.
-                        osgiSuperClasses.keySet().removeAll(superClasses.keySet());
-                        superClasses.putAll(osgiSuperClasses);
-                    }
+            Map<String, String> osgiSuperClasses = getOSGiSuperClassesFor(className, cl);
+            if (osgiSuperClasses != null) {
+                synchronized(this) {
+                    // Do not replace any existing super classes.
+                    osgiSuperClasses.keySet().removeAll(superClasses.keySet());
+                    superClasses.putAll(osgiSuperClasses);
                 }
-            } catch (PrivilegedActionException e) {
-                Exception ex = e.getException();
-                error(ex.getMessage(), ex);
             }
+        }
+    }
+
+    private Map<String, String> getOSGiSuperClassesFor(String className, ClassLoader cl) {
+        Constructor<PrivilegedExceptionAction<Map<String, String>>> osgiSuperClassExtractor = OSGiClassLoader.fetchSuperClassExtractorConstructor(cl);
+        try {
+            return (osgiSuperClassExtractor != null) ? doPrivileged(osgiSuperClassExtractor.newInstance(className, cl)) : null;
+        } catch (PrivilegedActionException e) {
+            Exception ex = e.getException();
+            error(ex.getMessage(), ex);
+            return null;
+        } catch (ReflectiveOperationException ex) {
+            error(ex.getMessage(), ex);
+            return null;
         }
     }
 

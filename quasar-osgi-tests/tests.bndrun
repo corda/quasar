@@ -1,9 +1,6 @@
-# Ensure Bnd uses the same Java executable as Gradle.
-java: ${project.javaExecutable}
-
 -tester: biz.aQute.tester.junit-platform
 -runfw: org.apache.felix.framework
--resolve.effective: active
+-resolve.effective: resolve,active
 -runee: JavaSE-11
 -runtrace: true
 
@@ -54,5 +51,5 @@ java: ${project.javaExecutable}
 	osgi-base;version='[0.8.8,0.8.9)',\
 	osgi-exception;version='[0.8.8,0.8.9)',\
 	quasar-osgi-tests;version='[0.8.8,0.8.9)',\
-	slf4j.api;version='[1.7.30,1.7.31)',\
-	slf4j.simple;version='[1.7.30,1.7.31)'
+	slf4j.api;version='[1.7.36,1.7.37)',\
+	slf4j.simple;version='[1.7.36,1.7.37)'

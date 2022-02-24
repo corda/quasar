@@ -49,6 +49,7 @@ pipeline {
         beforeAgent true
       }
       steps {
+        authenticateGradleWrapper()
         sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true artifactoryPublish"
       }
     }

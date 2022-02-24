@@ -11,22 +11,24 @@ import static org.objectweb.asm.ClassReader.SKIP_CODE;
 import static org.objectweb.asm.ClassReader.SKIP_DEBUG;
 import static org.objectweb.asm.ClassReader.SKIP_FRAMES;
 
-final class ExtractSuperClass extends ClassVisitor {
-    private String superClass;
-
-    private ExtractSuperClass() {
-        super(ASMAPI);
-    }
-
-    @Override
-    public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        this.superClass = superName;
-    }
-
-    static String extractFrom(InputStream is) throws IOException {
+public final class ExtractSuperClass {
+    public static String extractFrom(InputStream is) throws IOException {
         ClassReader reader = new ClassReader(is);
-        ExtractSuperClass esc = new ExtractSuperClass();
+        SuperClassVisitor esc = new SuperClassVisitor();
         reader.accept(esc, SKIP_CODE | SKIP_DEBUG | SKIP_FRAMES);
         return esc.superClass;
+    }
+
+    final static class SuperClassVisitor extends ClassVisitor {
+        private String superClass;
+
+        private SuperClassVisitor() {
+            super(ASMAPI);
+        }
+
+        @Override
+        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+            this.superClass = superName;
+        }
     }
 }

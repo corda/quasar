@@ -38,6 +38,7 @@ public final class QuasarInstrumentor {
     @SuppressWarnings("WeakerAccess")
     public static final int ASMAPI = ASMUtil.ASMAPI;
 
+    private static final String THIS_PACKAGE_NAME = "co.paralleluniverse.fibers.instrument.";
     private static final List<String> BUILT_IN_PACKAGES = List.of(
         "co/paralleluniverse/asm/",
         "co/paralleluniverse/common/asm/",
@@ -137,8 +138,9 @@ public final class QuasarInstrumentor {
         MethodDatabase db = getMethodDatabase(loader);
 
         if (className != null) {
+            MethodDatabase.ClassEntry classEntry = db.getClassEntry(className);
             log(LogLevel.INFO, "TRANSFORM: %s %s", className,
-                (db.getClassEntry(className) != null && db.getClassEntry(className).requiresInstrumentation()) ? "request" : "");
+                (classEntry != null && classEntry.requiresInstrumentation()) ? "request" : "");
 
             examine(className, "quasar-1-preinstr", cb);
         } else {
@@ -212,12 +214,12 @@ public final class QuasarInstrumentor {
             }
             return bootstrapDB;
         }
-        if (!dbForClassloader.containsKey(loader)) {
-            MethodDatabase newDb = new MethodDatabase(this, loader, new DefaultSuspendableClassifier(loader));
-            dbForClassloader.put(loader, newDb);
-            return newDb;
-        } else
-            return dbForClassloader.get(loader);
+        MethodDatabase db = dbForClassloader.get(loader);
+        if (db == null) {
+            db = new MethodDatabase(this, loader, new DefaultSuspendableClassifier(loader));
+            dbForClassloader.put(loader, db);
+        }
+        return db;
     }
 
     public QuasarInstrumentor setCheck(boolean check) {
@@ -300,12 +302,15 @@ public final class QuasarInstrumentor {
         return false;
     }
 
-    synchronized boolean isExcludedClassLoader(String classLoaderName) {
-        for (Pattern pattern : excludedClassLoaders) {
-            if (pattern.matcher(classLoaderName).matches())
-                return true;
+    boolean isExcludedClassLoader(String classLoaderName) {
+        synchronized(this) {
+            for (Pattern pattern : excludedClassLoaders) {
+                if (pattern.matcher(classLoaderName).matches()) {
+                    return true;
+                }
+            }
         }
-        return false;
+        return classLoaderName.startsWith(THIS_PACKAGE_NAME);
     }
 
     public synchronized void addExcludedClassLoader(String glob) {

@@ -3,13 +3,14 @@ import aQute.bnd.gradle.Resolve
 import aQute.bnd.gradle.TestOSGi
 import aQute.bnd.version.MavenVersion
 
+import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
+
 plugins {
     id 'biz.aQute.bnd.builder' apply false
 }
 
 ext {
     moduleName = 'quasar.osgi'
-    javaExecutable = file("${System.getProperty('java.home')}/bin/java")
     quasarOsgiVersion = provider {
         MavenVersion.parseMavenString(quasarVersion).getOSGiVersion().toString()
     }
@@ -73,6 +74,9 @@ def resolve = tasks.register('resolve', Resolve) {
 }
 
 def testOSGi = tasks.register('testOSGi', TestOSGi) {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = of(11)
+    }
     dependsOn configurations.quasarAgent.buildDependencies
     resultsDirectory = file("$testResultsDir/test")
     bundles = files(
