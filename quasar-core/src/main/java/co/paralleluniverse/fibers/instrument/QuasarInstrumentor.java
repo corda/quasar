@@ -62,7 +62,6 @@ public final class QuasarInstrumentor {
     private final WeakHashMap<ClassLoader, MethodDatabase> dbForClassloader = new WeakHashMap<>();
     private MethodDatabase bootstrapDB;
     private boolean check;
-    private final boolean aot;
     private boolean allowMonitors;
     private boolean allowBlocking;
     private final Collection<Pattern> exclusions = new ArrayList<>();
@@ -79,26 +78,14 @@ public final class QuasarInstrumentor {
     }
 
     public QuasarInstrumentor() {
-        this(false);
-    }
-
-    public QuasarInstrumentor(boolean aot) {
-        this.aot = aot;
         setLogLevelMask();
     }
 
-    @SuppressWarnings("unused")
-    public boolean isAOT() {
-        return aot;
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    public boolean shouldInstrument(ClassLoader loader) {
+    boolean shouldInstrument(ClassLoader loader) {
         return loader != null && !isExcludedClassLoader(loader.getClass().getName());
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public boolean shouldInstrument(String className) {
+    boolean shouldInstrument(String className) {
         if (className != null) {
             className = className.replace('.', '/');
             if (className.startsWith("co/paralleluniverse/fibers/instrument/") && !Debug.isUnitTest()) {
@@ -120,13 +107,11 @@ public final class QuasarInstrumentor {
         return true;
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public byte[] instrumentClass(ClassLoader loader, String className, byte[] data) throws IOException {
-        return shouldInstrument(className) ? instrumentClass(loader, className, new ByteArrayInputStream(data), false) : data;
+    byte[] instrumentClass(ClassLoader loader, String className, byte[] data) throws IOException {
+        return instrumentClass(loader, className, new ByteArrayInputStream(data), false);
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public byte[] instrumentClass(ClassLoader loader, String className, InputStream is) throws IOException {
+    byte[] instrumentClass(ClassLoader loader, String className, InputStream is) throws IOException {
         return instrumentClass(loader, className, is, false);
     }
 
