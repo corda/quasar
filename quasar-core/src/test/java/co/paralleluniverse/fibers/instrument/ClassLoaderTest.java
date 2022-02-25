@@ -34,7 +34,7 @@ public class ClassLoaderTest {
                 assertEquals(cl, testInstance.getClass().getClassLoader());
                 assertEquals(ClassLoader.getSystemClassLoader(), TestInterface.class.getClassLoader());
 
-                Fiber co = new Fiber((String) null, null, (SuspendableCallable) null) {
+                Fiber<?> co = new Fiber<>((String) null, null, (SuspendableCallable) null) {
                     @Override
                     protected Object run() throws SuspendExecution, InterruptedException {
                         testInstance.test(results);
@@ -81,7 +81,7 @@ public class ClassLoaderTest {
                 assertEquals(cl2, testInstance2.getClass().getClassLoader());
                 assertEquals(ClassLoader.getSystemClassLoader(), TestInterface.class.getClassLoader());
 
-                Fiber co1 = new Fiber((String) null, null, (SuspendableCallable) null) {
+                Fiber<?> co1 = new Fiber<>((String) null, null, (SuspendableCallable) null) {
                     @Override
                     protected Object run() throws SuspendExecution, InterruptedException {
                         testInstance1.test(results1);
@@ -89,7 +89,7 @@ public class ClassLoaderTest {
                     }
                 };
 
-                Fiber co2 = new Fiber((String) null, null, (SuspendableCallable) null) {
+                Fiber<?> co2 = new Fiber<>((String) null, null, (SuspendableCallable) null) {
                     @Override
                     protected Object run() throws SuspendExecution, InterruptedException {
                         testInstance2.test(results2);

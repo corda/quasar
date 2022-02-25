@@ -28,6 +28,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.*;
 import static org.hamcrest.CoreMatchers.*;
@@ -50,7 +51,7 @@ public class FiberAsyncIOTest {
     public TestRule watchman = TestUtil.WATCHMAN;
     
     private static final int PORT = 1234;
-    private static final Charset charset = Charset.forName("UTF-8");
+    private static final Charset charset = StandardCharsets.UTF_8;
     private static final CharsetEncoder encoder = charset.newEncoder();
     private static final CharsetDecoder decoder = charset.newDecoder();
     private final FiberScheduler scheduler;
@@ -119,7 +120,7 @@ public class FiberAsyncIOTest {
             }
         }).start();
 
-        final Fiber client = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> client = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 try {

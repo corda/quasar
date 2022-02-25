@@ -145,7 +145,7 @@ public final class VerificationTest {
         }
         assertTrue(t instanceof VerifyInstrumentationException && t.getMessage().contains(" **"));
 
-        final Fiber<?> fUninstrumentedMethod2 = new Fiber(new SuspendableRunnable() {
+        final Fiber<?> fUninstrumentedMethod2 = new Fiber<>(new SuspendableRunnable() {
             @Override
             public final void run() throws SuspendExecution, InterruptedException {
                 try {

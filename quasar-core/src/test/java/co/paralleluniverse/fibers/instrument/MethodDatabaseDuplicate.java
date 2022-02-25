@@ -20,7 +20,7 @@ public class MethodDatabaseDuplicate {
     @Test
     public void testSuspend() throws IOException {
         final String className = Type.getInternalName(MethodDatabaseDuplicate.class);
-        final QuasarInstrumentor instrumentor = new QuasarInstrumentor(false);
+        final QuasarInstrumentor instrumentor = new QuasarInstrumentor();
         final MethodDatabase db = instrumentor.getMethodDatabase(MethodDatabaseDuplicate.class.getClassLoader());
 
         // Create a DB entry for this class with null super.

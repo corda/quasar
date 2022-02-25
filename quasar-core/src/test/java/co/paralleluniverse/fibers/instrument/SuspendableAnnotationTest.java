@@ -64,7 +64,7 @@ public class SuspendableAnnotationTest {
     @Test
     public void testAnnotated() {
         try {
-            Fiber co = new Fiber((String) null, null, (SuspendableCallable) null) {
+            Fiber<?> co = new Fiber<>((String) null, null, (SuspendableCallable) null) {
                 @Override
                 protected Object run() throws SuspendExecution, InterruptedException {
                     suspendableMethod();
@@ -87,7 +87,7 @@ public class SuspendableAnnotationTest {
         assumeFalse(SystemProperties.isEmptyOrTrue("co.paralleluniverse.fibers.verifyInstrumentation"));
 
         try {
-            Fiber co = new Fiber((String) null, null, (SuspendableCallable) null) {
+            Fiber<?> co = new Fiber<>((String) null, null, (SuspendableCallable) null) {
                 @Override
                 protected Object run() throws SuspendExecution, InterruptedException {
                     nonsuspendableMethod();

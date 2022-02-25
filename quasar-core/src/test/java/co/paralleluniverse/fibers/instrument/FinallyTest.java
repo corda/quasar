@@ -44,7 +44,7 @@ import org.junit.Test;
  */
 public class FinallyTest implements SuspendableRunnable {
 
-    private ArrayList<String> results = new ArrayList<String>();
+    private final ArrayList<String> results = new ArrayList<String>();
     
     @Override
     public void run() throws SuspendExecution {

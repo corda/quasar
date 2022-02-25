@@ -29,7 +29,7 @@ import org.junit.After;
  * @author pron
  */
 public class AsyncCompletionStageTest {
-    private FiberScheduler scheduler;
+    private final FiberScheduler scheduler;
 
     public AsyncCompletionStageTest() {
         scheduler = new FiberForkJoinScheduler("test", 4, null, false);

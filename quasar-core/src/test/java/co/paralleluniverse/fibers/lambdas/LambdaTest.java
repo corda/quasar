@@ -33,7 +33,7 @@ public class LambdaTest {
     }
 
     private void run(I i) throws ExecutionException, InterruptedException {
-        new Fiber() {
+        new Fiber<>() {
             @Override
             protected Object run() throws SuspendExecution, InterruptedException {
                 i.doIt();

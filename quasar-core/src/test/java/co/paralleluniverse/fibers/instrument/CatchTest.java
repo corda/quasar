@@ -48,7 +48,7 @@ import static org.junit.Assert.*;
  * @author Matthias Mann
  */
 public class CatchTest {
-    private ArrayList<String> results = new ArrayList<String>();
+    private final ArrayList<String> results = new ArrayList<String>();
 
     class Runnable1 implements SuspendableRunnable {
         int cnt = 0;

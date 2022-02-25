@@ -13,10 +13,7 @@
  */
 package co.paralleluniverse.strands.channels.transfer;
 
-import co.paralleluniverse.common.test.Matchers;
 import co.paralleluniverse.common.test.TestUtil;
-import co.paralleluniverse.common.util.ConcurrentSet;
-import co.paralleluniverse.common.util.Debug;
 import co.paralleluniverse.fibers.Fiber;
 import co.paralleluniverse.fibers.FiberForkJoinScheduler;
 import co.paralleluniverse.fibers.FiberScheduler;
@@ -29,8 +26,6 @@ import co.paralleluniverse.strands.channels.Channels.OverflowPolicy;
 import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -116,9 +111,9 @@ public class PipelineTest {
                     }
                 },
                 parallelism);
-        final Fiber<Long> pf = new Fiber("pipeline", scheduler, p).start();
+        final Fiber<Long> pf = new Fiber<>("pipeline", scheduler, p).start();
 
-        final Fiber receiver = new Fiber("receiver", scheduler, new SuspendableRunnable() {
+        final Fiber<?> receiver = new Fiber<>("receiver", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 final Integer m1 = o.receive();

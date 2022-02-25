@@ -45,7 +45,7 @@ public class FiberAsyncTest {
     @Rule
     public TestRule watchman = TestUtil.WATCHMAN;
 
-    private FiberScheduler scheduler;
+    private final FiberScheduler scheduler;
 
     public FiberAsyncTest() {
         scheduler = new FiberForkJoinScheduler("test", 4, null, false);
@@ -149,7 +149,7 @@ public class FiberAsyncTest {
     }
 
     static abstract class MyFiberAsync extends FiberAsync<String, RuntimeException> implements MyCallback {
-        private final Fiber fiber;
+        private final Fiber<?> fiber;
 
         public MyFiberAsync() {
             this.fiber = Fiber.currentFiber();
@@ -168,7 +168,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testSyncCallback() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 String res = callService(syncService);
@@ -181,7 +181,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testSyncCallbackException() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 try {
@@ -198,7 +198,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testAsyncCallback() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 String res = callService(asyncService);
@@ -211,7 +211,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testAsyncCallbackException() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 try {
@@ -228,7 +228,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testAsyncCallbackExceptionInRequestAsync() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 try {
@@ -252,7 +252,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testTimedAsyncCallbackNoTimeout() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 try {
@@ -269,7 +269,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testTimedAsyncCallbackWithTimeout() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 try {
@@ -285,7 +285,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testInterrupt1() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 try {
@@ -302,7 +302,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testInterrupt2() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 try {
@@ -323,7 +323,7 @@ public class FiberAsyncTest {
         final AtomicBoolean started = new AtomicBoolean();
         final AtomicBoolean interrupted = new AtomicBoolean();
 
-        Fiber fiber = new Fiber(new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 FiberAsync.runBlocking(Executors.newSingleThreadExecutor(),
@@ -359,7 +359,7 @@ public class FiberAsyncTest {
     
     @Test
     public void testRunBlocking() throws Exception {
-        final Fiber fiber = new Fiber(new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 String res = FiberAsync.runBlocking(Executors.newCachedThreadPool(), new CheckedCallable<String, InterruptedException>() {
@@ -377,7 +377,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testRunBlockingWithTimeout1() throws Exception {
-        final Fiber fiber = new Fiber(new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 try {
@@ -399,7 +399,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testRunBlockingWithTimeout2() throws Exception {
-        final Fiber fiber = new Fiber(new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 try {

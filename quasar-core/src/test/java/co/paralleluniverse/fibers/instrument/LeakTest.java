@@ -33,7 +33,7 @@ public class LeakTest implements SuspendableRunnable {
     private static volatile String leaked = "leaked";
     @Test
     public void leaky() throws Exception {
-        Fiber co = new Fiber((String)null, null, this);
+        Fiber<?> co = new Fiber<>((String)null, null, this);
         
         leaked = "leaked";
         

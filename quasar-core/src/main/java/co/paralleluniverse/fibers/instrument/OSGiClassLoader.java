@@ -23,11 +23,12 @@ final class OSGiClassLoader extends ClassLoader {
     private static Constructor<PrivilegedExceptionAction<Map<String, String>>> superClassExtractorConstructor;
     private static ClassLoader osgiLoader;
 
-    private final ClassLoader thisLoader;
+    static {
+        OSGiClassLoader.registerAsParallelCapable();
+    }
 
     private OSGiClassLoader(ClassLoader parent) {
-        super(parent);
-        thisLoader = OSGiClassLoader.class.getClassLoader();
+        super("Quasar-OSGI", parent);
     }
 
     @Override
@@ -37,16 +38,16 @@ final class OSGiClassLoader extends ClassLoader {
         }
 
         final String resourceName = "META-INF/" + classToResource(name);
-        final URL resource = thisLoader.getResource(resourceName);
+        final URL resource = OSGiClassLoader.class.getClassLoader().getResource(resourceName);
         if (resource == null) {
             throw new ClassNotFoundException(name);
         }
 
         try (InputStream input = resource.openStream()) {
             byte[] bytecode = input.readAllBytes();
-            return defineClass(name, bytecode, 0, bytecode.length);
+            return defineClass(name, bytecode, 0, bytecode.length, OSGiClassLoader.class.getProtectionDomain());
         } catch (IOException e) {
-            throw new InternalError("Error reading resource " + resourceName);
+            throw new InternalError("Error reading resource " + resourceName, e);
         }
     }
 

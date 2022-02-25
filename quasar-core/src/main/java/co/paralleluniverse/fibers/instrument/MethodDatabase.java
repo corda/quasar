@@ -367,7 +367,7 @@ public final class MethodDatabase {
             ClassReader r = new ClassReader(is);
 
             CheckInstrumentationVisitor civ = new CheckInstrumentationVisitor(this);
-            r.accept(civ, ClassReader.SKIP_FRAMES | ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG);
+            r.accept(civ, ClassReader.SKIP_FRAMES | ClassReader.SKIP_CODE);
 
             return civ;
         }
