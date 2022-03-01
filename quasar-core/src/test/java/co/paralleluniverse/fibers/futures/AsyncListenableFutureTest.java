@@ -42,7 +42,7 @@ public class AsyncListenableFutureTest {
     @Rule
     public TestRule watchman = TestUtil.WATCHMAN;
     
-    private FiberScheduler scheduler;
+    private final FiberScheduler scheduler;
 
     public AsyncListenableFutureTest() {
         scheduler = new FiberForkJoinScheduler("test", 4, null, false);

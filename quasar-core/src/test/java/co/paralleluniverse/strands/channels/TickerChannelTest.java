@@ -82,22 +82,22 @@ public class TickerChannelTest {
 
         for (; i < 50; i++)
             sch.send(i);
-        Fiber f1 = new Fiber(scheduler, run).start();
+        Fiber<?> f1 = new Fiber<>(scheduler, run).start();
         Thread t1 = new Thread(Strand.toRunnable(run));
         t1.start();
         for (; i < 200; i++)
             sch.send(i);
-        Fiber f2 = new Fiber(scheduler, run).start();
+        Fiber<?> f2 = new Fiber<>(scheduler, run).start();
         Thread t2 = new Thread(Strand.toRunnable(run));
         t2.start();
         for (; i < 600; i++)
             sch.send(i);
-        Fiber f3 = new Fiber(scheduler, run).start();
+        Fiber<?> f3 = new Fiber<>(scheduler, run).start();
         Thread t3 = new Thread(Strand.toRunnable(run));
         t3.start();
         for (; i < 800; i++)
             sch.send(i);
-        Fiber f4 = new Fiber(scheduler, run).start();
+        Fiber<?> f4 = new Fiber<>(scheduler, run).start();
         Thread t4 = new Thread(Strand.toRunnable(run));
         t4.start();
         for (; i < 2000; i++)

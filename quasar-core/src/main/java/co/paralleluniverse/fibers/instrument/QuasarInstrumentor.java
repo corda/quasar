@@ -38,6 +38,7 @@ public final class QuasarInstrumentor {
     @SuppressWarnings("WeakerAccess")
     public static final int ASMAPI = ASMUtil.ASMAPI;
 
+    private static final String THIS_PACKAGE_NAME = "co.paralleluniverse.fibers.instrument.";
     private static final List<String> BUILT_IN_PACKAGES = List.of(
         "co/paralleluniverse/asm/",
         "co/paralleluniverse/common/asm/",
@@ -61,7 +62,6 @@ public final class QuasarInstrumentor {
     private final WeakHashMap<ClassLoader, MethodDatabase> dbForClassloader = new WeakHashMap<>();
     private MethodDatabase bootstrapDB;
     private boolean check;
-    private final boolean aot;
     private boolean allowMonitors;
     private boolean allowBlocking;
     private final Collection<Pattern> exclusions = new ArrayList<>();
@@ -78,26 +78,14 @@ public final class QuasarInstrumentor {
     }
 
     public QuasarInstrumentor() {
-        this(false);
-    }
-
-    public QuasarInstrumentor(boolean aot) {
-        this.aot = aot;
         setLogLevelMask();
     }
 
-    @SuppressWarnings("unused")
-    public boolean isAOT() {
-        return aot;
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    public boolean shouldInstrument(ClassLoader loader) {
+    boolean shouldInstrument(ClassLoader loader) {
         return loader != null && !isExcludedClassLoader(loader.getClass().getName());
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public boolean shouldInstrument(String className) {
+    boolean shouldInstrument(String className) {
         if (className != null) {
             className = className.replace('.', '/');
             if (className.startsWith("co/paralleluniverse/fibers/instrument/") && !Debug.isUnitTest()) {
@@ -119,13 +107,11 @@ public final class QuasarInstrumentor {
         return true;
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public byte[] instrumentClass(ClassLoader loader, String className, byte[] data) throws IOException {
-        return shouldInstrument(className) ? instrumentClass(loader, className, new ByteArrayInputStream(data), false) : data;
+    byte[] instrumentClass(ClassLoader loader, String className, byte[] data) throws IOException {
+        return instrumentClass(loader, className, new ByteArrayInputStream(data), false);
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public byte[] instrumentClass(ClassLoader loader, String className, InputStream is) throws IOException {
+    byte[] instrumentClass(ClassLoader loader, String className, InputStream is) throws IOException {
         return instrumentClass(loader, className, is, false);
     }
 
@@ -137,8 +123,9 @@ public final class QuasarInstrumentor {
         MethodDatabase db = getMethodDatabase(loader);
 
         if (className != null) {
+            MethodDatabase.ClassEntry classEntry = db.getClassEntry(className);
             log(LogLevel.INFO, "TRANSFORM: %s %s", className,
-                (db.getClassEntry(className) != null && db.getClassEntry(className).requiresInstrumentation()) ? "request" : "");
+                (classEntry != null && classEntry.requiresInstrumentation()) ? "request" : "");
 
             examine(className, "quasar-1-preinstr", cb);
         } else {
@@ -212,12 +199,12 @@ public final class QuasarInstrumentor {
             }
             return bootstrapDB;
         }
-        if (!dbForClassloader.containsKey(loader)) {
-            MethodDatabase newDb = new MethodDatabase(this, loader, new DefaultSuspendableClassifier(loader));
-            dbForClassloader.put(loader, newDb);
-            return newDb;
-        } else
-            return dbForClassloader.get(loader);
+        MethodDatabase db = dbForClassloader.get(loader);
+        if (db == null) {
+            db = new MethodDatabase(this, loader, new DefaultSuspendableClassifier(loader));
+            dbForClassloader.put(loader, db);
+        }
+        return db;
     }
 
     public QuasarInstrumentor setCheck(boolean check) {
@@ -300,12 +287,15 @@ public final class QuasarInstrumentor {
         return false;
     }
 
-    synchronized boolean isExcludedClassLoader(String classLoaderName) {
-        for (Pattern pattern : excludedClassLoaders) {
-            if (pattern.matcher(classLoaderName).matches())
-                return true;
+    boolean isExcludedClassLoader(String classLoaderName) {
+        synchronized(this) {
+            for (Pattern pattern : excludedClassLoaders) {
+                if (pattern.matcher(classLoaderName).matches()) {
+                    return true;
+                }
+            }
         }
-        return false;
+        return classLoaderName.startsWith(THIS_PACKAGE_NAME);
     }
 
     public synchronized void addExcludedClassLoader(String glob) {

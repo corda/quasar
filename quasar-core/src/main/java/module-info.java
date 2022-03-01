@@ -31,6 +31,7 @@ module co.paralleluniverse.quasar.core {
     requires static com.codahale.metrics;
     requires static com.codahale.metrics.jmx;
     requires static osgi.annotation;
+    requires static osgi.core;
 
     exports co.paralleluniverse.fibers;
     exports co.paralleluniverse.fibers.futures;

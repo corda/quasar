@@ -18,7 +18,7 @@ package co.paralleluniverse.fibers;
  * @author pron
  */
 public class TestsHelper {
-    public static boolean exec(Fiber f) {
+    public static boolean exec(Fiber<?> f) {
         f.resetState();
         return f.exec();
     }

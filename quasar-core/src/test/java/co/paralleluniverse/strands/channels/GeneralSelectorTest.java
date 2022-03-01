@@ -96,7 +96,7 @@ public class GeneralSelectorTest {
 
     void spawn(SuspendableRunnable r) {
         if (fiber)
-            new Fiber(scheduler, r).start();
+            new Fiber<>(scheduler, r).start();
         else
             new Thread(Strand.toRunnable(r)).start();
     }

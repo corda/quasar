@@ -51,8 +51,8 @@ subprojects {
     ext.drpWizVer = '4.1.0'
     ext.guavaVer  = '30.1.1-jre'
     ext.asmVer    = '7.0'
-    ext.slf4jVer  = '1.7.30'
-    ext.osgiVer   = '7.0.0'
+    ext.slf4jVer  = '1.7.36'
+    ext.osgiVer   = '8.0.0'
 
     if (!project.hasProperty('mainClass')) { // must use project.hasProperty() rather than hasProperty in subprojects (gradle bug)
         ext.mainClass = ''
@@ -441,6 +441,7 @@ project (':quasar-core') {
         }
 
         compileOnly "org.osgi:osgi.annotation:$osgiVer"
+        compileOnly "org.osgi:osgi.core:$osgiVer"
 
         agentImplementation files(sourceSets.main.output) {
             builtBy tasks.named('compileJava', JavaCompile)
@@ -512,6 +513,7 @@ project (':quasar-core') {
             exclude 'co/paralleluniverse/common/resource/**'
             exclude 'co/paralleluniverse/fibers/instrument/**'
             exclude 'co/paralleluniverse/fibers/suspend/**'
+            exclude 'co/paralleluniverse/fibers/osgi/**'
             exclude 'module-info.class'
         }
         from(sourceSets.bundle.output)
@@ -526,7 +528,8 @@ project (':quasar-core') {
             )
         }
 
-        bnd """
+        bundle {
+            bnd """\
 Bundle-SymbolicName: co.paralleluniverse.quasar-core
 Bundle-Name: Quasar Fibers
 Bundle-Version: \${project.version}
@@ -536,6 +539,7 @@ Import-Package: \
  org.junit.*;resolution:=optional,\
  *
 """
+        }
     }
 
     def validateBundle = tasks.register("validateBundle") {
@@ -552,9 +556,10 @@ Import-Package: \
         it.finalizedBy validateBundle
     }
 
+    def quasarFiles = zipTree(shadowJar.flatMap { it.archiveFile })
     def agentBundle = tasks.register("agentBundle", Bundle) {
         dependsOn shadowJar
-        from(zipTree(shadowJar.flatMap { it.archiveFile })) {
+        from(quasarFiles) {
             include 'META-INF/suspendable*'
             include 'co/paralleluniverse/asm/**'
             include 'co/paralleluniverse/common/asm/**'
@@ -567,6 +572,10 @@ Import-Package: \
             exclude 'co/paralleluniverse/fibers/instrument/SuspendablesScanner*'
             include 'co/paralleluniverse/fibers/suspend/**'
         }
+        from(quasarFiles) {
+            include 'co/paralleluniverse/fibers/osgi/**'
+            into 'META-INF'
+        }
         from(sourceSets.agent.output)
         archiveAppendix = 'osgi'
         archiveClassifier = 'agent'
@@ -577,7 +586,8 @@ Import-Package: \
             }
         }
 
-        bnd """
+        bnd """\
+-fixupmessages "Classes found in the wrong directory"; restrict:=error; is:=warning
 Bundle-SymbolicName: co.paralleluniverse.quasar-core.agent
 Bundle-Name: Quasar Agent
 Bundle-Version: \${project.version}

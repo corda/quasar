@@ -36,7 +36,7 @@ public class InitialSizeTest implements SuspendableRunnable {
     }
     
     private void testWithSize(int stackSize) {
-        Fiber c = new Fiber(null, null, stackSize, this);
+        Fiber<?> c = new Fiber<>(null, null, stackSize, this);
         //assertEquals(getStackSize(c), stackSize);
         boolean res = TestsHelper.exec(c);
         assertEquals(res, false);
@@ -58,7 +58,7 @@ public class InitialSizeTest implements SuspendableRunnable {
         return a * factorial(a - 1);
     }
     
-    private int getStackSize(Fiber c) {
+    private int getStackSize(Fiber<?> c) {
         try {
             Field stackField = Fiber.class.getDeclaredField("stack");
             stackField.setAccessible(true);

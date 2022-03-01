@@ -48,6 +48,6 @@ public class RTInitLocalArrayArgTest implements SuspendableCallable {
 
     @Test
     public void test() throws ExecutionException, InterruptedException {
-        assertTrue(new Fiber(this).start().get() != null);
+        assertTrue(new Fiber<Object>(this).start().get() != null);
     }
 }

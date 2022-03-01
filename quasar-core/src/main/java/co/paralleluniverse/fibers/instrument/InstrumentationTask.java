@@ -123,7 +123,7 @@ public class InstrumentationTask extends Task {
             for (FileSet fs : filesets)
                 urls.add(fs.getDir().toURI().toURL());
             final ClassLoader cl = new URLClassLoader(urls.toArray(new URL[0]), getClass().getClassLoader());
-            final QuasarInstrumentor instrumentor = new QuasarInstrumentor(true);
+            final QuasarInstrumentor instrumentor = new QuasarInstrumentor();
 
             instrumentor.setCheck(check);
             instrumentor.setVerbose(verbose);

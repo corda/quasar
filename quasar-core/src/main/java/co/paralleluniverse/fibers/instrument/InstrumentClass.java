@@ -289,7 +289,6 @@ class InstrumentClass extends ClassVisitor {
     }
 
     private boolean hasAnnotation(MethodNode mn) {
-        //noinspection unchecked
         final List<AnnotationNode> ans = mn.visibleAnnotations;
         if (ans == null)
             return false;
@@ -329,11 +328,10 @@ class InstrumentClass extends ClassVisitor {
         return b.compareTo(a) > 0 ? b : a;
     }
 
-    private static String[] toStringArray(List<?> l) {
+    private static String[] toStringArray(List<String> l) {
         if (l.isEmpty())
             return null;
 
-        //noinspection RedundantCast,unchecked
-        return ((List<String>)l).toArray(new String[l.size()]);
+        return l.toArray(new String[0]);
     }
 }

@@ -90,7 +90,7 @@ public class ThrowTest implements SuspendableRunnable {
     public void testThrow() {
         results.clear();
 
-        Fiber co = new Fiber((String)null, null, this);
+        Fiber<?> co = new Fiber<>((String)null, null, this);
         try {
             exec(co);
             results.add("B");

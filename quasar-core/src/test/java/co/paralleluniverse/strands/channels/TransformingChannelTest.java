@@ -237,7 +237,7 @@ public class TransformingChannelTest {
     public void testFilterFiberToFiber() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        Fiber fib1 = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib1 = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 ReceivePort<Integer> ch1 = Channels.filter((ReceivePort<Integer>) ch, new Predicate<Integer>() {
@@ -257,7 +257,7 @@ public class TransformingChannelTest {
             }
         }).start();
 
-        Fiber fib2 = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib2 = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 Strand.sleep(50);
@@ -279,7 +279,7 @@ public class TransformingChannelTest {
     public void testFilterThreadToFiber() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 ReceivePort<Integer> ch1 = Channels.filter((ReceivePort<Integer>) ch, new Predicate<Integer>() {
@@ -315,7 +315,7 @@ public class TransformingChannelTest {
     public void testFilterFiberToThread() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 Fiber.sleep(100);
@@ -355,7 +355,7 @@ public class TransformingChannelTest {
 
         final Channel<Object> sync = Channels.newChannel(0);
 
-        final Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        final Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 final ReceivePort<Integer> ch1 = Channels.filter((ReceivePort<Integer>) ch, new Predicate<Integer>() {
@@ -400,7 +400,7 @@ public class TransformingChannelTest {
     public void testSendFilterFiberToFiber() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        Fiber fib1 = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib1 = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 Integer m1 = ch.receive();
@@ -413,7 +413,7 @@ public class TransformingChannelTest {
             }
         }).start();
 
-        Fiber fib2 = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib2 = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 SendPort<Integer> ch1 = Channels.filterSend((SendPort<Integer>) ch, new Predicate<Integer>() {
@@ -442,7 +442,7 @@ public class TransformingChannelTest {
     public void testSendFilterThreadToFiber() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 Integer m1 = ch.receive();
@@ -478,7 +478,7 @@ public class TransformingChannelTest {
     public void testSendFilterFiberToThread() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 Fiber.sleep(100);
@@ -518,7 +518,7 @@ public class TransformingChannelTest {
 
         final Channel<Object> sync = Channels.newChannel(0);
 
-        final Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        final Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 sync.receive(); // 0
@@ -563,7 +563,7 @@ public class TransformingChannelTest {
     public void testMapThreadToFiber() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 ReceivePort<Integer> ch1 = Channels.map((ReceivePort<Integer>) ch, new Function<Integer, Integer>() {
@@ -605,7 +605,7 @@ public class TransformingChannelTest {
     public void testSendMapThreadToFiber() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 Integer m1 = ch.receive();
@@ -647,7 +647,7 @@ public class TransformingChannelTest {
     public void testReduceThreadToFiber() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 final ReceivePort<Integer> ch1 = Channels.reduce((ReceivePort<Integer>) ch, new Function2<Integer, Integer, Integer>() {
@@ -689,7 +689,7 @@ public class TransformingChannelTest {
     public void testReduceInitThreadToFiber() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 final ReceivePort<Integer> ch1 = Channels.reduce((ReceivePort<Integer>) ch, new Function2<Integer, Integer, Integer>() {
@@ -737,8 +737,8 @@ public class TransformingChannelTest {
                 assertThat(end - start, lessThan(new Long(5 * 1000 * 1000 * 1000))); // Should be immediate
             }
         };
-        final Fiber take0Of1Fiber1 = new Fiber("take-0-of-1_fiber1", scheduler, take0SR).start();
-        final Fiber take0Of1Fiber2 = new Fiber("take-0-of-1_fiber2", scheduler, take0SR).start();
+        final Fiber<?> take0Of1Fiber1 = new Fiber<>("take-0-of-1_fiber1", scheduler, take0SR).start();
+        final Fiber<?> take0Of1Fiber2 = new Fiber<>("take-0-of-1_fiber2", scheduler, take0SR).start();
         takeSourceCh.send(new Object());
         take0Of1Fiber1.join();
         take0Of1Fiber2.join();
@@ -746,7 +746,7 @@ public class TransformingChannelTest {
 
         // Test tryReceive failing immediately when fiber blocked in receive on take 1 of 2
         final ReceivePort<Object> take1Of2RP = Channels.take((ReceivePort<Object>) takeSourceCh, 1);
-        final Fiber timeoutSucceedingTake1Of2 = new Fiber("take-1-of-2_timeout_success", scheduler, new SuspendableRunnable() {
+        final Fiber<?> timeoutSucceedingTake1Of2 = new Fiber<>("take-1-of-2_timeout_success", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 final long start = System.nanoTime();
@@ -756,7 +756,7 @@ public class TransformingChannelTest {
             }
         }).start();
         Thread.sleep(100); // Let the fiber blocks in receive before starting the try
-        final Fiber tryFailingTake1Of2 = new Fiber("take-1-of-2_try_fail", scheduler, new SuspendableRunnable() {
+        final Fiber<?> tryFailingTake1Of2 = new Fiber<>("take-1-of-2_try_fail", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 final long start = System.nanoTime();
@@ -786,10 +786,10 @@ public class TransformingChannelTest {
         // - 5th fiber asking untimed receive, waiting in monitor, will bail out because of take threshold
 
         final ReceivePort<Object> take2Of3RPComprehensive = Channels.take((ReceivePort<Object>) takeSourceCh, 2);
-        final Function2<Long, Integer, Fiber> take1SRFun = new Function2<Long, Integer, Fiber>() {
+        final Function2<Long, Integer, Fiber<?>> take1SRFun = new Function2<Long, Integer, Fiber<?>>() {
             @Override
-            public Fiber apply(final Long timeoutMS, final Integer position) {
-                return new Fiber("take-1-of-2_comprehensive_receiver_" + (timeoutMS >= 0 ? timeoutMS : "unlimited") + "ms-" + position, scheduler, new SuspendableRunnable() {
+            public Fiber<?> apply(final Long timeoutMS, final Integer position) {
+                return new Fiber<>("take-1-of-2_comprehensive_receiver_" + (timeoutMS >= 0 ? timeoutMS : "unlimited") + "ms-" + position, scheduler, new SuspendableRunnable() {
                     @Override
                     public void run() throws SuspendExecution, InterruptedException {
                         final long start = System.nanoTime();
@@ -827,7 +827,7 @@ public class TransformingChannelTest {
                 });
             }
         };
-        final Fiber[] competing = new Fiber[5];
+        final Fiber<?>[] competing = new Fiber[5];
         // First front fiber winning first message
         competing[0] = take1SRFun.apply(300l, 1).start();
         // Make 1 message available immediately for the first front fiber to consume
@@ -848,7 +848,7 @@ public class TransformingChannelTest {
         takeSourceCh.send(new Object());
         takeSourceCh.send(new Object());
         // Wait fibers to finsh
-        for (final Fiber f : competing)
+        for (final Fiber<?> f : competing)
             f.join();
         assertThat(takeSourceCh.receive(), is(notNullValue())); // 1 left in source, check and cleanup
 
@@ -866,8 +866,8 @@ public class TransformingChannelTest {
                 assertThat(end - start, lessThan(new Long(500 * 1000 * 1000)));
             }
         };
-        final Fiber explicitCloseF1 = new Fiber("take-explicit-close-1", scheduler, explicitCloseSR);
-        final Fiber explicitCloseF2 = new Fiber("take-explicit-close-2", scheduler, explicitCloseSR);
+        final Fiber<?> explicitCloseF1 = new Fiber<>("take-explicit-close-1", scheduler, explicitCloseSR);
+        final Fiber<?> explicitCloseF2 = new Fiber<>("take-explicit-close-2", scheduler, explicitCloseSR);
         Thread.sleep(100);
         take1Of0ExplicitClose.close();
     }
@@ -876,7 +876,7 @@ public class TransformingChannelTest {
     public void testSendReduceThreadToFiber() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        final Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        final Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 Integer m1 = ch.receive();
@@ -918,7 +918,7 @@ public class TransformingChannelTest {
     public void testSendReduceInitThreadToFiber() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        final Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        final Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 Integer m1 = ch.receive();
@@ -947,7 +947,7 @@ public class TransformingChannelTest {
         final Channel<String> ch1 = newChannel();
         final Channel<Integer> ch2 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 ReceivePort<String> ch = Channels.zip(ch1, ch2, new Function2<String, Integer, String>() {
@@ -988,7 +988,7 @@ public class TransformingChannelTest {
 
         final Channel<Object> sync = Channels.newChannel(0);
 
-        final Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        final Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 final ReceivePort<String> ch = Channels.zip(ch1, ch2, new Function2<String, Integer, String>() {
@@ -1045,7 +1045,7 @@ public class TransformingChannelTest {
     public void testFlatmapThreadToFiber() throws Exception {
         final Channel<Integer> ch1 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 ReceivePort<Integer> ch = Channels.flatMap(ch1, new Function<Integer, ReceivePort<Integer>>() {
@@ -1089,7 +1089,7 @@ public class TransformingChannelTest {
 
         final Channel<Object> sync = Channels.newChannel(0);
 
-        final Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        final Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 final ReceivePort<Integer> ch = Channels.flatMap(ch1, new Function<Integer, ReceivePort<Integer>>() {
@@ -1169,7 +1169,7 @@ public class TransformingChannelTest {
             }
         });
 
-        Fiber fib1 = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib1 = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 assertThat(out.receive(), equalTo(20));
@@ -1179,7 +1179,7 @@ public class TransformingChannelTest {
             }
         }).start();
 
-        Fiber fib2 = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib2 = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 Strand.sleep(50);
@@ -1201,7 +1201,7 @@ public class TransformingChannelTest {
     public void testFlatmapSendThreadToFiber() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 assertThat(ch.receive(), is(1));
@@ -1242,7 +1242,7 @@ public class TransformingChannelTest {
     public void testFlatmapSendWithTimeoutsThreadToFiber() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 assertThat(ch.receive(), is(1));
@@ -1297,7 +1297,7 @@ public class TransformingChannelTest {
                     return chF2;
             }
         };
-        final Fiber f1 = new Fiber("split-send-1", scheduler, new SuspendableRunnable() {
+        final Fiber<?> f1 = new Fiber<>("split-send-1", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 assertThat(chF1.receive(), is("f1"));
@@ -1307,7 +1307,7 @@ public class TransformingChannelTest {
                 assertTrue(chF1.isClosed());
             }
         }).start();
-        final Fiber f2 = new Fiber("split-send-2", scheduler, new SuspendableRunnable() {
+        final Fiber<?> f2 = new Fiber<>("split-send-2", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 assertThat(chF2.receive(), is(not("f1")));
