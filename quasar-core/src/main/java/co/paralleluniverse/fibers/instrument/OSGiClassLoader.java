@@ -1,11 +1,11 @@
 package co.paralleluniverse.fibers.instrument;
 
+import co.paralleluniverse.fibers.instrument.function.BiFunction;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.security.PrivilegedAction;
-import java.security.PrivilegedExceptionAction;
 import java.util.Map;
 
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToResource;
@@ -18,9 +18,10 @@ import static java.security.AccessController.doPrivileged;
  */
 final class OSGiClassLoader extends ClassLoader {
     private static final String SUPER_CLASS_EXTRACTOR_CLASS_NAME = "co.paralleluniverse.fibers.osgi.ExtractSuperClasses";
+    private static final String GET_EXTRACTOR_METHOD_NAME = "getExtractorMethod";
     private static final String BUNDLE_CLASS_NAME = "org.osgi.framework.Bundle";
 
-    private static Constructor<PrivilegedExceptionAction<Map<String, String>>> superClassExtractorConstructor;
+    private static BiFunction<String, ClassLoader, Map<String, String>> superClassExtractor;
     private static ClassLoader osgiLoader;
 
     static {
@@ -66,27 +67,34 @@ final class OSGiClassLoader extends ClassLoader {
     }
 
     @SuppressWarnings("unchecked")
-    private static Constructor<PrivilegedExceptionAction<Map<String, String>>> createSuperClassExtractorConstructor(ClassLoader cl) {
+    private static BiFunction<String, ClassLoader, Map<String, String>> createSuperClassExtractor(ClassLoader cl) {
         final ClassLoader loader = getOSGiLoaderFrom(cl);
         if (loader == null) {
             return null;
         }
 
         try {
-            return ((Class<PrivilegedExceptionAction<Map<String, String>>>) Class.forName(SUPER_CLASS_EXTRACTOR_CLASS_NAME, false, loader))
-                .getDeclaredConstructor(String.class, ClassLoader.class);
+            Class<?> extractorClass = Class.forName(SUPER_CLASS_EXTRACTOR_CLASS_NAME, false, loader);
+            return (BiFunction<String, ClassLoader, Map<String, String>>) extractorClass.getMethod(GET_EXTRACTOR_METHOD_NAME).invoke(null);
         } catch (ReflectiveOperationException e) {
-            throw new InternalError("Constructor for " + SUPER_CLASS_EXTRACTOR_CLASS_NAME + " not found", e);
+            throw new InternalError("Failed to initialise " + SUPER_CLASS_EXTRACTOR_CLASS_NAME, e);
         }
     }
 
-    static synchronized Constructor<PrivilegedExceptionAction<Map<String, String>>> fetchSuperClassExtractorConstructor(ClassLoader cl) {
-        if (superClassExtractorConstructor == null) {
-            superClassExtractorConstructor = doPrivileged(
-                (PrivilegedAction<Constructor<PrivilegedExceptionAction<Map<String, String>>>>) () ->
-                    createSuperClassExtractorConstructor(cl)
+    static synchronized void disable() {
+        if (osgiLoader == null) {
+            // Only disable OSGi support if it hasn't been activated yet.
+            superClassExtractor = (a, b) -> null;
+        }
+    }
+
+    static synchronized BiFunction<String, ClassLoader, Map<String, String>> fetchSuperClassExtractor(ClassLoader cl) {
+        if (superClassExtractor == null) {
+            superClassExtractor = doPrivileged(
+                (PrivilegedAction<BiFunction<String, ClassLoader, Map<String, String>>>) () ->
+                    createSuperClassExtractor(cl)
             );
         }
-        return superClassExtractorConstructor;
+        return superClassExtractor;
     }
 }

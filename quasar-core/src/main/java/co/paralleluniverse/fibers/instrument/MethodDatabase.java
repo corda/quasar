@@ -42,6 +42,7 @@
 package co.paralleluniverse.fibers.instrument;
 
 import co.paralleluniverse.common.resource.ClassLoaderUtil;
+import co.paralleluniverse.fibers.instrument.function.BiFunction;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import java.io.File;
@@ -50,10 +51,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Constructor;
 import java.security.PrivilegedAction;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -457,15 +455,11 @@ public final class MethodDatabase {
     }
 
     private Map<String, String> getOSGiSuperClassesFor(String className, ClassLoader cl) {
-        Constructor<PrivilegedExceptionAction<Map<String, String>>> osgiSuperClassExtractor = OSGiClassLoader.fetchSuperClassExtractorConstructor(cl);
+        BiFunction<String, ClassLoader, Map<String, String>> fetchSuperClassExtractor = OSGiClassLoader.fetchSuperClassExtractor(cl);
         try {
-            return (osgiSuperClassExtractor != null) ? doPrivileged(osgiSuperClassExtractor.newInstance(className, cl)) : null;
-        } catch (PrivilegedActionException e) {
-            Exception ex = e.getException();
-            error(ex.getMessage(), ex);
-            return null;
-        } catch (ReflectiveOperationException ex) {
-            error(ex.getMessage(), ex);
+            return (fetchSuperClassExtractor == null) ? null : fetchSuperClassExtractor.applyThrowing(className, cl);
+        } catch (Exception e) {
+            error(e.getMessage(), e);
             return null;
         }
     }

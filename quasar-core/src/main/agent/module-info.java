@@ -8,4 +8,3 @@ module co.paralleluniverse.quasar.core.agent {
 
     opens co.paralleluniverse.fibers.suspend to co.paralleluniverse.quasar.core.osgi;
 }
-
