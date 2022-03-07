@@ -1,5 +1,6 @@
 module co.paralleluniverse.quasar.core.agent {
     requires java.instrument;
+    requires static org.objectweb.asm;
 
     exports co.paralleluniverse.common.asm;
     exports co.paralleluniverse.common.resource;

@@ -419,6 +419,7 @@ project (':quasar-core') {
     }
 
     configurations {
+        agentCompileOnly.extendsFrom provided
         bundleImplementation.extendsFrom implementation
         bundleImplementation.extendsFrom agentImplementation
     }
@@ -454,6 +455,7 @@ project (':quasar-core') {
     compileAgentJava {
         options.compilerArgs += [
             '--patch-module', "${project.moduleName}.agent=${sourceSets.main.output.asPath}",
+            '--module-path', configurations.agentCompileClasspath.asPath,
             '--module-version', project.version
         ]
     }
