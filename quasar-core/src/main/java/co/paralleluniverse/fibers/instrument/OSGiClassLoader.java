@@ -13,7 +13,7 @@ import static java.security.AccessController.doPrivileged;
 
 /**
  * This classloader contains the Quasar agent's OSGI-specific logic.
- * We cannot instantiate this classloaser unless we locate the OSGi
+ * We cannot instantiate this classloader unless we locate the OSGi
  * system bundle that hosts the framework classes.
  */
 final class OSGiClassLoader extends ClassLoader {
@@ -26,6 +26,15 @@ final class OSGiClassLoader extends ClassLoader {
 
     static {
         OSGiClassLoader.registerAsParallelCapable();
+
+        // Disable this classloader unless it's part of the OSGi Quasar Java agent.
+        if (OSGiClassLoader.class.getClassLoader().getResource(getOSGiResourceName(SUPER_CLASS_EXTRACTOR_CLASS_NAME)) == null) {
+            disable();
+        }
+    }
+
+    private static String getOSGiResourceName(String className) {
+        return "META-INF/" + classToResource(className);
     }
 
     private OSGiClassLoader(ClassLoader parent) {
@@ -38,7 +47,7 @@ final class OSGiClassLoader extends ClassLoader {
             throw new ClassNotFoundException(name);
         }
 
-        final String resourceName = "META-INF/" + classToResource(name);
+        final String resourceName = getOSGiResourceName(name);
         final URL resource = OSGiClassLoader.class.getClassLoader().getResource(resourceName);
         if (resource == null) {
             throw new ClassNotFoundException(name);

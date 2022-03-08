@@ -98,8 +98,9 @@ public class JavaAgent {
     private static volatile boolean ACTIVE;
 
     public static void premain(String agentArguments, Instrumentation instrumentation) {
-        if (!instrumentation.isRetransformClassesSupported())
+        if (!instrumentation.isRetransformClassesSupported()) {
             System.err.println("Retransforming classes is not supported!");
+        }
 
         final QuasarInstrumentor instrumentor = new QuasarInstrumentor();
         ACTIVE = true;
