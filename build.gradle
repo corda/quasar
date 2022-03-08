@@ -470,7 +470,16 @@ project (':quasar-core') {
 
     // this happens after we've filtered the dependency on ASM from core's module-info
     tasks.matching { it.name == 'compileJava' || it.name == 'compileTestJava' }.configureEach {
-        options.compilerArgs += ['--add-modules', 'org.objectweb.asm', '--add-reads', 'co.paralleluniverse.quasar.core=org.objectweb.asm']
+        options.compilerArgs += [
+            '--add-modules', 'org.objectweb.asm',
+            '--add-modules', 'org.objectweb.asm.util',
+            '--add-modules', 'org.objectweb.asm.commons',
+            '--add-modules', 'org.objectweb.asm.tree.analysis',
+            '--add-reads', 'co.paralleluniverse.quasar.core=org.objectweb.asm',
+            '--add-reads', 'co.paralleluniverse.quasar.core=org.objectweb.asm.util',
+            '--add-reads', 'co.paralleluniverse.quasar.core=org.objectweb.asm.commons',
+            '--add-reads', 'co.paralleluniverse.quasar.core=org.objectweb.asm.tree.analysis'
+        ]
     }
 
     tasks.named('jar', Jar) {

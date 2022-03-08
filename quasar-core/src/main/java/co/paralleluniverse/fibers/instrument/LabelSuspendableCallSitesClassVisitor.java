@@ -35,7 +35,7 @@ class LabelSuspendableCallSitesClassVisitor extends ClassVisitor {
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         this.className = name;
 
-        // need atleast 1.5 for annotations to work
+        // need at least 1.5 for annotations to work
         if (version < Opcodes.V1_5)
             version = Opcodes.V1_5;
 

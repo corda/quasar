@@ -15,7 +15,7 @@ ext {
         MavenVersion.parseMavenString(quasarVersion).getOSGiVersion().toString()
     }
     quasarOptions = provider {
-        '=x(aQute.**)'
+        '=x(aQute.**)o(IGNORE/*;VERIFY/*)'
     }
     reflectAsmVersion = '1.11.3'
 }
@@ -32,21 +32,33 @@ sourceSets {
 }
 
 configurations {
-    quasarAgent
-    systemClasspath
+    quasarAgent {
+        canBeConsumed = false
+    }
+    systemClasspath {
+        canBeConsumed = false
+    }
+    bundles {
+        canBeConsumed = false
+        transitive = false
+    }
 }
 
 dependencies {
     quasarAgent project(path: ':quasar-core', configuration: 'agentJar')
     systemClasspath "com.esotericsoftware:reflectasm:$reflectAsmVersion"
+    bundles project('osgi-suspendable')
 
-    osgiTestImplementation project(':quasar-osgi-tests:osgi-exception')
-    osgiTestImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    osgiTestCompileOnly "org.osgi:osgi.core:$osgiVer"
+    osgiTestCompileOnly project(path: ':quasar-core', configuration: 'agentJar')
+    osgiTestImplementation project(path: ':quasar-core', configuration: 'bundleJar')
+    osgiTestImplementation project('osgi-exception')
     osgiTestImplementation "org.assertj:assertj-core:$assertjVersion"
     osgiTestImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
+    osgiTestImplementation "org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion"
     osgiTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
     osgiTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
-    osgiTestRuntimeOnly project(path: ':quasar-core', configuration: 'bundleJar')
+    osgiTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     osgiTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVer"
 }
 
@@ -63,7 +75,7 @@ def resolve = tasks.register('resolve', Resolve) {
     dependsOn testingBundle
     bundles = files(
         sourceSets.osgiTest.runtimeClasspath,
-        configurations.systemClasspath.files,
+        configurations.systemClasspath,
         testingBundle
     )
     bndrun = file('tests.bndrun')
@@ -73,15 +85,22 @@ def resolve = tasks.register('resolve', Resolve) {
     }
 }
 
+def osgiTestResources = tasks.named('processOsgiTestResources', ProcessResources) {
+    from(configurations.bundles) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E.jar", "\$1.jar"
+    }
+}
+
 def testOSGi = tasks.register('testOSGi', TestOSGi) {
     javaLauncher = javaToolchains.launcherFor {
         languageVersion = of(11)
     }
-    dependsOn configurations.quasarAgent.buildDependencies
+    dependsOn configurations.quasarAgent.buildDependencies, osgiTestResources
     resultsDirectory = file("$testResultsDir/test")
     bundles = files(
         sourceSets.osgiTest.runtimeClasspath,
-        configurations.systemClasspath.files,
+        configurations.systemClasspath,
         testingBundle
     )
     bndrun = resolve.flatMap { it.outputBndrun }

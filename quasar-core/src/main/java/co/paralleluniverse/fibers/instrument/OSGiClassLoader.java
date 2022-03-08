@@ -6,7 +6,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.security.PrivilegedAction;
+import java.util.Collection;
 import java.util.Map;
+import java.util.function.BiPredicate;
+import java.util.regex.Pattern;
 
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToResource;
 import static java.security.AccessController.doPrivileged;
@@ -19,16 +22,23 @@ import static java.security.AccessController.doPrivileged;
 final class OSGiClassLoader extends ClassLoader {
     private static final String SUPER_CLASS_EXTRACTOR_CLASS_NAME = "co.paralleluniverse.fibers.osgi.ExtractSuperClasses";
     private static final String GET_EXTRACTOR_METHOD_NAME = "getExtractorMethod";
+    private static final String BUNDLE_EXCLUDER_CLASS_NAME = "co.paralleluniverse.fibers.osgi.ExcludeBundleLocation";
+    private static final String GET_EXCLUDER_METHOD_NAME = "getExcluderMethod";
     private static final String BUNDLE_CLASS_NAME = "org.osgi.framework.Bundle";
 
     private static BiFunction<String, ClassLoader, Map<String, String>> superClassExtractor;
+    private static BiPredicate<ClassLoader, Collection<Pattern>> bundleLocationExcluder;
     private static ClassLoader osgiLoader;
 
     static {
         OSGiClassLoader.registerAsParallelCapable();
 
         // Disable this classloader unless it's part of the OSGi Quasar Java agent.
-        if (OSGiClassLoader.class.getClassLoader().getResource(getOSGiResourceName(SUPER_CLASS_EXTRACTOR_CLASS_NAME)) == null) {
+        final String resourceName = getOSGiResourceName(SUPER_CLASS_EXTRACTOR_CLASS_NAME);
+        final URL osgiResource = doPrivileged((PrivilegedAction<URL>) () ->
+            OSGiClassLoader.class.getClassLoader().getResource(resourceName)
+        );
+        if (osgiResource == null) {
             disable();
         }
     }
@@ -90,20 +100,46 @@ final class OSGiClassLoader extends ClassLoader {
         }
     }
 
-    static synchronized void disable() {
-        if (osgiLoader == null) {
-            // Only disable OSGi support if it hasn't been activated yet.
-            superClassExtractor = (a, b) -> null;
+    @SuppressWarnings("unchecked")
+    private static BiPredicate<ClassLoader, Collection<Pattern>> createBundleLocationExcluder(ClassLoader cl) {
+        final ClassLoader loader = getOSGiLoaderFrom(cl);
+        if (loader == null) {
+            return null;
+        }
+
+        try {
+            Class<?> extractorClass = Class.forName(BUNDLE_EXCLUDER_CLASS_NAME, false, loader);
+            return (BiPredicate<ClassLoader, Collection<Pattern>>) extractorClass.getMethod(GET_EXCLUDER_METHOD_NAME).invoke(null);
+        } catch (ReflectiveOperationException e) {
+            throw new InternalError("Failed to initialise " + BUNDLE_EXCLUDER_CLASS_NAME, e);
         }
     }
 
     static synchronized BiFunction<String, ClassLoader, Map<String, String>> fetchSuperClassExtractor(ClassLoader cl) {
         if (superClassExtractor == null) {
             superClassExtractor = doPrivileged(
-                (PrivilegedAction<BiFunction<String, ClassLoader, Map<String, String>>>) () ->
+                (PrivilegedAction<? extends BiFunction<String, ClassLoader, Map<String, String>>>) () ->
                     createSuperClassExtractor(cl)
             );
         }
         return superClassExtractor;
+    }
+
+    static synchronized BiPredicate<ClassLoader, Collection<Pattern>> fetchBundleLocationExcluder(ClassLoader cl) {
+        if (bundleLocationExcluder == null) {
+            bundleLocationExcluder = doPrivileged(
+                (PrivilegedAction<? extends BiPredicate<ClassLoader, Collection<Pattern>>>) () ->
+                    createBundleLocationExcluder(cl)
+            );
+        }
+        return bundleLocationExcluder;
+    }
+
+    static synchronized void disable() {
+        if (osgiLoader == null) {
+            // Only disable OSGi support if it hasn't been activated yet.
+            superClassExtractor = (a, b) -> null;
+            bundleLocationExcluder = (a, b) -> false;
+        }
     }
 }

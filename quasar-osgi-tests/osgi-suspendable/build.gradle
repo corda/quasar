@@ -1,0 +1,12 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+}
+
+ext {
+    moduleName = 'quasar.osgi.suspendable'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVer"
+    compileOnly project(path: ':quasar-core', configuration: 'bundleJar')
+}
