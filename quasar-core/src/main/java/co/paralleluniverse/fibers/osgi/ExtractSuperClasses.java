@@ -2,6 +2,7 @@ package co.paralleluniverse.fibers.osgi;
 
 import co.paralleluniverse.common.resource.ClassLoaderUtil;
 import co.paralleluniverse.fibers.instrument.ExtractSuperClass;
+import co.paralleluniverse.fibers.instrument.function.BiFunction;
 import org.osgi.framework.BundleReference;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleWire;
@@ -10,10 +11,13 @@ import org.osgi.framework.wiring.BundleWiring;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static java.security.AccessController.doPrivileged;
 
 /**
  * This class is not used directly because {@link ClassLoader#getSystemClassLoader()}
@@ -22,35 +26,32 @@ import java.util.Map;
  * framework does exist inside.
  */
 @SuppressWarnings("unused")
-public final class ExtractSuperClasses implements PrivilegedExceptionAction<Map<String, String>> {
+public final class ExtractSuperClasses {
     private static final String PACKAGE_WIRING = "osgi.wiring.package";
     private static final String JAVA_OBJECT = "java/lang/Object";
 
-    private final String className;
-    private final ClassLoader cl;
-
-    public ExtractSuperClasses(String className, ClassLoader cl) {
-        this.className = className;
-        this.cl = cl;
+    public static BiFunction<String, ClassLoader, Map<String, String>> getExtractorMethod() {
+        return ExtractSuperClasses::extractSuperClasses;
     }
 
-    @Override
-    public Map<String, String> run() throws Exception {
-        final Extractor extractor;
+    public static Map<String, String> extractSuperClasses(String className, ClassLoader cl) throws Exception {
         try {
-            extractor = new Extractor(cl);
-        } catch (RuntimeException e) {
-            // This classloader has no underlying OSGi bundle.
-            return null;
+            return (cl instanceof BundleReference) ? doPrivileged((PrivilegedExceptionAction<Map<String, String>>) () ->
+               new Extractor((BundleReference) cl).extractFor(className)
+            ) : null;
+        } catch (PrivilegedActionException e) {
+            throw e.getException();
         }
-        return extractor.extractFor(className);
+    }
+
+    private ExtractSuperClasses() {
     }
 
     private static final class Extractor {
         private final BundleWiring initialWiring;
 
-        Extractor(ClassLoader cl) {
-            initialWiring = ((BundleReference) cl).getBundle().adapt(BundleWiring.class);
+        Extractor(BundleReference bundleReference) {
+            initialWiring = bundleReference.getBundle().adapt(BundleWiring.class);
         }
 
         Map<String, String> extractFor(String className) throws Exception {
