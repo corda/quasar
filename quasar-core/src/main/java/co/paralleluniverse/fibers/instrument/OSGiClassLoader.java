@@ -22,8 +22,8 @@ import static java.security.AccessController.doPrivileged;
 final class OSGiClassLoader extends ClassLoader {
     private static final String SUPER_CLASS_EXTRACTOR_CLASS_NAME = "co.paralleluniverse.fibers.osgi.ExtractSuperClasses";
     private static final String GET_EXTRACTOR_METHOD_NAME = "getExtractorMethod";
-    private static final String BUNDLE_EXCLUDER_CLASS_NAME = "co.paralleluniverse.fibers.osgi.ExcludeBundleLocation";
-    private static final String GET_EXCLUDER_METHOD_NAME = "getExcluderMethod";
+    private static final String BUNDLE_LOCATION_MATCHER_CLASS_NAME = "co.paralleluniverse.fibers.osgi.BundleLocationMatcher";
+    private static final String GET_MATCHER_METHOD_NAME = "getMatcherMethod";
     private static final String BUNDLE_CLASS_NAME = "org.osgi.framework.Bundle";
 
     private static BiFunction<String, ClassLoader, Map<String, String>> superClassExtractor;
@@ -101,17 +101,17 @@ final class OSGiClassLoader extends ClassLoader {
     }
 
     @SuppressWarnings("unchecked")
-    private static BiPredicate<ClassLoader, Collection<Pattern>> createBundleLocationExcluder(ClassLoader cl) {
+    private static BiPredicate<ClassLoader, Collection<Pattern>> createBundleLocationMatcher(ClassLoader cl) {
         final ClassLoader loader = getOSGiLoaderFrom(cl);
         if (loader == null) {
             return null;
         }
 
         try {
-            Class<?> extractorClass = Class.forName(BUNDLE_EXCLUDER_CLASS_NAME, false, loader);
-            return (BiPredicate<ClassLoader, Collection<Pattern>>) extractorClass.getMethod(GET_EXCLUDER_METHOD_NAME).invoke(null);
+            Class<?> matcherClass = Class.forName(BUNDLE_LOCATION_MATCHER_CLASS_NAME, false, loader);
+            return (BiPredicate<ClassLoader, Collection<Pattern>>) matcherClass.getMethod(GET_MATCHER_METHOD_NAME).invoke(null);
         } catch (ReflectiveOperationException e) {
-            throw new InternalError("Failed to initialise " + BUNDLE_EXCLUDER_CLASS_NAME, e);
+            throw new InternalError("Failed to initialise " + BUNDLE_LOCATION_MATCHER_CLASS_NAME, e);
         }
     }
 
@@ -125,11 +125,11 @@ final class OSGiClassLoader extends ClassLoader {
         return superClassExtractor;
     }
 
-    static synchronized BiPredicate<ClassLoader, Collection<Pattern>> fetchBundleLocationExcluder(ClassLoader cl) {
+    static synchronized BiPredicate<ClassLoader, Collection<Pattern>> fetchBundleLocationMatcher(ClassLoader cl) {
         if (bundleLocationExcluder == null) {
             bundleLocationExcluder = doPrivileged(
                 (PrivilegedAction<? extends BiPredicate<ClassLoader, Collection<Pattern>>>) () ->
-                    createBundleLocationExcluder(cl)
+                    createBundleLocationMatcher(cl)
             );
         }
         return bundleLocationExcluder;

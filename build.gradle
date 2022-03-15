@@ -53,6 +53,7 @@ subprojects {
     ext.asmVer    = '7.0'
     ext.slf4jVer  = '1.7.36'
     ext.osgiVer   = '8.0.0'
+    ext.osgiComponentVer = '1.4.0'
 
     if (!project.hasProperty('mainClass')) { // must use project.hasProperty() rather than hasProperty in subprojects (gradle bug)
         ext.mainClass = ''
@@ -255,7 +256,6 @@ subprojects {
                     "Implementation-Title"      :   project.name,
                     "Implementation-Version"    :   archiveVersion.get(),
                     "Implementation-Vendor"     :   vendor,
-                    "Automatic-Module-Name"     :   project.moduleName,
                     "Built-By"                  :   System.getProperty("user.name"),
                 )
             }

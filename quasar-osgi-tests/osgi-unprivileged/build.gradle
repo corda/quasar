@@ -4,10 +4,9 @@ plugins {
 }
 
 ext {
-    moduleName = 'quasar.osgi.suspendable'
+    moduleName = 'quasar.osgi.unprivileged'
 }
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation:$osgiVer"
-    compileOnly project(path: ':quasar-core', configuration: 'bundleJar')
 }

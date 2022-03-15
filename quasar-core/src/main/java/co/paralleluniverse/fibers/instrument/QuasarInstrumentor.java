@@ -200,7 +200,7 @@ public final class QuasarInstrumentor {
 //            return new TraceClassVisitor(cv, new PrintWriter(new File(filename)));
         }
     }
-    
+
     @SuppressWarnings("WeakerAccess")
     public synchronized MethodDatabase getMethodDatabase(ClassLoader loader) {
         if (loader == null) {
@@ -276,11 +276,11 @@ public final class QuasarInstrumentor {
         setLogLevelMask();
     }
     
-    public synchronized void addExcludedPackage(String packageGlob) {
+    synchronized void addExcludedPackage(String packageGlob) {
         exclusions.add(packagePattern(packageGlob));
     }
     
-    public synchronized boolean isExcluded(String className) {
+    synchronized boolean isExcluded(String className) {
         if (className != null) {
             className = className.replace('.', '/');
             
@@ -308,16 +308,20 @@ public final class QuasarInstrumentor {
         return classLoaderName.startsWith(THIS_PACKAGE_NAME);
     }
 
+    synchronized void addExcludedClassLoader(String glob) {
+        excludedClassLoaders.add(classLoaderPattern(glob));
+    }
+
     boolean isExcludedClassLoader(ClassLoader loader) {
         if (excludedBundleLocations.isEmpty()) {
             return false;
         }
-        BiPredicate<ClassLoader, Collection<Pattern>> bundleExcluder = OSGiClassLoader.fetchBundleLocationExcluder(loader);
-        return bundleExcluder != null && bundleExcluder.test(loader, excludedBundleLocations);
+        BiPredicate<ClassLoader, Collection<Pattern>> bundleMatcher = OSGiClassLoader.fetchBundleLocationMatcher(loader);
+        return bundleMatcher != null && bundleMatcher.test(loader, excludedBundleLocations);
     }
 
-    public synchronized void addExcludedClassLoader(String glob) {
-        excludedClassLoaders.add(classLoaderPattern(glob));
+    synchronized void addExcludedBundleLocation(String glob) {
+        excludedBundleLocations.add(bundleLocationPattern(glob));
     }
 
     private static Pattern classLoaderPattern(String glob) {
@@ -354,10 +358,6 @@ public final class QuasarInstrumentor {
         }
         out.append('$');
         return Pattern.compile(out.toString());
-    }
-
-    public synchronized void addExcludedBundleLocation(String glob) {
-        excludedBundleLocations.add(bundleLocationPattern(glob));
     }
 
     private static Pattern bundleLocationPattern(String glob) {

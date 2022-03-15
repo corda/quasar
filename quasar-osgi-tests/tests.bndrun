@@ -26,7 +26,9 @@
 -runrequires: \
     bnd.identity;id='quasar-osgi-tests',\
     bnd.identity;id='co.paralleluniverse.quasar-core',\
+    bnd.identity;id='org.apache.felix.configadmin',\
     bnd.identity;id='org.apache.felix.framework.security',\
+    bnd.identity;id='org.apache.felix.log',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple'

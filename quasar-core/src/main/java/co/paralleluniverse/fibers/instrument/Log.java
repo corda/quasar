@@ -32,7 +32,7 @@ package co.paralleluniverse.fibers.instrument;
  * @author Matthias Mann
  */
 public interface Log {
-    public void log(LogLevel level, String msg, Object ... args);
+    void log(LogLevel level, String msg, Object ... args);
     
-    public void error(String msg, Throwable ex);
+    void error(String msg, Throwable ex);
 }
