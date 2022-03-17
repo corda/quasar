@@ -11,7 +11,6 @@ import static java.util.Collections.singletonList;
 @SuppressWarnings("unused")
 public interface SecurityConfig {
     void setSecurityPolicy(PermissionData... policy);
-    void allowAll();
 
     PermissionData allow(String locationFilter, Collection<Permission> permissions);
     PermissionData allowFor(Class<?> clazz, Collection<Permission> permissions);

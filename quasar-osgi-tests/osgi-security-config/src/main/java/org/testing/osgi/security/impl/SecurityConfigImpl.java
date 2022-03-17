@@ -40,7 +40,7 @@ public class SecurityConfigImpl implements SecurityConfig {
     @Deactivate
     void shutdown() {
         System.err.println(">> Deactivating SecurityConfig");
-        allowAll();
+        setSecurityPolicy(allow("*", ALL_PERMISSIONS));
     }
 
     @Override
@@ -65,11 +65,6 @@ public class SecurityConfigImpl implements SecurityConfig {
         Bundle bundle = FrameworkUtil.getBundle(clazz);
         assertNotNull(bundle, "Class " + clazz.getName() + " does not belong to an OSGi bundle.");
         return new PermissionData(DENY, bundle.getLocation(), ALL_PERMISSIONS);
-    }
-
-    @Override
-    public void allowAll() {
-        setSecurityPolicy(allow("*", ALL_PERMISSIONS));
     }
 
     @Override
