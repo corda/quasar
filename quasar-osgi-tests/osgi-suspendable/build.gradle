@@ -4,10 +4,10 @@ plugins {
 }
 
 ext {
-    moduleName = 'quasar.osgi.exception'
+    moduleName = 'quasar.osgi.suspendable'
 }
 
 dependencies {
-    api project(':quasar-osgi-tests:osgi-base')
     compileOnly "org.osgi:osgi.annotation:$osgiVer"
+    compileOnly project(path: ':quasar-core', configuration: 'bundleJar')
 }

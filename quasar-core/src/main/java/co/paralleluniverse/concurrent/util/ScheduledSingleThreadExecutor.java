@@ -102,23 +102,13 @@ public class ScheduledSingleThreadExecutor extends AbstractExecutorService imple
     private final ReentrantLock mainLock = new ReentrantLock();
 
     public ScheduledSingleThreadExecutor(ThreadFactory threadFactory) {
-        this.worker = threadFactory.newThread(new Runnable() {
-            @Override
-            public void run() {
-                work();
-            }
-        });
-        this.workQueue = new SingleConsumerNonblockingProducerDelayQueue<RunnableScheduledFuture<?>>();
+        this.worker = threadFactory.newThread(this::work);
+        this.workQueue = new SingleConsumerNonblockingProducerDelayQueue<>();
         worker.start();
     }
 
     public ScheduledSingleThreadExecutor() {
-        this(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                return new Thread(r, "single-threaded-scheduled-executor-" + nameSuffixSequence.incrementAndGet());
-            }
-        });
+        this(runnable -> new Thread(runnable, "single-threaded-scheduled-executor-" + nameSuffixSequence.incrementAndGet()));
     }
 
     private void work() {
@@ -267,8 +257,7 @@ public class ScheduledSingleThreadExecutor extends AbstractExecutorService imple
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
-            boolean cancelled = super.cancel(mayInterruptIfRunning);
-            return cancelled;
+            return super.cancel(mayInterruptIfRunning);
         }
 
         /**
@@ -362,7 +351,7 @@ public class ScheduledSingleThreadExecutor extends AbstractExecutorService imple
             q.clear();
         } else {
             for (Object e : q) {
-                if (e instanceof RunnableScheduledFuture) {
+                if (e instanceof RunnableScheduledFuture<?>) {
                     RunnableScheduledFuture<?> t = (RunnableScheduledFuture<?>) e;
                     if ((t.isPeriodic() ? !keepPeriodic : !keepDelayed)
                             || t.isCancelled()) { // also remove if already cancelled

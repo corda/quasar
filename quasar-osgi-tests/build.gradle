@@ -7,6 +7,7 @@ import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
 
 plugins {
     id 'biz.aQute.bnd.builder' apply false
+    id 'java-library'
 }
 
 ext {
@@ -15,7 +16,7 @@ ext {
         MavenVersion.parseMavenString(quasarVersion).getOSGiVersion().toString()
     }
     quasarOptions = provider {
-        '=x(aQute.**)'
+        '=x(aQute.**)o(IGNORE/*;VERIFY/*)'
     }
     reflectAsmVersion = '1.11.3'
 }
@@ -32,21 +33,44 @@ sourceSets {
 }
 
 configurations {
-    quasarAgent
-    systemClasspath
+    quasarAgent {
+        canBeConsumed = false
+    }
+    systemClasspath {
+        canBeConsumed = false
+    }
+    bundles {
+        canBeConsumed = false
+        transitive = false
+    }
 }
 
 dependencies {
     quasarAgent project(path: ':quasar-core', configuration: 'agentJar')
     systemClasspath "com.esotericsoftware:reflectasm:$reflectAsmVersion"
+    bundles project('osgi-suspendable')
 
-    osgiTestImplementation project(':quasar-osgi-tests:osgi-exception')
-    osgiTestImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    osgiTestCompileOnly "org.osgi:osgi.core:$osgiVer"
+    osgiTestCompileOnly project(path: ':quasar-core', configuration: 'agentJar')
+    osgiTestImplementation project(path: ':quasar-core', configuration: 'bundleJar')
+    osgiTestImplementation project('osgi-exception')
+    osgiTestImplementation project('osgi-security-config')
+    osgiTestImplementation project('osgi-unprivileged')
     osgiTestImplementation "org.assertj:assertj-core:$assertjVersion"
+    osgiTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
     osgiTestImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
+    osgiTestImplementation "org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion"
     osgiTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
     osgiTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
-    osgiTestRuntimeOnly project(path: ':quasar-core', configuration: 'bundleJar')
+    osgiTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    osgiTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
+    osgiTestRuntimeOnly "org.apache.felix:org.apache.felix.log:$felixLogVersion"
+    osgiTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    osgiTestRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
+    osgiTestRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    osgiTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+        exclude group: 'org.osgi'
+    }
     osgiTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVer"
 }
 
@@ -63,13 +87,21 @@ def resolve = tasks.register('resolve', Resolve) {
     dependsOn testingBundle
     bundles = files(
         sourceSets.osgiTest.runtimeClasspath,
-        configurations.systemClasspath.files,
+        configurations.systemClasspath,
         testingBundle
     )
     bndrun = file('tests.bndrun')
+    outputBndrun = layout.buildDirectory.file('resolved-tests.bndrun')
     doFirst {
         //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
         System.setProperty('bnd.home.dir', "$rootDir/bnd")
+    }
+}
+
+def osgiTestResources = tasks.named('processOsgiTestResources', ProcessResources) {
+    from(configurations.bundles) {
+        into 'META-INF'
+        rename "(.*)-\\Q${version}\\E.jar", "\$1.jar"
     }
 }
 
@@ -77,11 +109,11 @@ def testOSGi = tasks.register('testOSGi', TestOSGi) {
     javaLauncher = javaToolchains.launcherFor {
         languageVersion = of(11)
     }
-    dependsOn configurations.quasarAgent.buildDependencies
+    dependsOn configurations.quasarAgent.buildDependencies, osgiTestResources
     resultsDirectory = file("$testResultsDir/test")
     bundles = files(
         sourceSets.osgiTest.runtimeClasspath,
-        configurations.systemClasspath.files,
+        configurations.systemClasspath,
         testingBundle
     )
     bndrun = resolve.flatMap { it.outputBndrun }

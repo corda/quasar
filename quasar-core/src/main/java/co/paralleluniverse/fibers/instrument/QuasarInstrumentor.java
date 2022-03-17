@@ -20,7 +20,13 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -29,6 +35,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.WeakHashMap;
+import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
 /**
@@ -66,6 +73,7 @@ public final class QuasarInstrumentor {
     private boolean allowBlocking;
     private final Collection<Pattern> exclusions = new ArrayList<>();
     private final Collection<Pattern> excludedClassLoaders = new ArrayList<>();
+    private final Collection<Pattern> excludedBundleLocations = new ArrayList<>();
     private Log log;
     private boolean verbose;
     private boolean debug;
@@ -82,7 +90,9 @@ public final class QuasarInstrumentor {
     }
 
     boolean shouldInstrument(ClassLoader loader) {
-        return loader != null && !isExcludedClassLoader(loader.getClass().getName());
+        return loader != null
+            && !isExcludedClassLoader(loader.getClass().getName())
+            && !isExcludedClassLoader(loader);
     }
 
     boolean shouldInstrument(String className) {
@@ -190,7 +200,7 @@ public final class QuasarInstrumentor {
 //            return new TraceClassVisitor(cv, new PrintWriter(new File(filename)));
         }
     }
-    
+
     @SuppressWarnings("WeakerAccess")
     public synchronized MethodDatabase getMethodDatabase(ClassLoader loader) {
         if (loader == null) {
@@ -266,11 +276,11 @@ public final class QuasarInstrumentor {
         setLogLevelMask();
     }
     
-    public synchronized void addExcludedPackage(String packageGlob) {
+    synchronized void addExcludedPackage(String packageGlob) {
         exclusions.add(packagePattern(packageGlob));
     }
     
-    public synchronized boolean isExcluded(String className) {
+    synchronized boolean isExcluded(String className) {
         if (className != null) {
             className = className.replace('.', '/');
             
@@ -298,8 +308,20 @@ public final class QuasarInstrumentor {
         return classLoaderName.startsWith(THIS_PACKAGE_NAME);
     }
 
-    public synchronized void addExcludedClassLoader(String glob) {
+    synchronized void addExcludedClassLoader(String glob) {
         excludedClassLoaders.add(classLoaderPattern(glob));
+    }
+
+    boolean isExcludedClassLoader(ClassLoader loader) {
+        if (excludedBundleLocations.isEmpty()) {
+            return false;
+        }
+        BiPredicate<ClassLoader, Collection<Pattern>> bundleMatcher = OSGiClassLoader.fetchBundleLocationMatcher(loader);
+        return bundleMatcher != null && bundleMatcher.test(loader, excludedBundleLocations);
+    }
+
+    synchronized void addExcludedBundleLocation(String glob) {
+        excludedBundleLocations.add(bundleLocationPattern(glob));
     }
 
     private static Pattern classLoaderPattern(String glob) {
@@ -315,16 +337,50 @@ public final class QuasarInstrumentor {
                     out.append('.');
                     break;
                 case '*':
-                    int j = i + 1;
+                    final int j = i + 1;
                     if (j < glob.length()) {
-                        char next = glob.charAt(j);
+                        final char next = glob.charAt(j);
                         if (next == '*') {
                             out.append(".*");
-                            ++i;
+                            i = j;
                             break;
                         }
                     }
                     out.append("[^.]+");
+                    break;
+                case '$':
+                    out.append("\\$");
+                    break;
+                default:
+                    out.append(c);
+            }
+            ++i;
+        }
+        out.append('$');
+        return Pattern.compile(out.toString());
+    }
+
+    private static Pattern bundleLocationPattern(String glob) {
+        StringBuilder out = new StringBuilder(glob.length() + 5).append('^');
+        int i = 0;
+        while (i < glob.length()) {
+            final char c = glob.charAt(i);
+            switch (c) {
+                case '.':
+                    out.append("\\.");
+                    break;
+                case '?':
+                    out.append('.');
+                    break;
+                case '*':
+                    final int j = i + 1;
+                    if (j < glob.length()) {
+                        final char next = glob.charAt(j);
+                        if (next == '*') {
+                            i = j;
+                        }
+                    }
+                    out.append(".*");
                     break;
                 case '$':
                     out.append("\\$");
@@ -364,7 +420,7 @@ public final class QuasarInstrumentor {
         try (OutputStream os = Files.newOutputStream(Paths.get(name), StandardOpenOption.CREATE_NEW)) {
             os.write(data);
         } catch (final IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 

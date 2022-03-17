@@ -1,0 +1,15 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+    id 'java-library'
+}
+
+ext {
+    moduleName = 'quasar.osgi.security.config'
+}
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation:$osgiVer"
+    compileOnly "org.osgi:osgi.core:$osgiVer"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiComponentVer"
+    implementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
+}

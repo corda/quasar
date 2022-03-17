@@ -4,10 +4,9 @@ plugins {
 }
 
 ext {
-    moduleName = 'quasar.osgi.exception'
+    moduleName = 'quasar.osgi.unprivileged'
 }
 
 dependencies {
-    api project(':quasar-osgi-tests:osgi-base')
     compileOnly "org.osgi:osgi.annotation:$osgiVer"
 }

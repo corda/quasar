@@ -53,6 +53,7 @@ subprojects {
     ext.asmVer    = '7.0'
     ext.slf4jVer  = '1.7.36'
     ext.osgiVer   = '8.0.0'
+    ext.osgiComponentVer = '1.4.0'
 
     if (!project.hasProperty('mainClass')) { // must use project.hasProperty() rather than hasProperty in subprojects (gradle bug)
         ext.mainClass = ''
@@ -255,7 +256,6 @@ subprojects {
                     "Implementation-Title"      :   project.name,
                     "Implementation-Version"    :   archiveVersion.get(),
                     "Implementation-Vendor"     :   vendor,
-                    "Automatic-Module-Name"     :   project.moduleName,
                     "Built-By"                  :   System.getProperty("user.name"),
                 )
             }
@@ -452,7 +452,7 @@ project (':quasar-core') {
         }
     }
 
-    compileAgentJava {
+    tasks.named('compileAgentJava', JavaCompile) {
         options.compilerArgs += [
             '--patch-module', "${project.moduleName}.agent=${sourceSets.main.output.asPath}",
             '--module-path', configurations.agentCompileClasspath.asPath,
@@ -460,7 +460,7 @@ project (':quasar-core') {
         ]
     }
 
-    compileBundleJava {
+    tasks.named('compileBundleJava', JavaCompile) {
         options.compilerArgs += [
             '--patch-module', "${project.moduleName}.osgi=${sourceSets.main.output.asPath}",
             '--module-path', configurations.bundleCompileClasspath.asPath,
@@ -469,8 +469,17 @@ project (':quasar-core') {
     }
 
     // this happens after we've filtered the dependency on ASM from core's module-info
-    compileTestJava {
-        options.compilerArgs += ["--add-modules", "org.objectweb.asm", "--add-reads", "co.paralleluniverse.quasar.core=org.objectweb.asm"]
+    tasks.matching { it.name == 'compileJava' || it.name == 'compileTestJava' }.configureEach {
+        options.compilerArgs += [
+            '--add-modules', 'org.objectweb.asm',
+            '--add-modules', 'org.objectweb.asm.util',
+            '--add-modules', 'org.objectweb.asm.commons',
+            '--add-modules', 'org.objectweb.asm.tree.analysis',
+            '--add-reads', 'co.paralleluniverse.quasar.core=org.objectweb.asm',
+            '--add-reads', 'co.paralleluniverse.quasar.core=org.objectweb.asm.util',
+            '--add-reads', 'co.paralleluniverse.quasar.core=org.objectweb.asm.commons',
+            '--add-reads', 'co.paralleluniverse.quasar.core=org.objectweb.asm.tree.analysis'
+        ]
     }
 
     tasks.named('jar', Jar) {

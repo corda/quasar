@@ -94,12 +94,13 @@ import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
  * @author Matthias Mann
  */
 public class JavaAgent {
-    private static final String USAGE = "Usage: vdmcb0x(exclusion;...)l(exclusion;...) (verbose, debug, allow monitors, check class, allow blocking, disable OSGi support)";
+    private static final String USAGE = "Usage: vdmcb0x(exclusion;...)l(exclusion;...)o(exclusion;...) (verbose, debug, allow monitors, check class, allow blocking, disable OSGi support)";
     private static volatile boolean ACTIVE;
 
     public static void premain(String agentArguments, Instrumentation instrumentation) {
-        if (!instrumentation.isRetransformClassesSupported())
+        if (!instrumentation.isRetransformClassesSupported()) {
             System.err.println("Retransforming classes is not supported!");
+        }
 
         final QuasarInstrumentor instrumentor = new QuasarInstrumentor();
         ACTIVE = true;
@@ -168,12 +169,22 @@ public class JavaAgent {
                             final String s = parseArgBrackets(agentArguments, ++i);
                             i += s.length() + 1;
 
-                            String[] classLoaderExclusions = s.split(";",0);
+                            String[] classLoaderExclusions = s.split(";", 0);
                             for (String x : classLoaderExclusions) {
                                 instrumentor.addExcludedClassLoader(x);
                             }
                         }
                         break;
+                    case 'o': {
+                        final String s = parseArgBrackets(agentArguments, ++i);
+                        i += s.length() + 1;
+
+                        String[] bundleLocationExclusions = s.split(";", 0);
+                        for (String x : bundleLocationExclusions) {
+                            instrumentor.addExcludedBundleLocation(x);
+                        }
+                        break;
+                    }
                     case '0':
                         OSGiClassLoader.disable();
                         break;
