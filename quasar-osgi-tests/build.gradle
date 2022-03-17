@@ -2,6 +2,7 @@ import aQute.bnd.gradle.Bundle
 import aQute.bnd.gradle.Resolve
 import aQute.bnd.gradle.TestOSGi
 import aQute.bnd.version.MavenVersion
+import java.nio.file.Files
 
 import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
 
@@ -16,7 +17,7 @@ ext {
         MavenVersion.parseMavenString(quasarVersion).getOSGiVersion().toString()
     }
     quasarOptions = provider {
-        '=x(aQute.**)o(IGNORE/*;VERIFY/*)'
+        '=vx(aQute.**;org.osgi.**;org.apache.felix.**;org.junit.**;org.assertj.**)o(IGNORE/*;VERIFY/*)C(CACHED/*)'
     }
     reflectAsmVersion = '1.11.3'
 }
@@ -49,6 +50,8 @@ dependencies {
     quasarAgent project(path: ':quasar-core', configuration: 'agentJar')
     systemClasspath "com.esotericsoftware:reflectasm:$reflectAsmVersion"
     bundles project('osgi-suspendable')
+    bundles project('osgi-cacheable-one')
+    bundles project('osgi-cacheable-two')
 
     osgiTestCompileOnly "org.osgi:osgi.core:$osgiVer"
     osgiTestCompileOnly project(path: ':quasar-core', configuration: 'agentJar')
@@ -105,7 +108,7 @@ def osgiTestResources = tasks.named('processOsgiTestResources', ProcessResources
     }
 }
 
-def testOSGi = tasks.register('testOSGi', TestOSGi) {
+def testOSGi = tasks.register('testOSGi', TestOSGi) { task ->
     javaLauncher = javaToolchains.launcherFor {
         languageVersion = of(11)
     }
@@ -117,6 +120,12 @@ def testOSGi = tasks.register('testOSGi', TestOSGi) {
         testingBundle
     )
     bndrun = resolve.flatMap { it.outputBndrun }
+
+    ext {
+        cacheDirectory = provider {
+            Files.createTempDirectory(task.temporaryDir.toPath(), "cache")
+        }
+    }
 }
 
 tasks.named('jar', Jar) {

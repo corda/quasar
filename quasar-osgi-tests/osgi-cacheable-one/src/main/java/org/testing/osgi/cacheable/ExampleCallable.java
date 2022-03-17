@@ -1,4 +1,4 @@
-package org.testing.osgi.suspendable;
+package org.testing.osgi.cacheable;
 
 import co.paralleluniverse.fibers.Suspendable;
 
@@ -10,6 +10,6 @@ public class ExampleCallable implements Callable<String> {
     @Override
     public String call() {
         System.out.println("1>> ExampleCallable.call() invoked");
-        return "Hello Quasar!";
+        return "Hello Quasar Cache!";
     }
 }

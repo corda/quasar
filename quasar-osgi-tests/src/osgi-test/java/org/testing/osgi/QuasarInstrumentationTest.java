@@ -42,7 +42,7 @@ class QuasarInstrumentationTest {
     void testSuperClasses() throws Exception {
         ByteArrayOutputStream errors = new ByteArrayOutputStream();
         PrintStream oldStderr = System.err;
-        try (PrintStream stderr = new PrintStream(errors)) {
+        try (PrintStream stderr = new PrintStream(errors, true, UTF_8)) {
             System.setErr(stderr);
             assertThat(doUnprivileged(() -> ExceptionSuperClasses.throwException(MESSAGE)))
                 .isInstanceOf(SecondException.class)
@@ -57,7 +57,6 @@ class QuasarInstrumentationTest {
         String[] lines = errors.toString(UTF_8).split(System.lineSeparator());
         assertThat(lines)
             .contains("Caught: " + MESSAGE)
-            .noneMatch(line -> line.contains("Can't determine super class of "))
-            .noneMatch(line -> line.contains("[quasar]"));
+            .noneMatch(line -> line.startsWith("[quasar]") && line.contains("Can't determine super class of "));
     }
 }

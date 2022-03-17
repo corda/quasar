@@ -4,7 +4,7 @@ plugins {
 }
 
 ext {
-    moduleName = 'quasar.osgi.suspendable.one'
+    moduleName = 'quasar.osgi.cacheable.one'
 }
 
 dependencies {

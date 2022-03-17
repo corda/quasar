@@ -210,7 +210,15 @@ public final class ClassLoaderUtil {
         uc.setUseCaches(false);
         return uc.getInputStream();
     }
-    
+
+    public static InputStream getResourceStreamOrNull(ClassLoader cl, String resource) {
+        try {
+            return getResourceAsStream(cl, resource);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
     /**
      * Returns the class path URIs specified by the {@code Class-Path} manifest attribute, according
      * to <a href="http://docs.oracle.com/javase/6/docs/technotes/guides/jar/jar.html#Main%20Attributes">

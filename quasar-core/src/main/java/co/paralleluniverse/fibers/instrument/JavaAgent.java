@@ -80,13 +80,23 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import co.paralleluniverse.common.resource.ClassLoaderUtil;
 
+import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.security.NoSuchAlgorithmException;
 import java.security.ProtectionDomain;
 import java.util.Arrays;
+import java.util.Set;
 
 import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 
 /*
  * @author pron
@@ -94,7 +104,10 @@ import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
  * @author Matthias Mann
  */
 public class JavaAgent {
-    private static final String USAGE = "Usage: vdmcb0x(exclusion;...)l(exclusion;...)o(exclusion;...) (verbose, debug, allow monitors, check class, allow blocking, disable OSGi support)";
+    private static final String USAGE = "Usage: vdmcb0x(exclusion;...)l(exclusion;...)o(exclusion;...)C(cached;...)"
+        + "(verbose, debug, allow monitors, check class, allow blocking, disable OSGi support)";
+    private static final String CACHE_DIRECTORY_PROPERTY_NAME = "co.paralleluniverse.quasar.cacheDirectory";
+    private static final String BYTE_CODE_HASH_ALGORITHM = "SHA-256";
     private static volatile boolean ACTIVE;
 
     public static void premain(String agentArguments, Instrumentation instrumentation) {
@@ -102,11 +115,7 @@ public class JavaAgent {
             System.err.println("Retransforming classes is not supported!");
         }
 
-        final QuasarInstrumentor instrumentor = new QuasarInstrumentor();
-        ACTIVE = true;
-        SuspendableHelper.javaAgent = true;
-
-        instrumentor.setLog(new Log() {
+        final Log log = new Log() {
             @Override
             public void log(LogLevel level, String msg, Object... args) {
                 System.err.println("[quasar] " + level + ": " + String.format(msg, args));
@@ -117,7 +126,11 @@ public class JavaAgent {
                 System.err.println("[quasar] ERROR: " + msg);
                 exc.printStackTrace(System.err);
             }
-        });
+        };
+
+        final QuasarInstrumentor instrumentor = new QuasarInstrumentor(createByteCodeCache(log), log);
+        ACTIVE = true;
+        SuspendableHelper.javaAgent = true;
 
         if (agentArguments != null) {
             for (int i = 0; i < agentArguments.length(); i++) {
@@ -185,6 +198,15 @@ public class JavaAgent {
                         }
                         break;
                     }
+                    case 'C':
+                        final String s = parseArgBrackets(agentArguments, ++i);
+                        i += s.length() + 1;
+
+                        String[] cachedBundleLocations = s.split(";", 0);
+                        for (String x : cachedBundleLocations) {
+                            instrumentor.addCachedBundleLocation(x);
+                        }
+                        break;
                     case '0':
                         OSGiClassLoader.disable();
                         break;
@@ -207,6 +229,39 @@ public class JavaAgent {
         Retransform.instrumentor = instrumentor;
 
         instrumentation.addTransformer(new Transformer(instrumentor), true);
+    }
+
+    private static ByteCodeCache createByteCodeCache(Log log) {
+        final ByteCodeCache.CacheKeyFactory keyFactory;
+        try {
+            keyFactory = ByteCodeCache.createKeyFactory(BYTE_CODE_HASH_ALGORITHM);
+        } catch (NoSuchAlgorithmException e) {
+            throw new InternalError(e.getMessage(), e);
+        }
+
+        Path cacheDirectory = getCacheDirectory(log);
+        return (cacheDirectory != null)
+            ? new ByteCodeFileCache(keyFactory, cacheDirectory, log)
+            : new ByteCodeMemoryCache(keyFactory);
+    }
+
+    private static Path getCacheDirectory(Log log) {
+        String cacheDirectoryName = System.getProperty(CACHE_DIRECTORY_PROPERTY_NAME);
+        if (cacheDirectoryName != null) {
+            Path cacheDirectory = Paths.get(cacheDirectoryName).toAbsolutePath();
+            try {
+                final Set<PosixFilePermission> requiredPermissions = Set.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE);
+                if (Files.isDirectory(cacheDirectory) && Files.getPosixFilePermissions(cacheDirectory).containsAll(requiredPermissions)) {
+                    log.log(LogLevel.INFO, "Cache directory: %s", cacheDirectory.toAbsolutePath());
+                    return cacheDirectory;
+                } else {
+                    log.log(LogLevel.WARNING, "Invalid cache directory '%s'", cacheDirectoryName);
+                }
+            } catch (IOException e) {
+                log.error("Cannot determine permissions for " + cacheDirectoryName, e);
+            }
+        }
+        return null;
     }
 
     public static void agentmain(String agentArguments, Instrumentation instrumentation) {
@@ -241,19 +296,27 @@ public class JavaAgent {
                 return null;
             }
 
-            if (className != null && className.startsWith("clojure/lang/Compiler"))
+            if (className != null && className.startsWith("clojure/lang/Compiler")) {
                 return crazyClojureOnceDisable(loader, className, classBeingRedefined, protectionDomain, classfileBuffer);
+            }
 
-            if (!instrumentor.shouldInstrument(className))
+            if (!instrumentor.shouldInstrument(className)) {
                 return null;
+            }
 
-            Retransform.beforeTransform(className, classBeingRedefined, classfileBuffer);
+            ByteCodeTransformer transformer = instrumentor.adapt(this::transformByteCode, loader);
+            return transformer.transform(loader, className, classBeingRedefined, classfileBuffer);
+        }
+
+        private byte[] transformByteCode(ClassLoader loader, String className, Class<?> classBeingRedefined, byte[] classByteCode) {
+            Retransform.beforeTransform(className, classBeingRedefined, classByteCode);
 
             try {
-                final byte[] transformed = instrumentor.instrumentClass(loader, className, classfileBuffer);
+                final byte[] transformed = instrumentor.instrumentClass(loader, className, classByteCode);
 
-                if (transformed != null)
+                if (transformed != null) {
                     Retransform.afterTransform(className, classBeingRedefined, transformed);
+                }
 
                 return transformed;
             } catch (Throwable t) {
@@ -264,8 +327,9 @@ public class JavaAgent {
     }
 
     public static byte[] crazyClojureOnceDisable(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-        if (!Boolean.parseBoolean(System.getProperty("co.paralleluniverse.pulsar.disableOnce", "false")))
+        if (!Boolean.getBoolean("co.paralleluniverse.pulsar.disableOnce")) {
             return classfileBuffer;
+        }
 
         final ClassReader cr = new ClassReader(classfileBuffer);
         final ClassWriter cw = new ClassWriter(cr, 0);

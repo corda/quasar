@@ -34,7 +34,7 @@ public final class ExtractSuperClasses {
         return ExtractSuperClasses::extractSuperClasses;
     }
 
-    public static Map<String, String> extractSuperClasses(String className, ClassLoader cl) throws Exception {
+    private static Map<String, String> extractSuperClasses(String className, ClassLoader cl) throws Exception {
         try {
             return (cl instanceof BundleReference) ? doPrivileged((PrivilegedExceptionAction<Map<String, String>>) () ->
                new Extractor((BundleReference) cl).extractFor(className)

@@ -41,7 +41,6 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.common.resource.ClassLoaderUtil;
 import co.paralleluniverse.fibers.instrument.function.BiFunction;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
@@ -61,6 +60,8 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
 
+import static co.paralleluniverse.common.resource.ClassLoaderUtil.getResourceAsStream;
+import static co.paralleluniverse.common.resource.ClassLoaderUtil.getResourceStreamOrNull;
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 import static java.security.AccessController.doPrivileged;
 
@@ -124,22 +125,20 @@ public final class MethodDatabase {
     }
 
     public String checkClass(File f) {
-        try {
-            FileInputStream fis = new FileInputStream(f);
-            CheckInstrumentationVisitor civ = checkFileAndClose(fis);
+        try (FileInputStream fis = new FileInputStream(f)) {
+            final CheckInstrumentationVisitor civ = checkFileAndClose(fis);
 
-            if (civ != null) {
-                recordSuspendableMethods(civ.getName(), civ.getClassEntry());
+            recordSuspendableMethods(civ.getName(), civ.getClassEntry());
 
-                if (civ.needsInstrumentation()) {
-                    if (civ.isAlreadyInstrumented()) {
-                        log(LogLevel.INFO, "Found instrumented class: %s", f.getPath());
-                        if (JavaAgent.isActive())
-                            throw new AssertionError();
-                    } else {
-                        log(LogLevel.INFO, "Found class: %s", f.getPath());
-                        return civ.getName();
+            if (civ.needsInstrumentation()) {
+                if (civ.isAlreadyInstrumented()) {
+                    log(LogLevel.INFO, "Found instrumented class: %s", f.getPath());
+                    if (JavaAgent.isActive()) {
+                        throw new AssertionError();
                     }
+                } else {
+                    log(LogLevel.INFO, "Found class: %s", f.getPath());
+                    return civ.getName();
                 }
             }
             return null;
@@ -325,13 +324,15 @@ public final class MethodDatabase {
     }
 
     private ClassEntry checkClass(String className) {
-        ClassLoader cl = null;
+        final ClassLoader cl;
         if (clRef != null) {
             cl = clRef.get();
             if (cl == null) {
                 log(LogLevel.INFO, "Can't check class: %s", className);
                 return null;
             }
+        } else {
+            cl = null;
         }
 
         if (className.startsWith("[")) {
@@ -340,19 +341,16 @@ public final class MethodDatabase {
         }
 
         log(LogLevel.INFO, "Reading class: %s", className);
-        try (final InputStream is = doPrivileged(new GetResourceAsStream(cl, className + ".class"))) {
+        try (final InputStream is = doPrivileged((PrivilegedAction<InputStream>)() ->
+                getResourceStreamOrNull(cl, className + ".class"))) {
             if (is == null) {
                 log(LogLevel.INFO, "Class not found: %s", className);
                 return null;
             }
             ClassEntry entry = getClassEntry(className); // getResourceAsStream may have triggered instrumentation
             if (entry == null) {
-                final CheckInstrumentationVisitor civ = checkFileAndClose(is);
-                if (civ != null) {
-                    entry = civ.getClassEntry();
-                    recordSuspendableMethods(className, entry);
-                } else
-                    log(LogLevel.INFO, "Class not found: %s", className);
+                entry = checkFileAndClose(is).getClassEntry();
+                recordSuspendableMethods(className, entry);
             }
             return entry;
         } catch(IOException e) {
@@ -380,7 +378,7 @@ public final class MethodDatabase {
             }
         }
 
-        try (final InputStream is = ClassLoaderUtil.getResourceAsStream(cl, className + ".class")) {
+        try (final InputStream is = getResourceAsStream(cl, className + ".class")) {
             if (is != null) {
                 return ExtractSuperClass.extractFrom(is);
             }
@@ -495,7 +493,8 @@ public final class MethodDatabase {
     }
 
     public static boolean isProblematicClass(String className) {
-        return className.startsWith("org/gradle/")
+        return className == null
+               || className.startsWith("org/gradle/")
                || className.startsWith("javax/jms/")
                || className.startsWith("ch/qos/logback/")
                || className.startsWith("org/apache/logging/log4j/")
@@ -506,21 +505,6 @@ public final class MethodDatabase {
 
     public enum SuspendableType {
         NON_SUSPENDABLE, SUSPENDABLE_SUPER, SUSPENDABLE
-    }
-
-    private static final class GetResourceAsStream implements PrivilegedAction<InputStream> {
-        private final ClassLoader cl;
-        private final String resourceName;
-
-        GetResourceAsStream(ClassLoader cl, String resourceName) {
-            this.cl = cl;
-            this.resourceName = resourceName;
-        }
-
-        @Override
-        public InputStream run() {
-            return cl.getResourceAsStream(resourceName);
-        }
     }
 
     public static final class ClassEntry {
