@@ -197,26 +197,39 @@ public final class ClassLoaderUtil {
     public static URL getResource(ClassLoader cl, String resource) {
         return cl != null ? cl.getResource(resource) : ClassLoader.getSystemResource(resource);
     }
-    
+
     public static Enumeration<URL> getResources(ClassLoader cl, String resources) throws IOException {
         return cl != null ? cl.getResources(resources) : ClassLoader.getSystemResources(resources);
     }
-    
+
     public static InputStream getResourceAsStream(ClassLoader cl, String resource) throws IOException {
         URL url = getResource(cl, resource);
-        if (url == null)
+        if (url == null) {
             return null;
+        }
         URLConnection uc = url.openConnection();
         uc.setUseCaches(false);
         return uc.getInputStream();
     }
 
-    public static InputStream getResourceStreamOrNull(ClassLoader cl, String resource) {
-        try {
-            return getResourceAsStream(cl, resource);
-        } catch (IOException e) {
-            return null;
+    /**
+     * Finds the first ClassLoader in the hierarchy that can provide the target resource.
+     * @param loader A ClassLoader capable of finding the target resource.
+     * @param resourceName The name of the resource that we are matching.
+     * @param target The resource URL we are matching against.
+     * @return {@code loader}'s remotest parent that can still find {@code target}.
+     */
+    public static ClassLoader getBestClassLoader(ClassLoader loader, String resourceName, URL target) {
+        ClassLoader current = loader;
+        while (current != null) {
+            final ClassLoader next = current.getParent();
+            final URL resource = getResource(next, resourceName);
+            if (!target.equals(resource)) {
+                break;
+            }
+            current = next;
         }
+        return current;
     }
 
     /**

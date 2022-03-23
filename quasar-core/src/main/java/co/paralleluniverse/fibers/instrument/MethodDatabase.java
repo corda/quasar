@@ -41,7 +41,7 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.fibers.instrument.function.BiFunction;
+import co.paralleluniverse.fibers.instrument.function.ThrowingBiFunction;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import java.io.File;
@@ -50,18 +50,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
+import java.net.URL;
+import java.net.URLConnection;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 
+import static co.paralleluniverse.common.resource.ClassLoaderUtil.getBestClassLoader;
+import static co.paralleluniverse.common.resource.ClassLoaderUtil.getResource;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.getResourceAsStream;
-import static co.paralleluniverse.common.resource.ClassLoaderUtil.getResourceStreamOrNull;
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 import static java.security.AccessController.doPrivileged;
 
@@ -75,6 +80,8 @@ import static java.security.AccessController.doPrivileged;
  * @author pron
  */
 public final class MethodDatabase {
+    public static final String JRT_PROTOCOL = "jrt";
+
     private static final String JAVA_OBJECT = "java/lang/Object";
 
     private final WeakReference<ClassLoader> clRef;
@@ -122,6 +129,11 @@ public final class MethodDatabase {
 
     public Log getLog() {
         return instrumentor.getLog();
+    }
+
+    public Set<String> getClassNames() {
+        // Create a "snapshot" of the current set of class names.
+        return new HashSet<>(classes.keySet());
     }
 
     public String checkClass(File f) {
@@ -324,6 +336,11 @@ public final class MethodDatabase {
     }
 
     private ClassEntry checkClass(String className) {
+        if (className.startsWith("[")) {
+            // Don't try looking for an "array" class.
+            return null;
+        }
+
         final ClassLoader cl;
         if (clRef != null) {
             cl = clRef.get();
@@ -335,27 +352,51 @@ public final class MethodDatabase {
             cl = null;
         }
 
-        if (className.startsWith("[")) {
-            // Don't try looking for an "array" class.
+        log(LogLevel.INFO, "Reading class: %s", className);
+        final String resourceName = className + ".class";
+        final URL resource = doPrivileged((PrivilegedAction<URL>)() -> getResource(cl, resourceName));
+        if (resource == null) {
+            log(LogLevel.INFO, "Class not found: %s", className);
             return null;
         }
 
-        log(LogLevel.INFO, "Reading class: %s", className);
-        try (final InputStream is = doPrivileged((PrivilegedAction<InputStream>)() ->
-                getResourceStreamOrNull(cl, className + ".class"))) {
+        // Identify which classloader actually contains the byte-code for this class,
+        // because its ClassEntry should belong to that classloader's MethodDatabase.
+        final ClassLoader ownerCl =  OSGiClassLoader.findResourceOwner(cl).locate(cl, resourceName, resource);
+        final MethodDatabase targetDB = (ownerCl == cl) ? this : instrumentor.getMethodDatabase(ownerCl);
+
+        try (final InputStream is = privilegedOpenInputStream(resource)) {
             if (is == null) {
                 log(LogLevel.INFO, "Class not found: %s", className);
                 return null;
             }
-            ClassEntry entry = getClassEntry(className); // getResourceAsStream may have triggered instrumentation
-            if (entry == null) {
-                entry = checkFileAndClose(is).getClassEntry();
-                recordSuspendableMethods(className, entry);
-            }
-            return entry;
+            return targetDB.fetchClassEntry(className, is);
         } catch(IOException e) {
             throw new UncheckedIOException("While opening " + className, e);
         }
+    }
+
+    private ClassEntry fetchClassEntry(String className, InputStream is) throws IOException {
+        ClassEntry entry = getClassEntry(className);
+        if (entry == null) {
+            entry = checkFileAndClose(is).getClassEntry();
+            recordSuspendableMethods(className, entry);
+        }
+        return entry;
+    }
+
+    private InputStream privilegedOpenInputStream(URL resource) {
+        return doPrivileged((PrivilegedAction<InputStream>)() -> {
+            try {
+                final URLConnection uc = resource.openConnection();
+                uc.setUseCaches(false);
+                return uc.getInputStream();
+            } catch(IOException e) {
+                final String message = "While opening " + resource;
+                error(message, e);
+                throw new UncheckedIOException(message, e);
+            }
+        });
     }
 
     private CheckInstrumentationVisitor checkFileAndClose(InputStream is) throws IOException {
@@ -370,12 +411,14 @@ public final class MethodDatabase {
     }
 
     private String extractSuperClass(String className) {
-        ClassLoader cl = null;
+        final ClassLoader cl;
         if (clRef != null) {
             cl = clRef.get();
             if (cl == null) {
                 return null;
             }
+        } else {
+            cl = null;
         }
 
         try (final InputStream is = getResourceAsStream(cl, className + ".class")) {
@@ -414,7 +457,7 @@ public final class MethodDatabase {
     }
 
     private String getDirectSuperClass(String className) {
-        ClassEntry entry = getClassEntry(className);
+        final ClassEntry entry = getClassEntry(className);
         if (entry != null && entry != CLASS_NOT_FOUND)
             return entry.getSuperName();
 
@@ -436,12 +479,14 @@ public final class MethodDatabase {
     }
 
     private void checkOSGiSuperClasses(String className) {
-        ClassLoader cl = null;
+        final ClassLoader cl;
         if (clRef != null) {
             cl = clRef.get();
+        } else {
+            cl = null;
         }
         if (cl != null) {
-            Map<String, String> osgiSuperClasses = getOSGiSuperClassesFor(className, cl);
+            final Map<String, String> osgiSuperClasses = getOSGiSuperClassesFor(className, cl);
             if (osgiSuperClasses != null) {
                 synchronized(this) {
                     // Do not replace any existing super classes.
@@ -453,7 +498,7 @@ public final class MethodDatabase {
     }
 
     private Map<String, String> getOSGiSuperClassesFor(String className, ClassLoader cl) {
-        BiFunction<String, ClassLoader, Map<String, String>> fetchSuperClassExtractor = OSGiClassLoader.fetchSuperClassExtractor(cl);
+        final ThrowingBiFunction<String, ClassLoader, Map<String, String>> fetchSuperClassExtractor = OSGiClassLoader.fetchSuperClassExtractor(cl);
         try {
             return (fetchSuperClassExtractor == null) ? null : fetchSuperClassExtractor.applyThrowing(className, cl);
         } catch (Exception e) {
@@ -502,6 +547,21 @@ public final class MethodDatabase {
     }
 
     private static final ClassEntry CLASS_NOT_FOUND = new ClassEntry("<class not found>");
+
+    static ClassLoader getBestClassLoaderFor(ClassLoader cl, String resourceName, URL resource) {
+        if (resource != null) {
+            if (JRT_PROTOCOL.equals(resource.getProtocol())) {
+                // This resource is from the Java runtime base image.
+                return null;
+            } else {
+                // Get the first classloader in the hierarchy that can provide this resource.
+                return doPrivileged((PrivilegedAction<? extends ClassLoader>) () ->
+                    getBestClassLoader(cl, resourceName, resource)
+                );
+            }
+        }
+        return cl;
+    }
 
     public enum SuspendableType {
         NON_SUSPENDABLE, SUSPENDABLE_SUPER, SUSPENDABLE

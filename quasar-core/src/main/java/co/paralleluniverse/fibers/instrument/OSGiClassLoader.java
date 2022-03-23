@@ -1,6 +1,7 @@
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.fibers.instrument.function.BiFunction;
+import co.paralleluniverse.fibers.instrument.function.ResourceLocator;
+import co.paralleluniverse.fibers.instrument.function.ThrowingBiFunction;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,10 +25,13 @@ final class OSGiClassLoader extends ClassLoader {
     private static final String GET_EXTRACTOR_METHOD_NAME = "getExtractorMethod";
     private static final String BUNDLE_LOCATION_MATCHER_CLASS_NAME = "co.paralleluniverse.fibers.osgi.BundleLocationMatcher";
     private static final String GET_MATCHER_METHOD_NAME = "getMatcherMethod";
+    private static final String BUNDLE_LOCATOR_CLASS_NAME = "co.paralleluniverse.fibers.osgi.BundleLocator";
+    private static final String FIND_RESOURCE_OWNER_METHOD_NAME = "getFindResourceOwnerMethod";
     private static final String BUNDLE_CLASS_NAME = "org.osgi.framework.Bundle";
 
-    private static BiFunction<String, ClassLoader, Map<String, String>> superClassExtractor;
+    private static ThrowingBiFunction<String, ClassLoader, Map<String, String>> superClassExtractor;
     private static BiPredicate<ClassLoader, Collection<Pattern>> bundleLocationExcluder;
+    private static ResourceLocator findResourceOwner;
     private static ClassLoader osgiLoader;
 
     static {
@@ -66,17 +70,17 @@ final class OSGiClassLoader extends ClassLoader {
         try (InputStream input = resource.openStream()) {
             byte[] bytecode = input.readAllBytes();
             return defineClass(name, bytecode, 0, bytecode.length, OSGiClassLoader.class.getProtectionDomain());
-        } catch (IOException e) {
+        } catch(IOException e) {
             throw new InternalError("Error reading resource " + resourceName, e);
         }
     }
 
     private static ClassLoader getOSGiLoaderFrom(ClassLoader cl) {
         if (osgiLoader == null) {
-            Class<?> bundleClass;
+            final Class<?> bundleClass;
             try {
                 bundleClass = Class.forName(BUNDLE_CLASS_NAME, false, cl);
-            } catch (ClassNotFoundException e) {
+            } catch(ClassNotFoundException e) {
                 // The Bundle class is not visible from this classloader.
                 return null;
             }
@@ -86,16 +90,16 @@ final class OSGiClassLoader extends ClassLoader {
     }
 
     @SuppressWarnings("unchecked")
-    private static BiFunction<String, ClassLoader, Map<String, String>> createSuperClassExtractor(ClassLoader cl) {
+    private static ThrowingBiFunction<String, ClassLoader, Map<String, String>> createSuperClassExtractor(ClassLoader cl) {
         final ClassLoader loader = getOSGiLoaderFrom(cl);
         if (loader == null) {
             return null;
         }
 
         try {
-            Class<?> extractorClass = Class.forName(SUPER_CLASS_EXTRACTOR_CLASS_NAME, false, loader);
-            return (BiFunction<String, ClassLoader, Map<String, String>>) extractorClass.getMethod(GET_EXTRACTOR_METHOD_NAME).invoke(null);
-        } catch (ReflectiveOperationException e) {
+            final Class<?> extractorClass = Class.forName(SUPER_CLASS_EXTRACTOR_CLASS_NAME, false, loader);
+            return (ThrowingBiFunction<String, ClassLoader, Map<String, String>>) extractorClass.getMethod(GET_EXTRACTOR_METHOD_NAME).invoke(null);
+        } catch(ReflectiveOperationException e) {
             throw new InternalError("Failed to initialise " + SUPER_CLASS_EXTRACTOR_CLASS_NAME, e);
         }
     }
@@ -108,17 +112,31 @@ final class OSGiClassLoader extends ClassLoader {
         }
 
         try {
-            Class<?> matcherClass = Class.forName(BUNDLE_LOCATION_MATCHER_CLASS_NAME, false, loader);
+            final Class<?> matcherClass = Class.forName(BUNDLE_LOCATION_MATCHER_CLASS_NAME, false, loader);
             return (BiPredicate<ClassLoader, Collection<Pattern>>) matcherClass.getMethod(GET_MATCHER_METHOD_NAME).invoke(null);
-        } catch (ReflectiveOperationException e) {
+        } catch(ReflectiveOperationException e) {
             throw new InternalError("Failed to initialise " + BUNDLE_LOCATION_MATCHER_CLASS_NAME, e);
         }
     }
 
-    static synchronized BiFunction<String, ClassLoader, Map<String, String>> fetchSuperClassExtractor(ClassLoader cl) {
+    private static ResourceLocator createFindResourceOwner(ClassLoader cl) {
+        final ClassLoader loader = getOSGiLoaderFrom(cl);
+        if (loader == null) {
+            return null;
+        }
+
+        try {
+            final Class<?> locatorClass = Class.forName(BUNDLE_LOCATOR_CLASS_NAME, false, loader);
+            return (ResourceLocator) locatorClass.getMethod(FIND_RESOURCE_OWNER_METHOD_NAME).invoke(null);
+        } catch(ReflectiveOperationException e) {
+            throw new InternalError("Failed to initialise " + BUNDLE_LOCATOR_CLASS_NAME, e);
+        }
+    }
+
+    static synchronized ThrowingBiFunction<String, ClassLoader, Map<String, String>> fetchSuperClassExtractor(ClassLoader cl) {
         if (superClassExtractor == null) {
             superClassExtractor = doPrivileged(
-                (PrivilegedAction<? extends BiFunction<String, ClassLoader, Map<String, String>>>) () ->
+                (PrivilegedAction<? extends ThrowingBiFunction<String, ClassLoader, Map<String, String>>>) () ->
                     createSuperClassExtractor(cl)
             );
         }
@@ -135,11 +153,21 @@ final class OSGiClassLoader extends ClassLoader {
         return bundleLocationExcluder;
     }
 
+    static synchronized ResourceLocator findResourceOwner(ClassLoader cl) {
+        if (findResourceOwner == null) {
+            findResourceOwner = doPrivileged((PrivilegedAction<? extends ResourceLocator>) () ->
+                createFindResourceOwner(cl)
+            );
+        }
+        return findResourceOwner;
+    }
+
     static synchronized void disable() {
         if (osgiLoader == null) {
             // Only disable OSGi support if it hasn't been activated yet.
             superClassExtractor = (a, b) -> null;
             bundleLocationExcluder = (a, b) -> false;
+            findResourceOwner = MethodDatabase::getBestClassLoaderFor;
         }
     }
 }

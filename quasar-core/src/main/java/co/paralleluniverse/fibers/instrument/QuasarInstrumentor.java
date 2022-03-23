@@ -36,6 +36,8 @@ import java.util.WeakHashMap;
 import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
+import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToSlashed;
+
 /**
  * @author pron
  */
@@ -131,14 +133,14 @@ public final class QuasarInstrumentor {
     }
 
     byte[] instrumentClass(ClassLoader loader, String className, InputStream is, boolean forceInstrumentation) throws IOException {
-        final String internalClassName = className != null ? className.replace('.', '/') : null;
+        final String internalClassName = classToSlashed(className);
 
         byte[] cb = is.readAllBytes();
 
         final MethodDatabase db = getMethodDatabase(loader);
 
         if (internalClassName != null) {
-            MethodDatabase.ClassEntry classEntry = db.getClassEntry(internalClassName);
+            final MethodDatabase.ClassEntry classEntry = db.getClassEntry(internalClassName);
             log(LogLevel.INFO, "TRANSFORM: %s%s", className,
                 (classEntry != null && classEntry.requiresInstrumentation()) ? " request" : "");
 
@@ -323,7 +325,7 @@ public final class QuasarInstrumentor {
         if (excludedBundleLocations.isEmpty()) {
             return false;
         }
-        BiPredicate<ClassLoader, Collection<Pattern>> bundleMatcher = OSGiClassLoader.fetchBundleLocationMatcher(loader);
+        final BiPredicate<ClassLoader, Collection<Pattern>> bundleMatcher = OSGiClassLoader.fetchBundleLocationMatcher(loader);
         return bundleMatcher != null && bundleMatcher.test(loader, excludedBundleLocations);
     }
 
@@ -335,7 +337,7 @@ public final class QuasarInstrumentor {
         if (cachedBundleLocations.isEmpty()) {
             return false;
         }
-        BiPredicate<ClassLoader, Collection<Pattern>> bundleMatcher = OSGiClassLoader.fetchBundleLocationMatcher(loader);
+        final BiPredicate<ClassLoader, Collection<Pattern>> bundleMatcher = OSGiClassLoader.fetchBundleLocationMatcher(loader);
         return bundleMatcher != null && bundleMatcher.test(loader, cachedBundleLocations);
     }
 
@@ -344,7 +346,7 @@ public final class QuasarInstrumentor {
     }
 
     private static Pattern classLoaderPattern(String glob) {
-        StringBuilder out = new StringBuilder(glob.length() + 5).append('^');
+        final StringBuilder out = new StringBuilder(glob.length() + 5).append('^');
         int i = 0;
         while (i < glob.length()) {
             final char c = glob.charAt(i);
@@ -380,7 +382,7 @@ public final class QuasarInstrumentor {
     }
 
     private static Pattern bundleLocationPattern(String glob) {
-        StringBuilder out = new StringBuilder(glob.length() + 5).append('^');
+        final StringBuilder out = new StringBuilder(glob.length() + 5).append('^');
         int i = 0;
         while (i < glob.length()) {
             final char c = glob.charAt(i);
@@ -448,7 +450,7 @@ public final class QuasarInstrumentor {
         
         final String glob = packageGlob.replace('.', '/');
         
-        StringBuilder out = new StringBuilder(glob.length() + 5);
+        final StringBuilder out = new StringBuilder(glob.length() + 5);
         out.append('^');
         for (int i = 0; i < glob.length(); ++i) {
             final char c = glob.charAt(i);

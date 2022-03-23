@@ -70,7 +70,7 @@ final class ByteCodeFileCache implements ByteCodeCache {
             Files.write(tempFile, byteCode);
             Files.setPosixFilePermissions(tempFile, READ_ONLY);
             return Files.move(tempFile, cacheFile, ATOMIC_MOVE);
-        } catch (IOException e) {
+        } catch(IOException e) {
             Files.delete(tempFile);
             throw e;
         }
@@ -89,7 +89,7 @@ final class ByteCodeFileCache implements ByteCodeCache {
                 return doPrivileged((PrivilegedExceptionAction<byte[]>) () ->
                     Files.readAllBytes(cacheFile)
                 );
-            } catch (PrivilegedActionException e) {
+            } catch(PrivilegedActionException e) {
                 log.error("Failed to read cached byte-code for " + className, e.getException());
                 return computer.get();
             }
@@ -99,7 +99,7 @@ final class ByteCodeFileCache implements ByteCodeCache {
                 doPrivileged((PrivilegedExceptionAction<Path>) () ->
                     writeToCache(cacheFile, instrumentedCode)
                 );
-            } catch (PrivilegedActionException e) {
+            } catch(PrivilegedActionException e) {
                 log.error("Failed to write cache file for " + className, e.getException());
             }
             return instrumentedCode;

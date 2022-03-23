@@ -40,7 +40,7 @@ interface ByteCodeCache {
             } else if (!(obj instanceof CacheKey)) {
                 return false;
             }
-            CacheKey other = (CacheKey) obj;
+            final CacheKey other = (CacheKey) obj;
             return className.equals(other.className)
                 && byteCodeLength == other.byteCodeLength
                 && Arrays.equals(byteCodeHash, other.byteCodeHash);
@@ -65,7 +65,7 @@ interface ByteCodeCache {
     }
 
     static CacheKeyFactory createKeyFactory(String algorithmName) throws NoSuchAlgorithmException {
-        MessageDigest digester = MessageDigest.getInstance(algorithmName);
+        final MessageDigest digester = MessageDigest.getInstance(algorithmName);
         return new CacheKeyFactory(digester);
     }
 }

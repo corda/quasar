@@ -235,20 +235,20 @@ public class JavaAgent {
         final ByteCodeCache.CacheKeyFactory keyFactory;
         try {
             keyFactory = ByteCodeCache.createKeyFactory(BYTE_CODE_HASH_ALGORITHM);
-        } catch (NoSuchAlgorithmException e) {
+        } catch(NoSuchAlgorithmException e) {
             throw new InternalError(e.getMessage(), e);
         }
 
-        Path cacheDirectory = getCacheDirectory(log);
+        final Path cacheDirectory = getCacheDirectory(log);
         return (cacheDirectory != null)
             ? new ByteCodeFileCache(keyFactory, cacheDirectory, log)
             : new ByteCodeMemoryCache(keyFactory);
     }
 
     private static Path getCacheDirectory(Log log) {
-        String cacheDirectoryName = System.getProperty(CACHE_DIRECTORY_PROPERTY_NAME);
+        final String cacheDirectoryName = System.getProperty(CACHE_DIRECTORY_PROPERTY_NAME);
         if (cacheDirectoryName != null) {
-            Path cacheDirectory = Paths.get(cacheDirectoryName).toAbsolutePath();
+            final Path cacheDirectory = Paths.get(cacheDirectoryName).toAbsolutePath();
             try {
                 final Set<PosixFilePermission> requiredPermissions = Set.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE);
                 if (Files.isDirectory(cacheDirectory) && Files.getPosixFilePermissions(cacheDirectory).containsAll(requiredPermissions)) {
@@ -257,7 +257,7 @@ public class JavaAgent {
                 } else {
                     log.log(LogLevel.WARNING, "Invalid cache directory '%s'", cacheDirectoryName);
                 }
-            } catch (IOException e) {
+            } catch(IOException e) {
                 log.error("Cannot determine permissions for " + cacheDirectoryName, e);
             }
         }
@@ -279,7 +279,7 @@ public class JavaAgent {
     private static class Transformer implements ClassFileTransformer {
         private final QuasarInstrumentor instrumentor;
 
-        public Transformer(QuasarInstrumentor instrumentor) {
+        Transformer(QuasarInstrumentor instrumentor) {
             this.instrumentor = instrumentor;
         }
 
@@ -304,7 +304,7 @@ public class JavaAgent {
                 return null;
             }
 
-            ByteCodeTransformer transformer = instrumentor.adapt(this::transformByteCode, loader);
+            final ByteCodeTransformer transformer = instrumentor.adapt(this::transformByteCode, loader);
             return transformer.transform(loader, className, classBeingRedefined, classfileBuffer);
         }
 
