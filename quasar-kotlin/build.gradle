@@ -2,9 +2,6 @@ plugins {
     id 'org.jetbrains.kotlin.jvm'
 }
 
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
-
 dependencies {
     implementation project(path: ':quasar-core', configuration: 'jdk8Archives')
     implementation(project(':quasar-actors')) {
