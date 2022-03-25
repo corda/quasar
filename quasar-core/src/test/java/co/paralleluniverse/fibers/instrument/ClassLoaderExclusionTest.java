@@ -10,7 +10,7 @@ public class ClassLoaderExclusionTest {
 
     @Before
     public void setup() {
-        instrumentor = new QuasarInstrumentor(false);
+        instrumentor = new QuasarInstrumentor();
     }
 
     @Test

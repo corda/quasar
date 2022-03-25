@@ -52,8 +52,7 @@ public final class QuasarURLClassLoaderHelper {
     }
 
     private QuasarInstrumentor newInstrumentor() {
-        QuasarInstrumentor inst = new QuasarInstrumentor(false);
-        inst.setLog(new Log() {
+        return new QuasarInstrumentor(new Log() {
             @Override
             public void log(LogLevel level, String msg, Object... args) {
                 System.err.println("[quasar] " + level + ": " + String.format(msg, args));
@@ -65,7 +64,6 @@ public final class QuasarURLClassLoaderHelper {
                 exc.printStackTrace(System.err);
             }
         });
-        return inst;
     }
 
     public void setLog(final boolean verbose, final boolean debug) {

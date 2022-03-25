@@ -14,21 +14,34 @@
 package co.paralleluniverse.fibers.instrument;
 
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.ServiceLoader;
 
 import static co.paralleluniverse.fibers.instrument.Classes.LAMBDA_METHOD_PREFIX;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPEND_EXECUTION_NAME;
+import static java.util.Collections.unmodifiableList;
 
 /**
  *
  * @author pron
  */
 public class DefaultSuspendableClassifier implements SuspendableClassifier {
-    private final ServiceLoader<SuspendableClassifier> loader;
+    private final List<SuspendableClassifier> classifiers;
     private final SuspendableClassifier simpleClassifier;
 
+    private static <T> List<T> toList(Iterator<T> iterator) {
+        List<T> result = new ArrayList<>();
+        while (iterator.hasNext()) {
+            result.add(iterator.next());
+        }
+        return unmodifiableList(result);
+    }
+
     public DefaultSuspendableClassifier(ClassLoader classLoader) {
-        this.loader = ServiceLoader.load(SuspendableClassifier.class, classLoader);
+        this.classifiers = toList(ServiceLoader.load(SuspendableClassifier.class, classLoader).iterator());
         this.simpleClassifier = new SimpleSuspendableClassifier(classLoader);
     }
 
@@ -39,7 +52,7 @@ public class DefaultSuspendableClassifier implements SuspendableClassifier {
 
         try {
             // classifier service
-            for (SuspendableClassifier sc : loader) {
+            for (SuspendableClassifier sc : classifiers) {
                 st = sc.isSuspendable(db, sourceName, sourceDebugInfo, isInterface, className, superClassName, interfaces, methodName, methodDesc, methodSignature, methodExceptions);
                 if (st != null)
                     return st;

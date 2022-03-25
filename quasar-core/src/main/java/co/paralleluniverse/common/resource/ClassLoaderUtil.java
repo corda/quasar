@@ -161,7 +161,7 @@ public final class ClassLoaderUtil {
     }
 
     private static void scanJar(File file, ClassLoader classloader, Set<URI> scannedUris, Visitor visitor) throws IOException {
-        JarFile jarFile;
+        final JarFile jarFile;
         try {
             jarFile = new JarFile(file);
         } catch (IOException e) {
@@ -184,6 +184,36 @@ public final class ClassLoaderUtil {
             } catch (IOException ignored) {
             }
         }
+    }
+
+    /**
+     * Finds the first ClassLoader in the hierarchy that can provide the target resource.
+     * @param loader A ClassLoader capable of finding the target resource.
+     * @param resourceName The name of the resource that we are matching.
+     * @param target The resource URL we are matching against.
+     * @return {@code loader}'s remotest parent that can still find {@code target}.
+     */
+    public static ClassLoader getBestClassLoader(ClassLoader loader, String resourceName, URL target) {
+        final ClassLoader extensionClassLoader = ClassLoader.getSystemClassLoader().getParent();
+        final ClassLoader bootstrapClassLoader = extensionClassLoader.getParent();
+        ClassLoader current = loader;
+        for (;;) {
+            ClassLoader next = current.getParent();
+            if (next == bootstrapClassLoader) {
+                if (current == extensionClassLoader) {
+                    break;
+                }
+                next = extensionClassLoader;
+            }
+
+            final URL resource = next.getResource(resourceName);
+            if (!target.equals(resource)) {
+                break;
+            }
+
+            current = next;
+        }
+        return current;
     }
 
     /**

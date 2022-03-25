@@ -21,21 +21,24 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.PrivilegedAction;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.security.AccessController.doPrivileged;
 
 /**
  *
  * @author pron
  */
 public class SimpleSuspendableClassifier implements SuspendableClassifier {
-    public static final String PREFIX = "META-INF/";
-    public static final String SUSPENDABLES_FILE = "suspendables";
-    public static final String SUSPENDABLE_SUPERS_FILE = "suspendable-supers";
+    private static final String PREFIX = "META-INF/";
+    private static final String SUSPENDABLES_FILE = "suspendables";
+    private static final String SUSPENDABLE_SUPERS_FILE = "suspendable-supers";
 
     private final Set<String> suspendables = new HashSet<>();
     private final Set<String> suspendableClasses = new HashSet<>();
@@ -72,15 +75,15 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
         return suspendableClasses;
     }
 
+    private static Enumeration<URL> getFiles(ClassLoader classLoader, String fileName) {
+        return doPrivileged(new GetResourcesAction(classLoader, PREFIX + fileName));
+    }
+
     private void readFiles(ClassLoader classLoader, String fileName, Set<String> set, Set<String> classSet) {
-        try {
-            for (Enumeration<URL> susFiles = classLoader.getResources(PREFIX + fileName); susFiles.hasMoreElements();) {
-                URL file = susFiles.nextElement();
-                // System.err.println("RRRRR: " + file);
-                parse(file, set, classSet);
-            }
-        } catch (IOException e) {
-            // silently ignore
+        for (Enumeration<URL> susFiles = getFiles(classLoader, fileName); susFiles.hasMoreElements();) {
+            URL file = susFiles.nextElement();
+            // System.err.println("RRRRR: " + file);
+            parse(file, set, classSet);
         }
     }
 
@@ -93,34 +96,7 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
     }
 
     private static void parse(URL file, Set<String> set, Set<String> classSet) {
-        try (InputStream is = file.openStream();
-             BufferedReader reader = new BufferedReader(new InputStreamReader(is, UTF_8))) {
-            String line;
-
-            for (int linenum = 1; (line = reader.readLine()) != null; linenum++) {
-                final String s = line.trim();
-                if (s.isEmpty())
-                    continue;
-                if (s.charAt(0) == '#')
-                    continue;
-                final int index = s.lastIndexOf('.');
-                if (index <= 0) {
-                    System.err.println("Can't parse line " + linenum + " in " + file + ": " + line);
-                    continue;
-                }
-                final String className = s.substring(0, index).replace('.', '/');
-                final String methodName = s.substring(index + 1);
-                final String fullName = className + '.' + methodName;
-
-                if (methodName.equals("*")) {
-                    if (classSet != null)
-                        classSet.add(className);
-                } else
-                    set.add(fullName);
-            }
-        } catch (IOException e) {
-            // silently ignore
-        }
+        doPrivileged(new ParseFileAction(file, set, classSet));
     }
 
     // test if the given method exists explicitly in the suspendables files
@@ -222,5 +198,72 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
         if (a != b)
             throw new AssertionError("a: " + a + " b: " + b);
         return a;
+    }
+
+    private static final class GetResourcesAction implements PrivilegedAction<Enumeration<URL>> {
+        private final ClassLoader classLoader;
+        private final String resourceName;
+
+        GetResourcesAction(ClassLoader classLoader, String resourceName) {
+            this.classLoader = classLoader;
+            this.resourceName = resourceName;
+        }
+
+        @Override
+        public Enumeration<URL> run() {
+            try {
+                return classLoader.getResources(resourceName);
+            } catch (IOException e) {
+                // silently ignore
+                return Collections.emptyEnumeration();
+            }
+        }
+    }
+
+    private static final class ParseFileAction implements PrivilegedAction<Void> {
+        private final URL file;
+        private final Set<String> set;
+        private final Set<String> classSet;
+
+        ParseFileAction(URL file, Set<String> set, Set<String> classSet) {
+            this.file = file;
+            this.set = set;
+            this.classSet = classSet;
+        }
+
+        @Override
+        public Void run() {
+            try (InputStream is = file.openStream();
+                 BufferedReader reader = new BufferedReader(new InputStreamReader(is, UTF_8))) {
+                String line;
+
+                for (int linenum = 1; (line = reader.readLine()) != null; linenum++) {
+                    final String s = line.trim();
+                    if (s.isEmpty())
+                        continue;
+                    if (s.charAt(0) == '#')
+                        continue;
+                    final int index = s.lastIndexOf('.');
+                    if (index <= 0) {
+                        System.err.println("Can't parse line " + linenum + " in " + file + ": " + line);
+                        continue;
+                    }
+                    final String className = s.substring(0, index).replace('.', '/');
+                    final String methodName = s.substring(index + 1);
+                    final String fullName = className + '.' + methodName;
+
+                    if (methodName.equals("*")) {
+                        if (classSet != null) {
+                            classSet.add(className);
+                        }
+                    } else {
+                        set.add(fullName);
+                    }
+                }
+            } catch (IOException e) {
+                // silently ignore
+            }
+            return null;
+        }
     }
 }
