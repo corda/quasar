@@ -2,7 +2,7 @@ package co.paralleluniverse.fibers.osgi;
 
 import co.paralleluniverse.common.resource.ClassLoaderUtil;
 import co.paralleluniverse.fibers.instrument.ExtractSuperClass;
-import co.paralleluniverse.fibers.instrument.function.BiFunction;
+import co.paralleluniverse.fibers.instrument.function.ThrowingBiFunction;
 import org.osgi.framework.BundleReference;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleWire;
@@ -30,11 +30,11 @@ public final class ExtractSuperClasses {
     private static final String PACKAGE_WIRING = "osgi.wiring.package";
     private static final String JAVA_OBJECT = "java/lang/Object";
 
-    public static BiFunction<String, ClassLoader, Map<String, String>> getExtractorMethod() {
+    public static ThrowingBiFunction<String, ClassLoader, Map<String, String>> getExtractorMethod() {
         return ExtractSuperClasses::extractSuperClasses;
     }
 
-    public static Map<String, String> extractSuperClasses(String className, ClassLoader cl) throws Exception {
+    private static Map<String, String> extractSuperClasses(String className, ClassLoader cl) throws Exception {
         try {
             return (cl instanceof BundleReference) ? doPrivileged((PrivilegedExceptionAction<Map<String, String>>) () ->
                new Extractor((BundleReference) cl).extractFor(className)

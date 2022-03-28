@@ -123,14 +123,7 @@ public class InstrumentationTask extends Task {
             for (FileSet fs : filesets)
                 urls.add(fs.getDir().toURI().toURL());
             final ClassLoader cl = new URLClassLoader(urls.toArray(new URL[0]), getClass().getClassLoader());
-            final QuasarInstrumentor instrumentor = new QuasarInstrumentor();
-
-            instrumentor.setCheck(check);
-            instrumentor.setVerbose(verbose);
-            instrumentor.setDebug(debug);
-            instrumentor.setAllowMonitors(allowMonitors);
-            instrumentor.setAllowBlocking(allowBlocking);
-            instrumentor.setLog(new Log() {
+            final QuasarInstrumentor instrumentor = new QuasarInstrumentor(new Log() {
                 @Override
                 public void log(LogLevel level, String msg, Object... args) {
                     final int msgLevel;
@@ -155,6 +148,12 @@ public class InstrumentationTask extends Task {
                     InstrumentationTask.this.log("ERROR: " + msg, ex, Project.MSG_ERR);
                 }
             });
+
+            instrumentor.setCheck(check);
+            instrumentor.setVerbose(verbose);
+            instrumentor.setDebug(debug);
+            instrumentor.setAllowMonitors(allowMonitors);
+            instrumentor.setAllowBlocking(allowBlocking);
 
             for (FileSet fs : filesets) {
                 final DirectoryScanner ds = fs.getDirectoryScanner(getProject());

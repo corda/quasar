@@ -18,7 +18,7 @@ configurations.all {
 }
 
 dependencies {
-    implementation project(path: ':quasar-core', configuration: 'shadowedJar')
+    implementation project(path: ':quasar-core', configuration: 'classic')
     implementation(project(':quasar-actors')) {
         exclude module: 'quasar-core'
     }

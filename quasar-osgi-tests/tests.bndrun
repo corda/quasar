@@ -6,6 +6,7 @@
 
 -runvm: \
     "-javaagent:${project.configurations.quasarAgent.singleFile}${project.quasarOptions}",\
+    -Dco.paralleluniverse.quasar.cacheDirectory=${task.cacheDirectory},\
     -Dco.paralleluniverse.fibers.verifyInstrumentation,\
     -Djava.security.policy=all.policy,\
     --add-opens, 'java.base/java.net=ALL-UNNAMED'

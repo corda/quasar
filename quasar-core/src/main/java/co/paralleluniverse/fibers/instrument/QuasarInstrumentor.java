@@ -13,7 +13,6 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.common.asm.ASMUtil;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -21,7 +20,6 @@ import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,13 +36,12 @@ import java.util.WeakHashMap;
 import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
+import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToSlashed;
+
 /**
  * @author pron
  */
 public final class QuasarInstrumentor {
-    @SuppressWarnings("WeakerAccess")
-    public static final int ASMAPI = ASMUtil.ASMAPI;
-
     private static final String THIS_PACKAGE_NAME = "co.paralleluniverse.fibers.instrument.";
     private static final List<String> BUILT_IN_PACKAGES = List.of(
         "co/paralleluniverse/asm/",
@@ -74,19 +71,29 @@ public final class QuasarInstrumentor {
     private final Collection<Pattern> exclusions = new ArrayList<>();
     private final Collection<Pattern> excludedClassLoaders = new ArrayList<>();
     private final Collection<Pattern> excludedBundleLocations = new ArrayList<>();
-    private Log log;
+    private final Collection<Pattern> cachedBundleLocations = new ArrayList<>();
+    private final ByteCodeCache byteCodeCache;
+    private final Log log;
     private boolean verbose;
     private boolean debug;
     private int logLevelMask;
 
     private static boolean isEmptyOrTrue(String value) {
-        if (value == null)
-            return false;
-        return value.isEmpty() || Boolean.parseBoolean(value);
+        return (value != null) && (value.isEmpty() || Boolean.parseBoolean(value));
     }
 
-    public QuasarInstrumentor() {
+    QuasarInstrumentor() {
+        this(null, null);
+    }
+
+    QuasarInstrumentor(Log log) {
+        this(null, log);
+    }
+
+    QuasarInstrumentor(ByteCodeCache byteCodeCache, Log log) {
         setLogLevelMask();
+        this.byteCodeCache = byteCodeCache;
+        this.log = log;
     }
 
     boolean shouldInstrument(ClassLoader loader) {
@@ -126,18 +133,18 @@ public final class QuasarInstrumentor {
     }
 
     byte[] instrumentClass(ClassLoader loader, String className, InputStream is, boolean forceInstrumentation) throws IOException {
-        className = className != null ? className.replace('.', '/') : null;
+        final String internalClassName = classToSlashed(className);
 
-        byte[] cb = toByteArray(is);
+        byte[] cb = is.readAllBytes();
 
-        MethodDatabase db = getMethodDatabase(loader);
+        final MethodDatabase db = getMethodDatabase(loader);
 
-        if (className != null) {
-            MethodDatabase.ClassEntry classEntry = db.getClassEntry(className);
-            log(LogLevel.INFO, "TRANSFORM: %s %s", className,
-                (classEntry != null && classEntry.requiresInstrumentation()) ? "request" : "");
+        if (internalClassName != null) {
+            final MethodDatabase.ClassEntry classEntry = db.getClassEntry(internalClassName);
+            log(LogLevel.INFO, "TRANSFORM: %s%s", className,
+                (classEntry != null && classEntry.requiresInstrumentation()) ? " request" : "");
 
-            examine(className, "quasar-1-preinstr", cb);
+            examine(internalClassName, "quasar-1-preinstr", cb);
         } else {
             log(LogLevel.INFO, "TRANSFORM: null className");
         }
@@ -149,7 +156,7 @@ public final class QuasarInstrumentor {
         r1.accept(ic1, 0);
         cb = cw1.toByteArray();
 
-        examine(className, "quasar-2", cb);
+        examine(internalClassName, "quasar-2", cb);
 
         // Phase 2, instrument, tree API
         final ClassReader r2 = new ClassReader(cb);
@@ -164,13 +171,14 @@ public final class QuasarInstrumentor {
                 error("Unable to instrument class " + className, e);
                 throw e;
             } else {
-                if (!MethodDatabase.isProblematicClass(className))
+                if (!MethodDatabase.isProblematicClass(internalClassName)) {
                     log(LogLevel.DEBUG, "Unable to instrument class " + className);
+                }
                 return null;
             }
         }
 
-        examine(className, "quasar-4", cb);
+        examine(internalClassName, "quasar-4", cb);
 
         // Phase 4, fill suspendable call offsets, event API is enough
         final OffsetClassReader r3 = new OffsetClassReader(cb);
@@ -181,7 +189,7 @@ public final class QuasarInstrumentor {
 
         // DEBUG
         if (EXAMINED_CLASS != null) {
-            examine(className, "quasar-5-final", cb);
+            examine(internalClassName, "quasar-5-final", cb);
 
             if (check) {
                 ClassReader r4 = new ClassReader(cb);
@@ -199,6 +207,15 @@ public final class QuasarInstrumentor {
             writeToFile(filename, data);
 //            return new TraceClassVisitor(cv, new PrintWriter(new File(filename)));
         }
+    }
+
+    ByteCodeTransformer adapt(ByteCodeTransformer transformer, ClassLoader loader) {
+        return isCachedClassLoader(loader) && byteCodeCache != null
+            ? (classLoader, className, classBeingRedefined, byteCode) ->
+                byteCodeCache.computeIfAbsent(className, byteCode, () ->
+                    transformer.transform(classLoader, className, classBeingRedefined, byteCode)
+                )
+            : transformer;
     }
 
     @SuppressWarnings("WeakerAccess")
@@ -241,14 +258,6 @@ public final class QuasarInstrumentor {
     @SuppressWarnings("WeakerAccess")
     public synchronized QuasarInstrumentor setAllowBlocking(boolean allowBlocking) {
         this.allowBlocking = allowBlocking;
-        return this;
-    }
-
-    public synchronized QuasarInstrumentor setLog(Log log) {
-        this.log = log;
-//        for (MethodDatabase db : dbForClassloader.values()) {
-//            db.setLog(log);
-//        }
         return this;
     }
 
@@ -316,7 +325,7 @@ public final class QuasarInstrumentor {
         if (excludedBundleLocations.isEmpty()) {
             return false;
         }
-        BiPredicate<ClassLoader, Collection<Pattern>> bundleMatcher = OSGiClassLoader.fetchBundleLocationMatcher(loader);
+        final BiPredicate<ClassLoader, Collection<Pattern>> bundleMatcher = OSGiClassLoader.fetchBundleLocationMatcher(loader);
         return bundleMatcher != null && bundleMatcher.test(loader, excludedBundleLocations);
     }
 
@@ -324,8 +333,20 @@ public final class QuasarInstrumentor {
         excludedBundleLocations.add(bundleLocationPattern(glob));
     }
 
+    boolean isCachedClassLoader(ClassLoader loader) {
+        if (cachedBundleLocations.isEmpty()) {
+            return false;
+        }
+        final BiPredicate<ClassLoader, Collection<Pattern>> bundleMatcher = OSGiClassLoader.fetchBundleLocationMatcher(loader);
+        return bundleMatcher != null && bundleMatcher.test(loader, cachedBundleLocations);
+    }
+
+    synchronized void addCachedBundleLocation(String glob) {
+        cachedBundleLocations.add(bundleLocationPattern(glob));
+    }
+
     private static Pattern classLoaderPattern(String glob) {
-        StringBuilder out = new StringBuilder(glob.length() + 5).append('^');
+        final StringBuilder out = new StringBuilder(glob.length() + 5).append('^');
         int i = 0;
         while (i < glob.length()) {
             final char c = glob.charAt(i);
@@ -361,7 +382,7 @@ public final class QuasarInstrumentor {
     }
 
     private static Pattern bundleLocationPattern(String glob) {
-        StringBuilder out = new StringBuilder(glob.length() + 5).append('^');
+        final StringBuilder out = new StringBuilder(glob.length() + 5).append('^');
         int i = 0;
         while (i < glob.length()) {
             final char c = glob.charAt(i);
@@ -424,35 +445,12 @@ public final class QuasarInstrumentor {
         }
     }
 
-    private static byte[] toByteArray(InputStream in) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        copy(in, out);
-        return out.toByteArray();
-    }
-
-    private static final int BUF_SIZE = 8192;
-
-    private static long copy(InputStream from, OutputStream to)
-        throws IOException {
-        byte[] buf = new byte[BUF_SIZE];
-        long total = 0;
-        while (true) {
-            int r = from.read(buf);
-            if (r == -1) {
-                break;
-            }
-            to.write(buf, 0, r);
-            total += r;
-        }
-        return total;
-    }
-    
     private static Pattern packagePattern(String packageGlob) {
         final String DOT = "[^/]"; // exclude /
         
         final String glob = packageGlob.replace('.', '/');
         
-        StringBuilder out = new StringBuilder(glob.length() + 5);
+        final StringBuilder out = new StringBuilder(glob.length() + 5);
         out.append('^');
         for (int i = 0; i < glob.length(); ++i) {
             final char c = glob.charAt(i);

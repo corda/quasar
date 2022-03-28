@@ -1,10 +1,12 @@
 package co.paralleluniverse.fibers.instrument.function;
 
+import java.util.function.BiFunction;
+
 /**
- * Extends {@link java.util.function.BiFunction} to support checked exceptions.
+ * Extends {@link BiFunction} to support checked exceptions.
  */
 @FunctionalInterface
-public interface BiFunction<T, U, R> extends java.util.function.BiFunction<T, U, R> {
+public interface ThrowingBiFunction<T, U, R> extends BiFunction<T, U, R> {
     R applyThrowing(T a, U b) throws Exception;
 
     default R apply(T a, U b) {
