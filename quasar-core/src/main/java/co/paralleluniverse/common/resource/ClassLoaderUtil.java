@@ -194,20 +194,12 @@ public final class ClassLoaderUtil {
         }
     }
 
-    public static URL getResource(ClassLoader cl, String resource) {
-        return cl != null ? cl.getResource(resource) : ClassLoader.getSystemResource(resource);
-    }
-
-    public static Enumeration<URL> getResources(ClassLoader cl, String resources) throws IOException {
-        return cl != null ? cl.getResources(resources) : ClassLoader.getSystemResources(resources);
-    }
-
     public static InputStream getResourceAsStream(ClassLoader cl, String resource) throws IOException {
-        URL url = getResource(cl, resource);
+        final URL url = cl.getResource(resource);
         if (url == null) {
             return null;
         }
-        URLConnection uc = url.openConnection();
+        final URLConnection uc = url.openConnection();
         uc.setUseCaches(false);
         return uc.getInputStream();
     }
@@ -220,13 +212,22 @@ public final class ClassLoaderUtil {
      * @return {@code loader}'s remotest parent that can still find {@code target}.
      */
     public static ClassLoader getBestClassLoader(ClassLoader loader, String resourceName, URL target) {
+        final ClassLoader platformClassLoader = ClassLoader.getPlatformClassLoader();
         ClassLoader current = loader;
-        while (current != null) {
-            final ClassLoader next = current.getParent();
-            final URL resource = getResource(next, resourceName);
+        for (;;) {
+            ClassLoader next = current.getParent();
+            if (next == null) {
+                if (current == platformClassLoader) {
+                    break;
+                }
+                next = platformClassLoader;
+            }
+
+            final URL resource = next.getResource(resourceName);
             if (!target.equals(resource)) {
                 break;
             }
+
             current = next;
         }
         return current;

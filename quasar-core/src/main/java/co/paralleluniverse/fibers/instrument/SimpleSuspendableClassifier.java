@@ -13,7 +13,6 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.common.resource.ClassLoaderUtil;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import java.io.BufferedReader;
 import java.io.File;
@@ -22,21 +21,24 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.PrivilegedAction;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.security.AccessController.doPrivileged;
 
 /**
  *
  * @author pron
  */
 public class SimpleSuspendableClassifier implements SuspendableClassifier {
-    public static final String PREFIX = "META-INF/";
-    public static final String SUSPENDABLES_FILE = "suspendables";
-    public static final String SUSPENDABLE_SUPERS_FILE = "suspendable-supers";
+    private static final String PREFIX = "META-INF/";
+    private static final String SUSPENDABLES_FILE = "suspendables";
+    private static final String SUSPENDABLE_SUPERS_FILE = "suspendable-supers";
 
     private final Set<String> suspendables = new HashSet<>();
     private final Set<String> suspendableClasses = new HashSet<>();
@@ -46,11 +48,6 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
     public SimpleSuspendableClassifier(ClassLoader classLoader) {
         readFiles(classLoader, SUSPENDABLES_FILE, suspendables, suspendableClasses);
         readFiles(classLoader, SUSPENDABLE_SUPERS_FILE, suspendableSupers, suspendableSuperInterfaces);
-
-//        System.err.println("CCCC SUSPENDABLE: " + suspendables);
-//        System.err.println("CCCC SUSPENDABLE classes: " + suspendableClasses);
-//        System.err.println("CCCC SUSPENDABLE_SUPER: " + suspendableSupers);
-//        System.err.println("CCCC SUSPENDABLE_SUPER interfaces: " + suspendableSuperInterfaces);
     }
 
     // Allows loading and querying custom 'suspendables' and 'suspendable-supers' resources
@@ -73,15 +70,22 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
         return suspendableClasses;
     }
 
-    private void readFiles(ClassLoader classLoader, String fileName, Set<String> set, Set<String> classSet) {
-        try {
-            for (Enumeration<URL> susFiles = ClassLoaderUtil.getResources(classLoader, PREFIX + fileName); susFiles.hasMoreElements();) {
-                URL file = susFiles.nextElement();
-                // System.err.println("RRRRR: " + file);
-                parse(file, set, classSet);
+    private static Enumeration<URL> getFiles(ClassLoader classLoader, String fileName) {
+        return doPrivileged((PrivilegedAction<Enumeration<URL>>)() -> {
+            try {
+                return classLoader.getResources(PREFIX + fileName);
+            } catch (IOException e) {
+                // silently ignore
+                return Collections.emptyEnumeration();
             }
-        } catch (IOException e) {
-            // silently ignore
+        });
+    }
+
+    private void readFiles(ClassLoader classLoader, String fileName, Set<String> set, Set<String> classSet) {
+        for (Enumeration<URL> susFiles = getFiles(classLoader, fileName); susFiles.hasMoreElements();) {
+            URL file = susFiles.nextElement();
+            // System.err.println("RRRRR: " + file);
+            parse(file, set, classSet);
         }
     }
 
@@ -94,34 +98,37 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
     }
 
     private static void parse(URL file, Set<String> set, Set<String> classSet) {
-        try (InputStream is = file.openStream();
-             BufferedReader reader = new BufferedReader(new InputStreamReader(is, UTF_8))) {
-            String line;
+        doPrivileged((PrivilegedAction<Void>)() -> {
+            try (InputStream is = file.openStream();
+                 BufferedReader reader = new BufferedReader(new InputStreamReader(is, UTF_8))) {
+                String line;
 
-            for (int linenum = 1; (line = reader.readLine()) != null; linenum++) {
-                final String s = line.trim();
-                if (s.isEmpty())
-                    continue;
-                if (s.charAt(0) == '#')
-                    continue;
-                final int index = s.lastIndexOf('.');
-                if (index <= 0) {
-                    System.err.println("Can't parse line " + linenum + " in " + file + ": " + line);
-                    continue;
+                for (int linenum = 1; (line = reader.readLine()) != null; linenum++) {
+                    final String s = line.trim();
+                    if (s.isEmpty())
+                        continue;
+                    if (s.charAt(0) == '#')
+                        continue;
+                    final int index = s.lastIndexOf('.');
+                    if (index <= 0) {
+                        System.err.println("Can't parse line " + linenum + " in " + file + ": " + line);
+                        continue;
+                    }
+                    final String className = s.substring(0, index).replace('.', '/');
+                    final String methodName = s.substring(index + 1);
+                    final String fullName = className + '.' + methodName;
+
+                    if (methodName.equals("*")) {
+                        if (classSet != null)
+                            classSet.add(className);
+                    } else
+                        set.add(fullName);
                 }
-                final String className = s.substring(0, index).replace('.', '/');
-                final String methodName = s.substring(index + 1);
-                final String fullName = className + '.' + methodName;
-
-                if (methodName.equals("*")) {
-                    if (classSet != null)
-                        classSet.add(className);
-                } else
-                    set.add(fullName);
+            } catch (IOException e) {
+                // silently ignore
             }
-        } catch (IOException e) {
-            // silently ignore
-        }
+            return null;
+        });
     }
 
     // test if the given method exists explicitly in the suspendables files

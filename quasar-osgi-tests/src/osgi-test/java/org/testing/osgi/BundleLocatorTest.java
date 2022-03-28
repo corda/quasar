@@ -60,8 +60,9 @@ class BundleLocatorTest {
 
     @Test
     void testClassesInBootstrapDB() {
-        MethodDatabase db = instrumentor.getMethodDatabase(null);
-        assertClassesBelongToClassLoader(db.getClassNames(), null);
+        final ClassLoader platformClassLoader = ClassLoader.getPlatformClassLoader();
+        MethodDatabase db = instrumentor.getMethodDatabase(platformClassLoader);
+        assertClassesBelongToClassLoader(db.getClassNames(), platformClassLoader);
     }
 
     private void assertClassesBelongToClassLoader(Collection<String> classNames, ClassLoader actual) {
@@ -72,7 +73,7 @@ class BundleLocatorTest {
             final String actualClassName = className.replace('/', '.');
             try {
                 final Class<?> dbClass = loadClass(actualClassName, thisLoader);
-                final ClassLoader expected = dbClass.getClassLoader();
+                final ClassLoader expected = getClassLoaderFor(dbClass);
                 assertEquals(expected, actual,
                     "Instrumented class " + actualClassName + " found in " + actual + " but belongs to " + expected);
             } catch (ClassNotFoundException e) {
@@ -85,7 +86,12 @@ class BundleLocatorTest {
         try {
             return Class.forName(className, false, loader);
         } catch (ClassNotFoundException e) {
-            return Class.forName(className, false, ClassLoader.getSystemClassLoader());
+            return Class.forName(className, false, ClassLoader.getPlatformClassLoader());
         }
+    }
+
+    private static ClassLoader getClassLoaderFor(Class<?> clazz) {
+        final ClassLoader cl = clazz.getClassLoader();
+        return (cl != null) ? cl : ClassLoader.getPlatformClassLoader();
     }
 }

@@ -174,7 +174,7 @@ public class ClassLoaderTest {
 
             QuasarInstrumentor instrumentor = Retransform.getInstrumentor();
             assertClassesBelongToClassLoader(ClassLoader.getSystemClassLoader(), instrumentor);
-            assertClassesBelongToClassLoader(null, instrumentor);
+            assertClassesBelongToClassLoader(ClassLoader.getPlatformClassLoader(), instrumentor);
             assertClassesBelongToClassLoader(cl, instrumentor);
         }
     }
@@ -190,12 +190,17 @@ public class ClassLoaderTest {
             final String actualClassName = className.replace('/', '.');
             try {
                 final Class<?> dbClass = Class.forName(actualClassName, false, actual);
-                final ClassLoader expected = dbClass.getClassLoader();
+                final ClassLoader expected = getClassLoaderFor(dbClass);
                 assertEquals("Instrumented class " + actualClassName + " belongs to wrong method database",
                     expected, actual);
             } catch (ClassNotFoundException e) {
                 fail("Failed to load class " + actualClassName);
             }
         });
+    }
+
+    private static ClassLoader getClassLoaderFor(Class<?> clazz) {
+        final ClassLoader cl = clazz.getClassLoader();
+        return (cl != null) ? cl : ClassLoader.getPlatformClassLoader();
     }
 }

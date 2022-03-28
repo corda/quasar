@@ -36,7 +36,7 @@ public final class BundleLocator {
             final String protocol = resource.getProtocol();
             if (JRT_PROTOCOL.equals(protocol)) {
                 // This resource is from the Java runtime base image.
-                return null;
+                return ClassLoader.getPlatformClassLoader();
             } else if (BUNDLE_PROTOCOL.equals(protocol) && (cl instanceof BundleReference)) {
                 final long bundleId = parseFelixBundleId(resource);
                 final BundleWiring wiring = fetchBundleWiring((BundleReference) cl, bundleId);

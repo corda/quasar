@@ -64,7 +64,6 @@ public final class QuasarInstrumentor {
     private static final String EXAMINED_CLASS = System.getProperty("co.paralleluniverse.fibers.writeInstrumentedClasses");
     private static final boolean allowJdkInstrumentation = isEmptyOrTrue("co.paralleluniverse.fibers.allowJdkInstrumentation");
     private final WeakHashMap<ClassLoader, MethodDatabase> dbForClassloader = new WeakHashMap<>();
-    private MethodDatabase bootstrapDB;
     private boolean check;
     private boolean allowMonitors;
     private boolean allowBlocking;
@@ -221,10 +220,7 @@ public final class QuasarInstrumentor {
     @SuppressWarnings("WeakerAccess")
     public synchronized MethodDatabase getMethodDatabase(ClassLoader loader) {
         if (loader == null) {
-            if (bootstrapDB == null) {
-                bootstrapDB = new MethodDatabase(this, null, new DefaultSuspendableClassifier(null));
-            }
-            return bootstrapDB;
+            throw new IllegalArgumentException("classloader cannot be null");
         }
         MethodDatabase db = dbForClassloader.get(loader);
         if (db == null) {
@@ -285,11 +281,11 @@ public final class QuasarInstrumentor {
         setLogLevelMask();
     }
     
-    synchronized void addExcludedPackage(String packageGlob) {
+    public synchronized void addExcludedPackage(String packageGlob) {
         exclusions.add(packagePattern(packageGlob));
     }
     
-    synchronized boolean isExcluded(String className) {
+    public synchronized boolean isExcluded(String className) {
         if (className != null) {
             className = className.replace('.', '/');
             
