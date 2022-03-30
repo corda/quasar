@@ -1,4 +1,4 @@
-package co.paralleluniverse.common.resource;
+package co.paralleluniverse.common.test;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -20,7 +20,7 @@ import static org.objectweb.asm.ClassReader.SKIP_DEBUG;
 import static org.objectweb.asm.ClassReader.SKIP_FRAMES;
 import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
 
-final class ClassFactory {
+public final class ClassFactory {
     private static final int BUFFER_SIZE = 8192;
     private static final int EOF = -1;
 
@@ -29,7 +29,7 @@ final class ClassFactory {
 
     // Create a brand new class by renaming an existing class.
     @SuppressWarnings("SameParameterValue")
-    static Class<?> renameTo(Class<?> template, String className, ClassLoader parent) throws IOException {
+    public static Class<?> renameTo(Class<?> template, String className, ClassLoader parent) throws IOException {
         final String templateResourceName = classToResource(template);
         final URL templateResource = template.getClassLoader().getResource(templateResourceName);
         if (templateResource == null) {

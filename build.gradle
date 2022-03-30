@@ -375,7 +375,7 @@ project (':quasar-core') {
                 srcDir 'src/classloadertest/java'
             }
 
-            compileClasspath += jdk8.output + test.compileClasspath
+            compileClasspath += jdk8.output + jdk8test.output + test.compileClasspath
             runtimeClasspath += compileClasspath + test.runtimeClasspath
         }
     }
@@ -383,6 +383,10 @@ project (':quasar-core') {
     configurations {
         jdk8Archives {
             extendsFrom runtimeClasspath
+            canBeResolved = false
+        }
+        testArtifacts {
+            extendsFrom testRuntimeClasspath
             canBeResolved = false
         }
     }
@@ -400,7 +404,6 @@ project (':quasar-core') {
 
         implementation "com.esotericsoftware:kryo:4.0.2"
         implementation "de.javakaffee:kryo-serializers:0.43"
-        provided 'junit:junit:4.12'
 
         compileOnly "org.osgi:osgi.annotation:$osgiVer"
     }
@@ -415,6 +418,14 @@ project (':quasar-core') {
         dependsOn "processJdk8Resources"
         doLast {
             rootProject.scanAndInstrument(sourceSets.jdk8, [configurations.provided, configurations.runtimeClasspath])
+        }
+    }
+
+    def testJar = tasks.register('testJar', Jar) {
+        archiveClassifier = 'tests'
+        from(sourceSets.jdk8test.output) {
+            // To align with the release/0.8 branch.
+            include 'co/paralleluniverse/common/test/**'
         }
     }
 
@@ -480,7 +491,6 @@ Bundle-Version: \${project.version}
 Import-Package: \
 org.LatencyUtils.*;resolution:=optional,\
 org.HdrHistogram.*;resolution:=optional,\
-org.junit.*;resolution:=optional,\
 *
 """
     }
@@ -552,6 +562,7 @@ Bundle-Version: \${project.version}
     artifacts {
         jdk8Archives shadowJarTask
         archives shadowJarTask
+        testArtifacts testJar
     }
 
     signArchives.dependsOn shadowJarTask, bundleTask, bundleAgentTask
@@ -602,6 +613,7 @@ project (':quasar-actors') {
         // compile 'org.mutabilitydetector:MutabilityDetector:0.9.2'
         implementation "org.slf4j:slf4j-api:$slf4jVer"
         implementation "net.bytebuddy:byte-buddy:1.7.1"
+        testImplementation project(path: ':quasar-core', configuration: 'testArtifacts')
         testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:2.8.2"
         testRuntimeOnly "org.apache.logging.log4j:log4j-api:2.8.2"
         testRuntimeOnly "org.apache.logging.log4j:log4j-core:2.8.2"

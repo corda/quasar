@@ -1,5 +1,6 @@
 package co.paralleluniverse.common.resource;
 
+import co.paralleluniverse.common.test.ClassFactory;
 import org.junit.Test;
 
 import java.net.URL;
