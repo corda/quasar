@@ -25,7 +25,6 @@ module co.paralleluniverse.quasar.core {
     requires static kryo.serializers;
     requires static objenesis;
     requires static ant;
-    requires static junit;
     requires static HdrHistogram;
     requires static LatencyUtils;
     requires static com.codahale.metrics;
@@ -49,7 +48,6 @@ module co.paralleluniverse.quasar.core {
     exports co.paralleluniverse.common.monitoring to co.paralleluniverse.quasar.actors;
     exports co.paralleluniverse.common.reflection to co.paralleluniverse.quasar.actors;
     exports co.paralleluniverse.common.resource   to co.paralleluniverse.quasar.actors;
-    exports co.paralleluniverse.common.test       to co.paralleluniverse.quasar.actors;
     exports co.paralleluniverse.concurrent.util   to co.paralleluniverse.quasar.actors;
     exports co.paralleluniverse.io.serialization  to co.paralleluniverse.quasar.actors;
     exports co.paralleluniverse.strands.queues    to co.paralleluniverse.quasar.actors;

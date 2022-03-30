@@ -84,7 +84,6 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
     private void readFiles(ClassLoader classLoader, String fileName, Set<String> set, Set<String> classSet) {
         for (Enumeration<URL> susFiles = getFiles(classLoader, fileName); susFiles.hasMoreElements();) {
             URL file = susFiles.nextElement();
-            // System.err.println("RRRRR: " + file);
             parse(file, set, classSet);
         }
     }

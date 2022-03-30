@@ -88,9 +88,12 @@ subprojects {
     }
 
     configurations {
-        provided
-        timewarp
-        // markdownDoclet
+        provided {
+            canBeConsumed = false
+        }
+        timewarp {
+            canBeConsumed = false
+        }
 
         compileOnly.extendsFrom provided
         testCompileOnly.extendsFrom compileOnly
@@ -373,20 +376,6 @@ project (':quasar-core') {
 
     ext.moduleName = 'co.paralleluniverse.quasar.core'
 
-    configurations {
-        classic {
-            extendsFrom runtimeClasspath
-            canBeResolved = false
-        }
-        bundleJar {
-            extendsFrom runtimeClasspath
-            canBeResolved = false
-        }
-        agentJar {
-            canBeResolved = false
-        }
-    }
-
     sourceSets {
         main {
             java {
@@ -426,15 +415,36 @@ project (':quasar-core') {
                 srcDir 'src/classloadertest/java'
             }
 
-            compileClasspath += main.output + test.compileClasspath
+            compileClasspath += main.output + test.output + test.compileClasspath
             runtimeClasspath += compileClasspath + test.runtimeClasspath
         }
     }
 
     configurations {
-        agentCompileOnly.extendsFrom provided
-        bundleImplementation.extendsFrom implementation
-        bundleImplementation.extendsFrom agentImplementation
+        classic {
+            extendsFrom runtimeClasspath
+            canBeResolved = false
+        }
+        bundleJar {
+            extendsFrom runtimeClasspath
+            canBeResolved = false
+        }
+        agentJar {
+            canBeResolved = false
+        }
+
+        agentCompileOnly {
+            extendsFrom provided
+        }
+        bundleImplementation {
+            extendsFrom implementation
+            extendsFrom agentImplementation
+        }
+
+        testArtifacts {
+            extendsFrom testRuntimeClasspath
+            canBeResolved = false
+        }
     }
 
     dependencies {
@@ -449,10 +459,6 @@ project (':quasar-core') {
 
         implementation "com.esotericsoftware:kryo:4.0.2"
         implementation "de.javakaffee:kryo-serializers:0.43"
-
-        provided ('junit:junit:4.12') {
-            exclude group: 'org.hamcrest', module: '*'
-        }
 
         compileOnly "org.osgi:osgi.annotation:$osgiVer"
         compileOnly "org.osgi:osgi.core:$osgiVer"
@@ -498,6 +504,14 @@ project (':quasar-core') {
     tasks.named('jar', Jar) {
         archiveClassifier = 'ignore'
         enabled = false
+    }
+
+    def testJar = tasks.register('testJar', Jar) {
+        archiveClassifier = 'tests'
+        from(sourceSets.test.output) {
+            // JPMS refuses to split packages across jars.
+            include 'co/paralleluniverse/common/test/**'
+        }
     }
 
     def shadowJar = tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
@@ -578,7 +592,6 @@ Bundle-Version: \${project.version}
 Import-Package: \
  org.LatencyUtils.*;resolution:=optional,\
  org.HdrHistogram.*;resolution:=optional,\
- org.junit.*;resolution:=optional,\
  *
 """
         }
@@ -667,6 +680,7 @@ Import-Package: !org.osgi.framework.*,*
         archives bundle
         agentJar agentBundle
         archives agentBundle
+        testArtifacts testJar
     }
 
     check.dependsOn test
@@ -717,6 +731,7 @@ project (':quasar-actors') {
         implementation "org.slf4j:slf4j-api:$slf4jVer"
         implementation "net.bytebuddy:byte-buddy:1.9.2"
 
+        testImplementation project(path: ':quasar-core', configuration: 'testArtifacts')
         testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:2.11.1"
         testRuntimeOnly "org.apache.logging.log4j:log4j-api:2.11.1"
         testRuntimeOnly "org.apache.logging.log4j:log4j-core:2.11.1"

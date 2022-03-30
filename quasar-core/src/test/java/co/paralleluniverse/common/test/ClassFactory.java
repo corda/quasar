@@ -5,7 +5,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,9 +20,6 @@ import static org.objectweb.asm.ClassReader.SKIP_FRAMES;
 import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
 
 public final class ClassFactory {
-    private static final int BUFFER_SIZE = 8192;
-    private static final int EOF = -1;
-
     private ClassFactory() {
     }
 
@@ -36,20 +32,10 @@ public final class ClassFactory {
             throw new FileNotFoundException(templateResourceName + " not found");
         }
 
-        final byte[] byteCode = readAllBytes(templateResource.openStream());
+        final byte[] byteCode = templateResource.openStream().readAllBytes();
         final ClassWriter writer = new ClassWriter(COMPUTE_MAXS);
         new ClassReader(byteCode).accept(new RenameVisitor(classToSlashed(className), writer), SKIP_DEBUG | SKIP_FRAMES);
         return new ByteCodeClassLoader(className, writer.toByteArray(), parent).createClass();
-    }
-
-    private static byte[] readAllBytes(InputStream input) throws IOException {
-        final ByteArrayOutputStream output = new ByteArrayOutputStream();
-        final byte[] buffer = new byte[BUFFER_SIZE];
-        int bytesRead;
-        while ((bytesRead = input.read(buffer)) != EOF) {
-            output.write(buffer, 0, bytesRead);
-        }
-        return output.toByteArray();
     }
 
     private static class RenameVisitor extends ClassVisitor {
