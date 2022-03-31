@@ -58,6 +58,9 @@ class BundleExclusionTest {
     void testBundleNotInstrumented(String locationPrefix) throws Exception {
         Bundle excluded = bundleContext.installBundle(withLocationPrefix(locationPrefix), getSuspendableJar());
         try {
+            // Bundle has no BundleContext until we start it.
+            excluded.start();
+
             Class<? extends Callable<?>> callable = Unprivileged.doUnprivileged(() -> loadCallableFrom(excluded));
             assertCallable(callable);
 
@@ -74,6 +77,9 @@ class BundleExclusionTest {
         String locationPrefix = "FLOW/";
         Bundle included = bundleContext.installBundle(withLocationPrefix(locationPrefix), getSuspendableJar());
         try {
+            // Bundle has no BundleContext until we start it.
+            included.start();
+
             Class<? extends Callable<?>> callable = Unprivileged.doUnprivileged(() -> loadCallableFrom(included));
             assertCallable(callable);
 

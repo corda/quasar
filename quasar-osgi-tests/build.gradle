@@ -52,6 +52,7 @@ dependencies {
     bundles project('osgi-suspendable')
     bundles project('osgi-cacheable-one')
     bundles project('osgi-cacheable-two')
+    bundles project('osgi-super-classes')
 
     osgiTestCompileOnly "org.osgi:osgi.core:$osgiVer"
     osgiTestCompileOnly project(path: ':quasar-core', configuration: 'agentJar')

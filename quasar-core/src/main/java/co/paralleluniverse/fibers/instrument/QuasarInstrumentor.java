@@ -48,9 +48,13 @@ public final class QuasarInstrumentor {
         "co/paralleluniverse/common/asm/",
         "co/paralleluniverse/common/resource/",
         "co/paralleluniverse/fibers/suspend/",
+        "org/osgi/framework/",
         "org/objectweb/asm/", // For testing
         "org/netbeans/lib/"
     );
+
+    // Regex to exclude /
+    private static final String DOT = "[^/]";
 
     private static boolean isBuiltInPackage(String className) {
         for (String packageName: BUILT_IN_PACKAGES) {
@@ -442,12 +446,9 @@ public final class QuasarInstrumentor {
     }
 
     private static Pattern packagePattern(String packageGlob) {
-        final String DOT = "[^/]"; // exclude /
-        
         final String glob = packageGlob.replace('.', '/');
         
-        final StringBuilder out = new StringBuilder(glob.length() + 5);
-        out.append('^');
+        final StringBuilder out = new StringBuilder(glob.length() + 5).append('^');
         for (int i = 0; i < glob.length(); ++i) {
             final char c = glob.charAt(i);
             switch (c) {

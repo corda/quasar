@@ -12,7 +12,6 @@
  */
 package co.paralleluniverse.data.record;
 
-import co.paralleluniverse.common.util.UtilUnsafe;
 import sun.misc.Unsafe;
 
 /**

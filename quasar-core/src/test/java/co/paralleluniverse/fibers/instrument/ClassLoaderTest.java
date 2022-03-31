@@ -172,15 +172,32 @@ public class ClassLoaderTest {
             Class.forName(DYNAMIC_SUSPENDABLE_CLASS_NAME, false, cl);
             Class.forName(DYNAMIC_FIBER_CLASS_NAME, false, cl);
 
-            QuasarInstrumentor instrumentor = Retransform.getInstrumentor();
+            final QuasarInstrumentor instrumentor = Retransform.getInstrumentor();
             assertClassesBelongToClassLoader(ClassLoader.getSystemClassLoader(), instrumentor);
             assertClassesBelongToClassLoader(ClassLoader.getPlatformClassLoader(), instrumentor);
             assertClassesBelongToClassLoader(cl, instrumentor);
         }
     }
 
+    @Test
+    public void testSuperClassesForCorrectMethodDatabase() throws Exception {
+        try (URLClassLoader cl = createClassLoaderFor(getTestClassesURL())) {
+            Class.forName(DYNAMIC_SUSPENDABLE_CLASS_NAME, false, cl);
+            Class.forName(DYNAMIC_FIBER_CLASS_NAME, false, cl);
+
+            final QuasarInstrumentor instrumentor = Retransform.getInstrumentor();
+            assertSuperClassesBelongToClassLoader(ClassLoader.getSystemClassLoader(), instrumentor);
+            assertSuperClassesBelongToClassLoader(ClassLoader.getPlatformClassLoader(), instrumentor);
+            assertSuperClassesBelongToClassLoader(cl, instrumentor);
+        }
+    }
+
     private void assertClassesBelongToClassLoader(ClassLoader cl, QuasarInstrumentor instrumentor) {
         assertClassesBelongToClassLoader(instrumentor.getMethodDatabase(cl).getClassNames(), cl);
+    }
+
+    private void assertSuperClassesBelongToClassLoader(ClassLoader cl, QuasarInstrumentor instrumentor) {
+        assertClassesBelongToClassLoader(instrumentor.getMethodDatabase(cl).getClassNamesForSuperClasses(), cl);
     }
 
     private void assertClassesBelongToClassLoader(Collection<String> classNames, ClassLoader actual) {

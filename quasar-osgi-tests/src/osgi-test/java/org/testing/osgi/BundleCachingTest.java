@@ -121,6 +121,8 @@ class BundleCachingTest {
     private void assertForBundle(String location, InputStream bundleData, ThrowingConsumer<Bundle> assertion) throws Exception {
         Bundle bundle = bundleContext.installBundle(location, bundleData);
         try {
+            // Bundle has no BundleContext until we start it.
+            bundle.start();
             assertion.accept(bundle);
         } finally {
             bundle.uninstall();
