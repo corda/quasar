@@ -19,7 +19,7 @@ public class DynamicallyLoadedSuspendable implements TestInterface {
             results.add("c");
             Fiber.park();
             results.add("d");
-        } catch (SuspendExecution ex) {
+        } catch (SuspendExecution | DynamicallyLoadedRuntimeException ex) {
 
         }
         results.add("e");
@@ -41,7 +41,7 @@ public class DynamicallyLoadedSuspendable implements TestInterface {
                 results.add("b1");
                 Fiber.park();
                 results.add("b2");
-            } catch (SuspendExecution ex) {
+            } catch (SuspendExecution | DynamicallyLoadedRuntimeException ex) {
 
             }
         }
@@ -55,7 +55,7 @@ public class DynamicallyLoadedSuspendable implements TestInterface {
                 results.add("d1");
                 Fiber.park();
                 results.add("d2");
-            } catch (SuspendExecution ex) {
+            } catch (SuspendExecution | DynamicallyLoadedRuntimeException ex) {
 
             }
             baseTest(results);
