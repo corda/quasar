@@ -65,8 +65,6 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.getBestClassLoader;
-import static co.paralleluniverse.common.resource.ClassLoaderUtil.getResource;
-import static co.paralleluniverse.common.resource.ClassLoaderUtil.getResourceAsStream;
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 import static java.security.AccessController.doPrivileged;
 
@@ -91,8 +89,12 @@ public final class MethodDatabase {
     private final QuasarInstrumentor instrumentor;
 
     MethodDatabase(QuasarInstrumentor instrumentor, ClassLoader classloader, SuspendableClassifier classifier) {
+        if (classloader == null) {
+            throw new IllegalArgumentException("classloader cannot be null");
+        }
+
         this.instrumentor = instrumentor;
-        this.clRef = classloader != null ? new WeakReference<>(classloader) : null;
+        this.clRef = new WeakReference<>(classloader);
         this.classifier = classifier;
 
         classes = new TreeMap<>();
@@ -174,7 +176,7 @@ public final class MethodDatabase {
             return SuspendableType.NON_SUSPENDABLE;
         }
 
-        int res = isMethodSuspendable0(className, methodName, methodDesc, opcode);
+        final int res = isMethodSuspendable0(className, methodName, methodDesc, opcode);
         switch (res) {
             case UNKNOWN:
                 return null;
@@ -195,22 +197,26 @@ public final class MethodDatabase {
 
     public ClassEntry getOrLoadClassEntry(String className) {
         ClassEntry entry = getClassEntry(className);
-        if (entry == null)
+        if (entry == null) {
             entry = checkClass(className);
+        }
         return entry;
     }
 
     private int isMethodSuspendable0(String className, String methodName, String methodDesc, int opcode) {
-        if (methodName.charAt(0) == '<')
+        if (methodName.charAt(0) == '<') {
             return NONSUSPENDABLE;   // special methods are never suspendable
+        }
 
-        if (isYieldMethod(className, methodName))
+        if (isYieldMethod(className, methodName)) {
             return SUSPENDABLE;
+        }
 
         final ClassEntry entry = getOrLoadClassEntry(className);
         if (entry == null) {
-            if (isJDK(className))
+            if (isJDK(className)) {
                 return JDK;
+            }
 
 //            if (JavaAgent.isActive())
 //                throw new AssertionError();
@@ -341,20 +347,15 @@ public final class MethodDatabase {
             return null;
         }
 
-        final ClassLoader cl;
-        if (clRef != null) {
-            cl = clRef.get();
-            if (cl == null) {
-                log(LogLevel.INFO, "Can't check class: %s", className);
-                return null;
-            }
-        } else {
-            cl = null;
+        final ClassLoader cl = clRef.get();
+        if (cl == null) {
+            log(LogLevel.INFO, "Can't check class: %s", className);
+            return null;
         }
 
         log(LogLevel.INFO, "Reading class: %s", className);
         final String resourceName = className + ".class";
-        final URL resource = doPrivileged((PrivilegedAction<URL>)() -> getResource(cl, resourceName));
+        final URL resource = doPrivileged((PrivilegedAction<URL>)() -> cl.getResource(resourceName));
         if (resource == null) {
             log(LogLevel.INFO, "Class not found: %s", className);
             return null;
@@ -411,17 +412,17 @@ public final class MethodDatabase {
     }
 
     private String extractSuperClass(String className) {
-        final ClassLoader cl;
-        if (clRef != null) {
-            cl = clRef.get();
-            if (cl == null) {
-                return null;
-            }
-        } else {
-            cl = null;
+        final ClassLoader cl = clRef.get();
+        if (cl == null) {
+            return null;
         }
 
-        try (final InputStream is = getResourceAsStream(cl, className + ".class")) {
+        final URL resource = doPrivileged((PrivilegedAction<URL>)() -> cl.getResource(className + ".class"));
+        if (resource == null) {
+            return null;
+        }
+
+        try (final InputStream is = privilegedOpenInputStream(resource)) {
             if (is != null) {
                 return ExtractSuperClass.extractFrom(is);
             }
@@ -458,20 +459,22 @@ public final class MethodDatabase {
 
     private String getDirectSuperClass(String className) {
         final ClassEntry entry = getClassEntry(className);
-        if (entry != null && entry != CLASS_NOT_FOUND)
+        if (entry != null) {
             return entry.getSuperName();
+        }
 
         String superClass = getSuperClass(className);
         if (superClass == null) {
             superClass = extractSuperClass(className);
             if (superClass != null) {
-                String oldSuperClass;
+                final String oldSuperClass;
                 synchronized (this) {
                     oldSuperClass = superClasses.put(className, superClass);
                 }
                 if (oldSuperClass != null) {
-                    if (!oldSuperClass.equals(superClass))
+                    if (!oldSuperClass.equals(superClass)) {
                         log(LogLevel.WARNING, "Duplicate super class entry with different value: %s vs %s", oldSuperClass, superClass);
+                    }
                 }
             }
         }
@@ -479,12 +482,7 @@ public final class MethodDatabase {
     }
 
     private void checkOSGiSuperClasses(String className) {
-        final ClassLoader cl;
-        if (clRef != null) {
-            cl = clRef.get();
-        } else {
-            cl = null;
-        }
+        final ClassLoader cl = clRef.get();
         if (cl != null) {
             final Map<String, String> osgiSuperClasses = getOSGiSuperClassesFor(className, cl);
             if (osgiSuperClasses != null) {
@@ -531,10 +529,20 @@ public final class MethodDatabase {
 
     public static boolean isJDK(String className) {
         return className.startsWith("java/")
-               || className.startsWith("javax/")
+               || isJavaxInternal(className)
                || className.startsWith("sun/")
                || className.startsWith("jdk/")
                || (className.startsWith("com/sun/") && !className.startsWith("com/sun/jersey"));
+    }
+
+    private static boolean isJavaxInternal(String className) {
+        if (!className.startsWith("javax/")) {
+            return false;
+        }
+        final String classSubName = className.substring("javax/".length());
+        return classSubName.startsWith("crypto/")
+                || classSubName.startsWith("management/")
+                || classSubName.startsWith("net/");
     }
 
     public static boolean isProblematicClass(String className) {
@@ -546,19 +554,17 @@ public final class MethodDatabase {
                || className.startsWith("org/apache/log4j/");
     }
 
-    private static final ClassEntry CLASS_NOT_FOUND = new ClassEntry("<class not found>");
-
     static ClassLoader getBestClassLoaderFor(ClassLoader cl, String resourceName, URL resource) {
         if (resource != null) {
-            if (JRT_PROTOCOL.equals(resource.getProtocol())) {
-                // This resource is from the Java runtime base image.
-                return null;
-            } else {
-                // Get the first classloader in the hierarchy that can provide this resource.
-                return doPrivileged((PrivilegedAction<? extends ClassLoader>) () ->
-                    getBestClassLoader(cl, resourceName, resource)
-                );
-            }
+            return doPrivileged((PrivilegedAction<? extends ClassLoader>)() -> {
+                if (JRT_PROTOCOL.equals(resource.getProtocol())) {
+                    // This resource is from the Java runtime base image.
+                    return ClassLoader.getPlatformClassLoader();
+                } else {
+                    // Get the first classloader in the hierarchy that can provide this resource.
+                    return getBestClassLoader(cl, resourceName, resource);
+                }
+            });
         }
         return cl;
     }

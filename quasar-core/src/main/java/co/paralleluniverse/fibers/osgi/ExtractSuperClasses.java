@@ -54,7 +54,7 @@ public final class ExtractSuperClasses {
             initialWiring = bundleReference.getBundle().adapt(BundleWiring.class);
         }
 
-        Map<String, String> extractFor(String className) throws Exception {
+        Map<String, String> extractFor(String className) throws IOException {
             final Map<String, String> superClasses = new HashMap<>();
             BundleWiring bundleWiring = initialWiring;
             String packageName = "";
@@ -79,8 +79,8 @@ public final class ExtractSuperClasses {
             return superClasses;
         }
 
-        private String extractSuperClass(BundleWiring bundleWiring, String className) throws Exception {
-            final ClassLoader cl = bundleWiring == null ? null : bundleWiring.getClassLoader();
+        private String extractSuperClass(BundleWiring bundleWiring, String className) throws IOException {
+            final ClassLoader cl = bundleWiring == null ? ClassLoader.getPlatformClassLoader() : bundleWiring.getClassLoader();
             try (InputStream is = ClassLoaderUtil.getResourceAsStream(cl, className + ".class")) {
                 return ExtractSuperClass.extractFrom(is);
             } catch (IOException e) {

@@ -19,10 +19,10 @@ public final class ExtractSuperClass {
         return esc.superClass;
     }
 
-    final static class SuperClassVisitor extends ClassVisitor {
+    private static final class SuperClassVisitor extends ClassVisitor {
         private String superClass;
 
-        private SuperClassVisitor() {
+        SuperClassVisitor() {
             super(ASMAPI);
         }
 
