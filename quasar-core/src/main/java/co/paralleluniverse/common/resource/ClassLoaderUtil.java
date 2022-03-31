@@ -213,10 +213,11 @@ public final class ClassLoaderUtil {
      */
     public static ClassLoader getBestClassLoader(ClassLoader loader, String resourceName, URL target) {
         final ClassLoader platformClassLoader = ClassLoader.getPlatformClassLoader();
+        final ClassLoader bootstrapClassLoader = platformClassLoader.getParent();
         ClassLoader current = loader;
         for (;;) {
             ClassLoader next = current.getParent();
-            if (next == null) {
+            if (next == bootstrapClassLoader) {
                 if (current == platformClassLoader) {
                     break;
                 }
