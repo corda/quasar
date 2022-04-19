@@ -89,35 +89,40 @@ public class KotlinClassifier implements SuspendableClassifier {
         boolean isInterface, String className, String superClassName, String[] interfaces,
         String methodName, String methodDesc, String methodSignature, String[] methodExceptions
     ) {
-        if (className == null)
+        if (className == null || methodName == null) {
             return null;
+        }
 
         for (final String[] s : supers) {
-            if (className.equals(s[0]))
+            if (className.equals(s[0])) {
                 for (int i = 1; i < s.length; i++) {
-                    if (methodName != null && methodName.matches(s[i])) {
-                        if (db.isVerbose())
+                    if (methodName.matches(s[i])) {
+                        if (db.isVerbose()) {
                             db.getLog().log(LogLevel.INFO, KotlinClassifier.class.getName() + ": " + className + "." + methodName + " supersOrEqual " + s[0] + "." + s[i]);
+                        }
                         return MethodDatabase.SuspendableType.SUSPENDABLE_SUPER;
                     }
                 }
+            }
         }
 
         // Don't consider Kotlin user files without inner classes
         if (!className.startsWith(PKG_PREFIX)
-            && !(className.contains("$") && sourceName != null && sourceName.toLowerCase().endsWith(".kt")))
+            && !(className.contains("$") && sourceName != null && sourceName.toLowerCase().endsWith(".kt"))) {
             return null;
+        }
 
         // Exclude packages known not to suspend
         for (final String s : excludePrefixes) {
-            if (className.startsWith(s))
+            if (className.startsWith(s)) {
                 return null;
+            }
         }
 
         for (final String[] s : supers) {
             if (SimpleSuspendableClassifier.extendsOrImplements(s[0], db, className, superClassName, interfaces))
                 for (int i = 1; i < s.length; i++) {
-                    if (methodName != null && methodName.matches(s[i])) {
+                    if (methodName.matches(s[i])) {
                         if (db.isVerbose())
                             db.getLog().log(LogLevel.INFO, KotlinClassifier.class.getName() + ": " + className + "." + methodName + " extends " + s[0] + "." + s[i]);
                         return MethodDatabase.SuspendableType.SUSPENDABLE;
@@ -126,8 +131,9 @@ public class KotlinClassifier implements SuspendableClassifier {
         }
 
         // Java7 compilation scheme
-        if (methodName != null && methodName.contains("access$"))
+        if (methodName.startsWith("access$") || methodName.contains("$lambda-")) {
             return MethodDatabase.SuspendableType.SUSPENDABLE;
+        }
 
         return null;
     }

@@ -22,15 +22,19 @@ class CallableReference {
     @Suspendable
     private fun apply(f: () -> String): String = f()
 
+    @Suppress("unused_parameter")
     @Suspendable
     private fun doNothing(f: () -> Unit) {doYield()}
 
+    @Suppress("unused_parameter")
     @Suspendable
     private fun doNothing1(f: (Int, String) -> Unit) {doYield()}
 
+    @Suppress("unused_parameter")
     @Suspendable
     private fun doNothing2(f: (Int, String, String) -> Unit) {doYield()}
 
+    @Suppress("unused_parameter")
     @Suspendable
     private fun doNothingVararg(x: Int, vararg y: String) {doYield()}
 

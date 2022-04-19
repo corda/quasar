@@ -58,11 +58,13 @@ tasks.named('check') {
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     kotlinOptions {
         jvmTarget = '11'
-        apiVersion = '1.4'
-        languageVersion = '1.4'
-        // We should enable this, but are currently blocked by a Kotlin bug!
+        apiVersion = '1.6'
+        languageVersion = '1.6'
+        allWarningsAsErrors = true
+        // We need to enable this, but must watch for compiler warnings about
+        // abstract methods in the base class not having an implementation!
         // See https://youtrack.jetbrains.com/issue/KT-46253
-        //freeCompilerArgs = ['-Xjvm-default=all']
+        freeCompilerArgs = [ '-Xjvm-default=all' ]
     }
 }
 

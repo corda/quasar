@@ -56,7 +56,8 @@ final class Classes {
     static final String SUSPEND_EXECUTION_NAME         = "co/paralleluniverse/fibers/suspend/SuspendExecution";
     static final String STACK_OPS_NAME                 = "co/paralleluniverse/fibers/suspend/StackOps";
 
-    static final String LAMBDA_METHOD_PREFIX            = "lambda$";
+    static final String LAMBDA_METHOD_PREFIX           = "lambda$";
+    static final String KOTLIN_LAMBDA_SUFFIX           = "$lambda-";
 
     static final String DONT_INSTRUMENT_DESC = Type.getDescriptor(DontInstrument.class);
     static final String INSTRUMENTED_DESC    = Type.getDescriptor(Instrumented.class);
