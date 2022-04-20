@@ -32,7 +32,7 @@ final class UtilUnsafe {
                     return f.get(null);
                 });
             } catch (PrivilegedActionException e) {
-                throw new RuntimeException("Could not initialize intrinsics", e.getCause());
+                throw new SecurityException("Could not initialize intrinsics", e.getCause());
             }
         }
     }
