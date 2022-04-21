@@ -27,7 +27,7 @@ import static java.security.AccessController.doPrivileged;
  * guarantees which are generally not needed in these algorithms and are also
  * expensive on most processors.
  */
-public class UtilUnsafe {
+public final class UtilUnsafe {
     private UtilUnsafe() {
     }
 

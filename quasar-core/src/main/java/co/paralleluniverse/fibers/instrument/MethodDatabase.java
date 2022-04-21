@@ -199,12 +199,25 @@ public final class MethodDatabase {
         }
     }
 
-    public ClassEntry getOrLoadClassEntry(String className) {
-        ClassEntry entry = getClassEntry(className);
-        if (entry == null) {
-            entry = checkClass(className);
+    Pair<MethodDatabase, ClassEntry> getOrLoadClassEntry(String className) {
+        if (className.startsWith("[")) {
+            // Don't try looking for an "array" class.
+            return null;
         }
-        return entry;
+
+        final ClassEntry entry = getClassEntry(className);
+        if (entry != null) {
+            return new Pair<>(this, entry);
+        } else {
+            final ClassLookup lookup = getLookupFor(className);
+            if (lookup == null || lookup.getResource() == null) {
+                log(LogLevel.INFO, "Class not found: %s", className);
+                return null;
+            } else {
+                final MethodDatabase ownerDB = lookup.toOwnerDB(this);
+                return new Pair<>(ownerDB, ownerDB.fetchClassEntry(className, lookup.getResource()));
+            }
+        }
     }
 
     private int isMethodSuspendable0(String className, String methodName, String methodDesc, int opcode) {
@@ -216,14 +229,16 @@ public final class MethodDatabase {
             return SUSPENDABLE;
         }
 
-        final ClassEntry entry = getOrLoadClassEntry(className);
-        if (entry == null) {
+        final Pair<MethodDatabase, ClassEntry> dbEntry = getOrLoadClassEntry(className);
+        if (dbEntry == null) {
             if (isJDK(className)) {
                 return JDK;
             }
             return UNKNOWN;
         }
 
+        final MethodDatabase ownerDB = dbEntry.getFirst();
+        final ClassEntry entry = dbEntry.getSecond();
         final SuspendableType susp1 = entry.check(methodName, methodDesc);
 
         int suspendable = UNKNOWN;
@@ -238,12 +253,12 @@ public final class MethodDatabase {
         if (suspendable == UNKNOWN) {
             if (opcode == Opcodes.INVOKEVIRTUAL || opcode == Opcodes.INVOKESTATIC || opcode == Opcodes.INVOKESPECIAL) {
                 if (entry.getSuperName() != null) {
-                    suspendable = isMethodSuspendable0(entry.getSuperName(), methodName, methodDesc, opcode);
+                    suspendable = ownerDB.isMethodSuspendable0(entry.getSuperName(), methodName, methodDesc, opcode);
                 }
             }
             if (opcode == Opcodes.INVOKEINTERFACE || opcode == Opcodes.INVOKEVIRTUAL) { // can be INVOKEVIRTUAL on an abstract class implementing the interface
-                for (String iface : entry.getInterfaces()) {
-                    final int s = isMethodSuspendable0(iface, methodName, methodDesc, opcode);
+                for (final String iface : entry.getInterfaces()) {
+                    int s = ownerDB.isMethodSuspendable0(iface, methodName, methodDesc, opcode);
                     if (s > suspendable) {
                         suspendable = s;
                     }
@@ -324,45 +339,34 @@ public final class MethodDatabase {
         return null;
     }
 
-    public boolean isException(String className) {
+    public boolean isException(final String className) {
+        String currentClassName = className;
+        MethodDatabase currentDB = this;
         for (;;) {
-            if ("java/lang/Throwable".equals(className)) {
+            if ("java/lang/Throwable".equals(currentClassName)) {
                 return true;
             }
 
-            if (JAVA_OBJECT.equals(className)) {
+            if (JAVA_OBJECT.equals(currentClassName)) {
                 return false;
             }
 
-            final String superClass = getDirectSuperClass(className);
+            String superClass = null;
+            final ClassLookup lookup = currentDB.getLookupFor(currentClassName);
+            if (lookup != null) {
+                final URL resource = lookup.getResource();
+                if (resource != null) {
+                    currentDB = lookup.toOwnerDB(currentDB);
+                    superClass = currentDB.getDirectSuperClass(currentClassName, resource);
+                }
+            }
             if (superClass == null) {
-                log(isProblematicClass(className) ? LogLevel.INFO : LogLevel.WARNING, "Can't determine super class of %s (this is usually related to classloading)", className);
+                log(isProblematicClass(currentClassName) ? LogLevel.INFO : LogLevel.WARNING,
+                        "Can't determine super class of %s (this is usually related to classloading)", currentClassName);
                 return false;
             }
-            className = superClass;
+            currentClassName = superClass;
         }
-    }
-
-    private ClassEntry checkClass(String className) {
-        if (className.startsWith("[")) {
-            // Don't try looking for an "array" class.
-            return null;
-        }
-
-        final ClassLoader cl = clRef.get();
-        if (cl == null) {
-            log(LogLevel.INFO, "Can't check class: %s", className);
-            return null;
-        }
-
-        final Lookup lookup = new Lookup(cl, className);
-        final URL resource = lookup.getResource();
-        if (resource == null) {
-            log(LogLevel.INFO, "Class not found: %s", className);
-            return null;
-        }
-
-        return lookup.toTargetDB(this).fetchClassEntry(className, resource);
     }
 
     private ClassEntry fetchClassEntry(String className, URL resource) {
@@ -397,52 +401,56 @@ public final class MethodDatabase {
         }
     }
 
-    private List<String> getSuperClasses(String className) {
+    private List<String> getSuperClasses(final String className) {
         final LinkedList<String> result = new LinkedList<>();
+        String currentClassName = className;
+        MethodDatabase currentDB = this;
         for (;;) {
-            result.addFirst(className);
-            if (JAVA_OBJECT.equals(className)) {
+            result.addFirst(currentClassName);
+            if (JAVA_OBJECT.equals(currentClassName)) {
                 return result;
             }
 
-            final String superClass = getDirectSuperClass(className);
+            String superClass = null;
+            final ClassLookup lookup = currentDB.getLookupFor(currentClassName);
+            if (lookup != null) {
+                final URL resource = lookup.getResource();
+                if (resource != null) {
+                    currentDB = lookup.toOwnerDB(currentDB);
+                    superClass = currentDB.getDirectSuperClass(currentClassName, resource);
+                }
+            }
             if (superClass == null) {
-                log(isProblematicClass(className) ? LogLevel.INFO : LogLevel.WARNING, "Can't determine super class of %s", className);
+                log(isProblematicClass(currentClassName) ? LogLevel.INFO : LogLevel.WARNING,
+                        "Can't determine super class of %s", currentClassName);
                 return null;
             }
-            className = superClass;
+            currentClassName = superClass;
         }
     }
 
-    private String getDirectSuperClass(String className) {
+    private ClassLookup getLookupFor(String className) {
         final ClassLoader cl = clRef.get();
-        if (cl == null) {
-            return null;
-        }
+        return (cl == null) ? null : new ClassLookup(cl, className);
+    }
 
-        final Lookup lookup = new Lookup(cl, className);
-        final URL resource = lookup.getResource();
-        if (resource == null) {
-            return null;
-        }
-
-        final MethodDatabase targetDB = lookup.toTargetDB(this);
-        final ClassEntry entry = targetDB.getClassEntry(className);
+    private String getDirectSuperClass(String className, URL resource) {
+        final ClassEntry entry = getClassEntry(className);
         if (entry != null) {
             return entry.getSuperName();
         }
 
         String superClass;
-        synchronized(targetDB.superClasses) {
-            superClass = targetDB.superClasses.get(className);
+        synchronized(superClasses) {
+            superClass = superClasses.get(className);
         }
         if (superClass == null) {
-            try (final InputStream is = privilegedOpenInputStream(resource)){
+            try (final InputStream is = privilegedOpenInputStream(resource)) {
                 superClass = ExtractSuperClass.extractFrom(is);
                 if (superClass != null) {
                     final String oldSuperClass;
-                    synchronized(targetDB.superClasses) {
-                        oldSuperClass = targetDB.superClasses.put(className, superClass);
+                    synchronized(superClasses) {
+                        oldSuperClass = superClasses.put(className, superClass);
                     }
                     if (oldSuperClass != null && !oldSuperClass.equals(superClass)) {
                         log(LogLevel.WARNING, "Duplicate super class entry with different value: %s vs %s", oldSuperClass, superClass);
@@ -455,12 +463,12 @@ public final class MethodDatabase {
         return superClass;
     }
 
-    private static final class Lookup {
+    private static final class ClassLookup {
         private final ClassLoader classloader;
         private final String resourceName;
         private final URL resource;
 
-        Lookup(ClassLoader cl, String internalClassName) {
+        ClassLookup(ClassLoader cl, String internalClassName) {
             classloader = cl;
             resourceName = internalClassName + ".class";
             resource = doPrivileged(new GetResourceAction(cl, resourceName));
@@ -470,7 +478,7 @@ public final class MethodDatabase {
             return resource;
         }
 
-        MethodDatabase toTargetDB(MethodDatabase db) {
+        MethodDatabase toOwnerDB(MethodDatabase db) {
             // Identify which classloader actually contains the byte-code for this class,
             // because its ClassEntry should belong to that classloader's MethodDatabase.
             final ClassLoader ownerCl = doPrivileged(new GetBestClassLoaderAction(classloader, resourceName, resource));

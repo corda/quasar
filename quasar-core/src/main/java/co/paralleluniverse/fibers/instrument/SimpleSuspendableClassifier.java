@@ -130,36 +130,46 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
             return SuspendableType.SUSPENDABLE_SUPER;
 
         if (superClassName != null) {
-            MethodDatabase.ClassEntry ce = db.getOrLoadClassEntry(superClassName);
-            if (ce != null && isSuspendable(db, sourceName, sourceDebugInfo, isInterface, superClassName, ce.getSuperName(), ce.getInterfaces(), methodName, methodDesc, methodSignature, methodExceptions) == SuspendableType.SUSPENDABLE)
-                return SuspendableType.SUSPENDABLE;
+            final Pair<MethodDatabase, MethodDatabase.ClassEntry> dbEntry = db.getOrLoadClassEntry(superClassName);
+            if (dbEntry != null) {
+                final MethodDatabase ownerDB = dbEntry.getFirst();
+                final MethodDatabase.ClassEntry ce = dbEntry.getSecond();
+                if (isSuspendable(ownerDB, sourceName, sourceDebugInfo, isInterface, superClassName, ce.getSuperName(), ce.getInterfaces(), methodName, methodDesc, methodSignature, methodExceptions) == SuspendableType.SUSPENDABLE) {
+                    return SuspendableType.SUSPENDABLE;
+                }
+            }
         }
 
         if (interfaces != null) {
-            for (String iface : interfaces) {
-                MethodDatabase.ClassEntry ce = db.getOrLoadClassEntry(iface);
-                if (ce != null && isSuspendable(db, ce.getSourceName(), ce.getSourceDebugInfo(), ce.isInterface(), iface, ce.getSuperName(), ce.getInterfaces(), methodName, methodDesc, methodSignature, methodExceptions) == SuspendableType.SUSPENDABLE)
-                    return SuspendableType.SUSPENDABLE;
+            for (final String iface : interfaces) {
+                final Pair<MethodDatabase, MethodDatabase.ClassEntry> dbEntry = db.getOrLoadClassEntry(iface);
+                if (dbEntry != null) {
+                    final MethodDatabase ownerDB = dbEntry.getFirst();
+                    final MethodDatabase.ClassEntry ce = dbEntry.getSecond();
+                    if (isSuspendable(ownerDB, ce.getSourceName(), ce.getSourceDebugInfo(), ce.isInterface(), iface, ce.getSuperName(), ce.getInterfaces(), methodName, methodDesc, methodSignature, methodExceptions) == SuspendableType.SUSPENDABLE) {
+                        return SuspendableType.SUSPENDABLE;
+                    }
+                }
             }
         }
 
         return null;
     }
 
-    public static boolean extendsOrImplements(String superOrIface, MethodDatabase db, String className, String superClassName, String[] interfaces) {
+    public static boolean extendsOrImplements(String superOrIface, MethodDatabase db, String superClassName, String[] interfaces) {
         if (superOrIface == null)
             throw new IllegalArgumentException("superOrIface is null");
 
         if (Objects.equals(superOrIface, superClassName))
             return true;
-        for (String iface : interfaces) {
+        for (final String iface : interfaces) {
             if (Objects.equals(superOrIface, iface))
                 return true;
         }
 
         if (extendsOrImplements(superOrIface, db, superClassName))
             return true;
-        for (String iface : interfaces) {
+        for (final String iface : interfaces) {
             if (extendsOrImplements(superOrIface, db, iface))
                 return true;
         }
@@ -170,20 +180,27 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
         if (className == null)
             return false;
 
-        MethodDatabase.ClassEntry ce = db.getOrLoadClassEntry(className);
-        assert ce != null : "The class " + className + " couldn't be looked up: it may be missing from the classpath";
-        if (Objects.equals(superOrIface, ce.getSuperName()))
-            return true;
-        for (String iface : ce.getInterfaces()) {
-            if (Objects.equals(superOrIface, iface))
+        final Pair<MethodDatabase, MethodDatabase.ClassEntry> dbEntry = db.getOrLoadClassEntry(className);
+        if (dbEntry != null) {
+            final MethodDatabase ownerDB = dbEntry.getFirst();
+            final MethodDatabase.ClassEntry ce = dbEntry.getSecond();
+            if (Objects.equals(superOrIface, ce.getSuperName())) {
                 return true;
-        }
+            }
+            for (final String iface : ce.getInterfaces()) {
+                if (Objects.equals(superOrIface, iface)) {
+                    return true;
+                }
+            }
 
-        if (extendsOrImplements(superOrIface, db, ce.getSuperName()))
-            return true;
-        for (String iface : ce.getInterfaces()) {
-            if (extendsOrImplements(superOrIface, db, iface))
+            if (extendsOrImplements(superOrIface, ownerDB, ce.getSuperName())) {
                 return true;
+            }
+            for (final String iface : ce.getInterfaces()) {
+                if (extendsOrImplements(superOrIface, ownerDB, iface)) {
+                    return true;
+                }
+            }
         }
         return false;
     }
