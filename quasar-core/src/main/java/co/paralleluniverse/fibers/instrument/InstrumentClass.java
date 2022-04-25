@@ -228,8 +228,9 @@ class InstrumentClass extends ClassVisitor {
                     }
                 }
             };
+        } else {
+            return super.visitMethod(access, name, desc, signature, exceptions);
         }
-        return super.visitMethod(access, name, desc, signature, exceptions);
     }
 
     @Override

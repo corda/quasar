@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.StreamSupport;
 
+import static co.paralleluniverse.fibers.instrument.Classes.KOTLIN_LAMBDA_SUFFIX;
 import static co.paralleluniverse.fibers.instrument.Classes.LAMBDA_METHOD_PREFIX;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPEND_EXECUTION_NAME;
 import static java.util.stream.Collectors.toUnmodifiableList;
@@ -57,9 +58,10 @@ public class DefaultSuspendableClassifier implements SuspendableClassifier {
             if (checkExceptions(methodExceptions))
                 return SuspendableType.SUSPENDABLE;
 
-            // lambda$
-            if (methodName.startsWith(LAMBDA_METHOD_PREFIX))
+            // lambda$ or $lambda-x
+            if (methodName.startsWith(LAMBDA_METHOD_PREFIX) || methodName.contains(KOTLIN_LAMBDA_SUFFIX)) {
                 return SuspendableType.SUSPENDABLE;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             throw e;

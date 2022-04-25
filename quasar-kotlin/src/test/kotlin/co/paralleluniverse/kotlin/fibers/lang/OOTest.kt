@@ -33,10 +33,10 @@ class OOTest {
         @Suspendable inline fun fiberSleepInline() { Fiber.sleep(1) }
     }
 
-    val scheduler = FiberForkJoinScheduler("test", 4, null, false)
+    private val scheduler = FiberForkJoinScheduler("test", 4, null, false)
 
     class D {
-        var v = true
+        private var v = true
 
         @Suspendable operator fun getValue(thisRef: Any?, prop: KProperty<*>): Boolean {
             fiberSleepInline()
@@ -97,7 +97,7 @@ class OOTest {
         }).start().get())
     }
 
-    val iv = true
+    private val iv = true
     @Suspendable get() {
         fiberSleepInline()
         return field
@@ -115,7 +115,7 @@ class OOTest {
         }).start().get())
     }
 
-    var mv = true
+    private var mv = true
         @Suspendable get() {
             fiberSleepInline()
             return field
@@ -151,7 +151,7 @@ class OOTest {
         }).start().get())
     }
 
-    var md by D()
+    private var md by D()
         @Suspendable get
         @Suspendable set
 
@@ -181,7 +181,7 @@ class OOTest {
         }).start().get())
     }
 
-    val ivInline: Boolean @Suspendable inline get() {
+    private val ivInline: Boolean @Suspendable inline get() {
         fiberSleepInline()
         return true
     }
@@ -198,7 +198,7 @@ class OOTest {
         }).start().get())
     }
 
-    var mvInline : Boolean
+    private var mvInline : Boolean
         @Suspendable inline get() {
             fiberSleepInline()
             return true
@@ -248,7 +248,7 @@ class OOTest {
         }
     }
 
-    var mdInline by DInline()
+    private var mdInline by DInline()
         @Suspendable get
         @Suspendable set
 
@@ -278,7 +278,7 @@ class OOTest {
         }).start().get())
     }
 
-    enum class E(val data: Int?) {
+    enum class E(private val data: Int?) {
         V1(0),
         V2(1) {
             @Suspendable override fun enumFun() {
@@ -426,7 +426,7 @@ class OOTest {
         return true
     }
 
-    open class Base (val data: Int = 0) {
+    open class Base (private val data: Int = 0) {
         // NOT SUPPORTED: Kotlin's initializers are named <init> and we don't instrument those. Not an issue
         // because they're called by constructors which we don't instrument either (because it is most probably
         // impossible to unpark them).
@@ -446,6 +446,7 @@ class OOTest {
 
     }
 
+    @JvmDefaultWithCompatibility
     interface BaseTrait1 {
         @Suspendable fun doSleep() : Boolean {
             fiberSleepInline()
@@ -537,7 +538,12 @@ class OOTest {
         }).start().get())
     }
 
-    object O : DerivedDerived2()
+    object O : DerivedDerived2() {
+        override fun doSleep(): Boolean {
+            fiberSleepInline()
+            return true
+        }
+    }
 
     @Test fun testOOSimple() {
         assertTrue(Fiber(scheduler, SuspendableCallable @Suspendable {
@@ -581,7 +587,12 @@ class OOTest {
 
     @Test fun testOODerived2() {
         assertTrue(Fiber(scheduler, SuspendableCallable @Suspendable {
-            (object : DerivedDerived2() {}).doSleep()
+            (object : DerivedDerived2() {
+                override fun doSleep(): Boolean {
+                    fiberSleepInline()
+                    return true
+                }
+            }).doSleep()
             true
         }).start().get())
     }
