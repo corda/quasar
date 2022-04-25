@@ -134,8 +134,9 @@ public final class Stack implements Serializable {
 
         int nextMethodIdx = sp + numSlots;
         int nextMethodSP = nextMethodIdx + FRAME_RECORD_SIZE;
-        if (nextMethodSP > dataObject.length)
+        if (nextMethodSP >= dataObject.length) {
             growStack(nextMethodSP);
+        }
 
         // clear next method's frame record
         dataLong[nextMethodIdx] = 0L;
