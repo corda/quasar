@@ -56,10 +56,7 @@ public class BlockingTest {
         msgs.add("Method BlockingTest.java:" + className + "#t_join2(Ljava/lang/Thread;)V contains potentially blocking call to java/lang/Thread#join(J)V");
         msgs.add("Method BlockingTest.java:" + className + "#t_join3(Ljava/lang/Thread;)V contains potentially blocking call to java/lang/Thread#join(JI)V");
 
-        final QuasarInstrumentor instrumentor = new QuasarInstrumentor(false);
-        final MethodDatabase db = instrumentor.getMethodDatabase(BlockingTest.class.getClassLoader());
-        instrumentor.setAllowBlocking(true);
-        instrumentor.setLog(new Log() {
+        final QuasarInstrumentor instrumentor = new QuasarInstrumentor(new Log() {
             @Override
             public void log(LogLevel level, String msg, Object... args) {
                 if (level == LogLevel.WARNING) {
@@ -73,6 +70,8 @@ public class BlockingTest {
                 throw new Error(msg, ex);
             }
         });
+        final MethodDatabase db = instrumentor.getMethodDatabase(BlockingTest.class.getClassLoader());
+        instrumentor.setAllowBlocking(true);
 
         try (final InputStream in = BlockingTest.class.getResourceAsStream("BlockingTest.class")) {
             instrumentor.instrumentClass(BlockingTest.class.getClassLoader(), BlockingTest.class.getName(), in, true);

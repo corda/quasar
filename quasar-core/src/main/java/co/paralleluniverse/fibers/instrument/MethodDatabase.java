@@ -45,21 +45,24 @@ import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 import static java.security.AccessController.doPrivileged;
 
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
-import java.security.PrivilegedAction;
-import java.util.ArrayList;
+import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -73,19 +76,19 @@ import java.util.TreeMap;
  */
 public final class MethodDatabase {
     private static final String JAVA_OBJECT = "java/lang/Object";
-    private static final int ASMAPI = Opcodes.ASM5;
 
     private final WeakReference<ClassLoader> clRef;
     private final SuspendableClassifier classifier;
     private final NavigableMap<String, ClassEntry> classes;
-    private final HashMap<String, String> superClasses;
+    private final Map<String, String> superClasses;
     private final QuasarInstrumentor instrumentor;
 
-    public MethodDatabase(QuasarInstrumentor instrumentor, ClassLoader classloader, SuspendableClassifier classifier) {
-        this.instrumentor = instrumentor;
-        if (classloader == null)
-            throw new NullPointerException("classloader");
+    MethodDatabase(QuasarInstrumentor instrumentor, ClassLoader classloader, SuspendableClassifier classifier) {
+        if (classloader == null) {
+            throw new IllegalArgumentException("classloader cannot be null");
+        }
 
+        this.instrumentor = instrumentor;
         this.clRef = new WeakReference<>(classloader);
         this.classifier = classifier;
 
@@ -125,23 +128,34 @@ public final class MethodDatabase {
         return instrumentor.getLog();
     }
 
+    public Set<String> getClassNames() {
+        synchronized(classes) {
+            // Create a "snapshot" of the current set of class names.
+            return new HashSet<>(classes.keySet());
+        }
+    }
+
+    public Set<String> getClassNamesForSuperClasses() {
+        synchronized(superClasses) {
+            // Create a "snapshot" of the current set of class names.
+            return new HashSet<>(superClasses.keySet());
+        }
+    }
+
     public String checkClass(File f) {
-        try {
-            FileInputStream fis = new FileInputStream(f);
-            CheckInstrumentationVisitor civ = checkFileAndClose(fis, f.getPath());
+        try (FileInputStream fis = new FileInputStream(f)) {
+            CheckInstrumentationVisitor civ = checkFileAndClose(fis);
 
-            if (civ != null) {
-                recordSuspendableMethods(civ.getName(), civ.getClassEntry());
+            recordSuspendableMethods(civ.getName(), civ.getClassEntry());
 
-                if (civ.needsInstrumentation()) {
-                    if (civ.isAlreadyInstrumented()) {
-                        log(LogLevel.INFO, "Found instrumented class: %s", f.getPath());
-                        if (JavaAgent.isActive())
-                            throw new AssertionError();
-                    } else {
-                        log(LogLevel.INFO, "Found class: %s", f.getPath());
-                        return civ.getName();
-                    }
+            if (civ.needsInstrumentation()) {
+                if (civ.isAlreadyInstrumented()) {
+                    log(LogLevel.INFO, "Found instrumented class: %s", f.getPath());
+                    if (JavaAgent.isActive())
+                        throw new AssertionError();
+                } else {
+                    log(LogLevel.INFO, "Found class: %s", f.getPath());
+                    return civ.getName();
                 }
             }
             return null;
@@ -165,13 +179,14 @@ public final class MethodDatabase {
             return SuspendableType.NON_SUSPENDABLE;
         }
 
-        int res = isMethodSuspendable0(className, methodName, methodDesc, opcode);
+        final int res = isMethodSuspendable0(className, methodName, methodDesc, opcode);
         switch (res) {
             case UNKNOWN:
                 return null;
             case JDK:
-                if (!className.startsWith("java/"))
+                if (!className.startsWith("java/")) {
                     log(LogLevel.INFO, "Method: %s#%s not in 'java' package but marked non-suspendable anyway because it is a probably part of the JDK", className, methodName);
+                }
             // fallthrough
             case NONSUSPENDABLE:
                 return SuspendableType.NON_SUSPENDABLE;
@@ -184,54 +199,72 @@ public final class MethodDatabase {
         }
     }
 
-    public ClassEntry getOrLoadClassEntry(String className) {
-        ClassEntry entry = getClassEntry(className);
-        if (entry == null)
-            entry = checkClass(className);
-        return entry;
+    Pair<MethodDatabase, ClassEntry> getOrLoadClassEntry(String className) {
+        if (className.startsWith("[")) {
+            // Don't try looking for an "array" class.
+            return null;
+        }
+
+        final ClassEntry entry = getClassEntry(className);
+        if (entry != null) {
+            return new Pair<>(this, entry);
+        } else {
+            final ClassLookup lookup = getLookupFor(className);
+            if (lookup == null || lookup.getResource() == null) {
+                log(LogLevel.INFO, "Class not found: %s", className);
+                return null;
+            } else {
+                final MethodDatabase ownerDB = lookup.toOwnerDB(this);
+                return new Pair<>(ownerDB, ownerDB.fetchClassEntry(className, lookup.getResource()));
+            }
+        }
     }
 
     private int isMethodSuspendable0(String className, String methodName, String methodDesc, int opcode) {
-        if (methodName.charAt(0) == '<')
+        if (methodName.charAt(0) == '<') {
             return NONSUSPENDABLE;   // special methods are never suspendable
+        }
 
-        if (isYieldMethod(className, methodName))
+        if (isYieldMethod(className, methodName)) {
             return SUSPENDABLE;
+        }
 
-        final ClassEntry entry = getOrLoadClassEntry(className);
-        if (entry == null) {
-            if (isJDK(className))
+        final Pair<MethodDatabase, ClassEntry> dbEntry = getOrLoadClassEntry(className);
+        if (dbEntry == null) {
+            if (isJDK(className)) {
                 return JDK;
-
-//            if (JavaAgent.isActive())
-//                throw new AssertionError();
+            }
             return UNKNOWN;
         }
 
-        SuspendableType susp1 = entry.check(methodName, methodDesc);
+        final MethodDatabase ownerDB = dbEntry.getFirst();
+        final ClassEntry entry = dbEntry.getSecond();
+        final SuspendableType susp1 = entry.check(methodName, methodDesc);
 
         int suspendable = UNKNOWN;
-        if (susp1 == null)
-            suspendable = UNKNOWN;
-        else if (susp1 == SuspendableType.SUSPENDABLE)
+        if (susp1 == SuspendableType.SUSPENDABLE) {
             suspendable = SUSPENDABLE;
-        else if (susp1 == SuspendableType.SUSPENDABLE_SUPER)
+        } else if (susp1 == SuspendableType.SUSPENDABLE_SUPER) {
             suspendable = SUSPENDABLE_ABSTRACT;
-        else if (susp1 == SuspendableType.NON_SUSPENDABLE)
+        } else if (susp1 == SuspendableType.NON_SUSPENDABLE) {
             suspendable = NONSUSPENDABLE;
+        }
 
         if (suspendable == UNKNOWN) {
             if (opcode == Opcodes.INVOKEVIRTUAL || opcode == Opcodes.INVOKESTATIC || opcode == Opcodes.INVOKESPECIAL) {
-                if (entry.getSuperName() != null)
-                    suspendable = isMethodSuspendable0(entry.getSuperName(), methodName, methodDesc, opcode);
+                if (entry.getSuperName() != null) {
+                    suspendable = ownerDB.isMethodSuspendable0(entry.getSuperName(), methodName, methodDesc, opcode);
+                }
             }
             if (opcode == Opcodes.INVOKEINTERFACE || opcode == Opcodes.INVOKEVIRTUAL) { // can be INVOKEVIRTUAL on an abstract class implementing the interface
-                for (String iface : entry.getInterfaces()) {
-                    int s = isMethodSuspendable0(iface, methodName, methodDesc, opcode);
-                    if (s > suspendable)
+                for (final String iface : entry.getInterfaces()) {
+                    int s = ownerDB.isMethodSuspendable0(iface, methodName, methodDesc, opcode);
+                    if (s > suspendable) {
                         suspendable = s;
-                    if (suspendable > JDK)
+                    }
+                    if (suspendable > JDK) {
                         break;
+                    }
                 }
             }
         }
@@ -239,33 +272,40 @@ public final class MethodDatabase {
         return suspendable;
     }
 
-    public synchronized ClassEntry getClassEntry(String className) {
-        return classes.get(className);
+    public ClassEntry getClassEntry(String className) {
+        synchronized(classes) {
+            return classes.get(className);
+        }
     }
 
-    public synchronized ClassEntry getOrCreateClassEntry(String className, String superType) {
-        ClassEntry ce = classes.get(className);
-        if (ce == null) {
-            ce = new ClassEntry(superType);
-            classes.put(className, ce);
+    public ClassEntry getOrCreateClassEntry(String className, String superType) {
+        synchronized(classes) {
+            ClassEntry ce = classes.get(className);
+            if (ce == null) {
+                ce = new ClassEntry(superType);
+                classes.put(className, ce);
+            }
+            return ce;
         }
-        return ce;
     }
 
     // this method is used by Pulsar
-    public synchronized Map<String, ClassEntry> getInnerClassesEntries(String className) {
-        Map<String, ClassEntry> tailMap = classes.tailMap(className, true);
-        HashMap<String, ClassEntry> map = new HashMap<>();
-        for (Map.Entry<String, ClassEntry> entry : tailMap.entrySet()) {
-            if (entry.getKey().equals(className) || entry.getKey().startsWith(className + '$'))
-                map.put(entry.getKey(), entry.getValue());
+    public Map<String, ClassEntry> getInnerClassesEntries(String className) {
+        synchronized(classes) {
+            final Map<String, ClassEntry> tailMap = classes.tailMap(className, true);
+            final Map<String, ClassEntry> map = new HashMap<>();
+            for (Map.Entry<String, ClassEntry> entry : tailMap.entrySet()) {
+                if (entry.getKey().equals(className) || entry.getKey().startsWith(className + '$')) {
+                    map.put(entry.getKey(), entry.getValue());
+                }
+            }
+            return Collections.unmodifiableMap(map);
         }
-        return Collections.unmodifiableMap(map);
     }
 
     void recordSuspendableMethods(String className, ClassEntry entry) {
         ClassEntry oldEntry;
-        synchronized (this) {
+        synchronized(classes) {
             oldEntry = classes.put(className, entry);
         }
         if (oldEntry != null && oldEntry != entry) {
@@ -279,16 +319,16 @@ public final class MethodDatabase {
         if (JAVA_OBJECT.equals(classA) || JAVA_OBJECT.equals(classB)) {
             return JAVA_OBJECT;
         }
-        List<String> listA = getSuperClasses(classA);
-        List<String> listB = getSuperClasses(classB);
+        final List<String> listA = getSuperClasses(classA);
+        final List<String> listB = getSuperClasses(classB);
         if (listA == null || listB == null) {
             return null;
         }
+        final int num = Math.min(listA.size(), listB.size());
         int idx = 0;
-        int num = Math.min(listA.size(), listB.size());
         for (; idx < num; idx++) {
-            String superClassA = listA.get(idx);
-            String superClassB = listB.get(idx);
+            final String superClassA = listA.get(idx);
+            final String superClassB = listB.get(idx);
             if (!superClassA.equals(superClassB)) {
                 break;
             }
@@ -299,143 +339,151 @@ public final class MethodDatabase {
         return null;
     }
 
-    public boolean isException(String className) {
+    public boolean isException(final String className) {
+        String currentClassName = className;
+        MethodDatabase currentDB = this;
         for (;;) {
-            if ("java/lang/Throwable".equals(className))
+            if ("java/lang/Throwable".equals(currentClassName)) {
                 return true;
+            }
 
-            if (JAVA_OBJECT.equals(className))
-                return false;
-
-            String superClass = getDirectSuperClass(className);
-            if (superClass == null) {
-                log(isProblematicClass(className) ? LogLevel.INFO : LogLevel.WARNING, "Can't determine super class of %s (this is usually related to classloading)", className);
+            if (JAVA_OBJECT.equals(currentClassName)) {
                 return false;
             }
-            className = superClass;
+
+            String superClass = null;
+            final ClassLookup lookup = currentDB.getLookupFor(currentClassName);
+            if (lookup != null) {
+                final URL resource = lookup.getResource();
+                if (resource != null) {
+                    currentDB = lookup.toOwnerDB(currentDB);
+                    superClass = currentDB.getDirectSuperClass(currentClassName, resource);
+                }
+            }
+            if (superClass == null) {
+                log(isProblematicClass(currentClassName) ? LogLevel.INFO : LogLevel.WARNING,
+                        "Can't determine super class of %s (this is usually related to classloading)", currentClassName);
+                return false;
+            }
+            currentClassName = superClass;
         }
     }
 
-    protected ClassEntry checkClass(String className) {
-        ClassLoader cl = clRef.get();
-        if (cl == null) {
-            log(LogLevel.INFO, "Can't check class: %s", className);
-            return null;
-        }
-
-        if (className.startsWith("[")) {
-            // Don't try looking for an "array" class.
-            return null;
-        }
-
-        log(LogLevel.INFO, "Reading class: %s", className);
-        final InputStream is = doPrivileged(new GetResourceAsStream(cl, className + ".class"));
-        if (is == null) {
-            log(LogLevel.INFO, "Class not found: %s", className);
-            return null;
-        }
-        ClassEntry entry = getClassEntry(className); // getResourceAsStream may have triggered instrumentation
+    private ClassEntry fetchClassEntry(String className, URL resource) {
+        ClassEntry entry = getClassEntry(className);
         if (entry == null) {
-            final CheckInstrumentationVisitor civ = checkFileAndClose(is, className);
-            if (civ != null) {
-                entry = civ.getClassEntry();
+            log(LogLevel.INFO, "Reading class: %s", className);
+            try (final InputStream is = privilegedOpenInputStream(resource)) {
+                entry = checkFileAndClose(is).getClassEntry();
                 recordSuspendableMethods(className, entry);
-            } else
-                log(LogLevel.INFO, "Class not found: %s", className);
-        } else {
-            try {
-                is.close();
-            } catch (IOException e) {
-                error(className, e);
+            } catch(IOException e) {
+                throw new UncheckedIOException("While opening " + className, e);
             }
         }
-
         return entry;
     }
 
-    private CheckInstrumentationVisitor checkFileAndClose(InputStream is, String name) {
+    private InputStream privilegedOpenInputStream(URL resource) {
+        // Java 8 lambdas are (apparently) unreliable inside an instrumentation agent!
+        return doPrivileged(new OpenInputStreamAction(resource, getLog()));
+    }
+
+    private CheckInstrumentationVisitor checkFileAndClose(InputStream is) throws IOException {
         try {
-            try {
-                ClassReader r = new ClassReader(is);
+            final ClassReader r = new ClassReader(is);
 
-                CheckInstrumentationVisitor civ = new CheckInstrumentationVisitor(this);
-                r.accept(civ, ClassReader.SKIP_FRAMES | ClassReader.SKIP_CODE);
+            final CheckInstrumentationVisitor civ = new CheckInstrumentationVisitor(this);
+            r.accept(civ, ClassReader.SKIP_FRAMES | ClassReader.SKIP_CODE);
 
-                return civ;
-            } finally {
-                is.close();
-            }
-        } catch (UnableToInstrumentException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            error(name, ex);
+            return civ;
+        } finally {
+            is.close();
         }
-        return null;
     }
 
-    private String extractSuperClass(String className) {
-        ClassLoader cl = clRef.get();
-        if (cl == null)
-            return null;
-
-        final InputStream is = doPrivileged(new GetResourceAsStream(cl, className + ".class"));
-        if (is != null) {
-            try {
-                try {
-                    ClassReader r = new ClassReader(is);
-                    ExtractSuperClass esc = new ExtractSuperClass();
-                    r.accept(esc, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
-                    return esc.superClass;
-                } finally {
-                    is.close();
-                }
-            } catch (IOException ex) {
-                error(className, ex);
-            }
-        }
-        return null;
-    }
-
-    private List<String> getSuperClasses(String className) {
-        List<String> result = new ArrayList<>();
+    private List<String> getSuperClasses(final String className) {
+        final LinkedList<String> result = new LinkedList<>();
+        String currentClassName = className;
+        MethodDatabase currentDB = this;
         for (;;) {
-            result.add(0, className);
-            if (JAVA_OBJECT.equals(className)) {
+            result.addFirst(currentClassName);
+            if (JAVA_OBJECT.equals(currentClassName)) {
                 return result;
             }
 
-            String superClass = getDirectSuperClass(className);
+            String superClass = null;
+            final ClassLookup lookup = currentDB.getLookupFor(currentClassName);
+            if (lookup != null) {
+                final URL resource = lookup.getResource();
+                if (resource != null) {
+                    currentDB = lookup.toOwnerDB(currentDB);
+                    superClass = currentDB.getDirectSuperClass(currentClassName, resource);
+                }
+            }
             if (superClass == null) {
-                log(isProblematicClass(className) ? LogLevel.INFO : LogLevel.WARNING, "Can't determine super class of %s", className);
+                log(isProblematicClass(currentClassName) ? LogLevel.INFO : LogLevel.WARNING,
+                        "Can't determine super class of %s", currentClassName);
                 return null;
             }
-            className = superClass;
+            currentClassName = superClass;
         }
     }
 
-    protected String getDirectSuperClass(String className) {
-        ClassEntry entry = getClassEntry(className);
-        if (entry != null && entry != CLASS_NOT_FOUND)
+    private ClassLookup getLookupFor(String className) {
+        final ClassLoader cl = clRef.get();
+        return (cl == null) ? null : new ClassLookup(cl, className);
+    }
+
+    private String getDirectSuperClass(String className, URL resource) {
+        final ClassEntry entry = getClassEntry(className);
+        if (entry != null) {
             return entry.getSuperName();
+        }
 
         String superClass;
-        synchronized (this) {
+        synchronized(superClasses) {
             superClass = superClasses.get(className);
         }
         if (superClass == null) {
-            superClass = extractSuperClass(className);
-            if (superClass != null) {
-                String oldSuperClass;
-                synchronized (this) {
-                    oldSuperClass = superClasses.put(className, superClass);
-                }
-                if (oldSuperClass != null) {
-                    if (!oldSuperClass.equals(superClass))
+            try (final InputStream is = privilegedOpenInputStream(resource)) {
+                superClass = ExtractSuperClass.extractFrom(is);
+                if (superClass != null) {
+                    final String oldSuperClass;
+                    synchronized(superClasses) {
+                        oldSuperClass = superClasses.put(className, superClass);
+                    }
+                    if (oldSuperClass != null && !oldSuperClass.equals(superClass)) {
                         log(LogLevel.WARNING, "Duplicate super class entry with different value: %s vs %s", oldSuperClass, superClass);
+                    }
                 }
+            } catch(IOException ex) {
+                error(className, ex);
             }
         }
         return superClass;
+    }
+
+    private static final class ClassLookup {
+        private final ClassLoader classloader;
+        private final String resourceName;
+        private final URL resource;
+
+        ClassLookup(ClassLoader cl, String internalClassName) {
+            classloader = cl;
+            resourceName = internalClassName + ".class";
+            resource = doPrivileged(new GetResourceAction(cl, resourceName));
+        }
+
+        URL getResource() {
+            return resource;
+        }
+
+        MethodDatabase toOwnerDB(MethodDatabase db) {
+            // Identify which classloader actually contains the byte-code for this class,
+            // because its ClassEntry should belong to that classloader's MethodDatabase.
+            final ClassLoader ownerCl = doPrivileged(new GetBestClassLoaderAction(classloader, resourceName, resource));
+            return (ownerCl == classloader) ? db : db.instrumentor.getMethodDatabase(ownerCl);
+        }
     }
 
     public static boolean isReflectInvocation(String className, String methodName) {
@@ -456,9 +504,28 @@ public final class MethodDatabase {
 
     public static boolean isJDK(String className) {
         return className.startsWith("java/")
-               || className.startsWith("javax/")
+               || isJavaxInternal(className)
                || className.startsWith("sun/")
+               || className.startsWith("jdk/")
                || (className.startsWith("com/sun/") && !className.startsWith("com/sun/jersey"));
+    }
+
+    private static boolean isJavaxInternal(String className) {
+        if (!className.startsWith("javax/")) {
+            return false;
+        }
+        final String classSubName = className.substring("javax/".length());
+        return classSubName.startsWith("activation/")
+                || classSubName.startsWith("crypto/")
+                || classSubName.startsWith("lang/")
+                || classSubName.startsWith("management/")
+                || classSubName.startsWith("naming/")
+                || classSubName.startsWith("net/")
+                || classSubName.startsWith("script/")
+                || classSubName.startsWith("security/")
+                || classSubName.startsWith("sql/")
+                || classSubName.startsWith("tools/")
+                || classSubName.startsWith("xml/");
     }
 
     public static boolean isProblematicClass(String className) {
@@ -469,25 +536,8 @@ public final class MethodDatabase {
                || className.startsWith("org/apache/log4j/");
     }
 
-    private static final ClassEntry CLASS_NOT_FOUND = new ClassEntry("<class not found>");
-
     public enum SuspendableType {
         NON_SUSPENDABLE, SUSPENDABLE_SUPER, SUSPENDABLE
-    }
-
-    private static final class GetResourceAsStream implements PrivilegedAction<InputStream> {
-        private final ClassLoader cl;
-        private final String resourceName;
-
-        GetResourceAsStream(ClassLoader cl, String resourceName) {
-            this.cl = cl;
-            this.resourceName = resourceName;
-        }
-
-        @Override
-        public InputStream run() {
-            return cl.getResourceAsStream(resourceName);
-        }
     }
 
     public static final class ClassEntry {
@@ -598,19 +648,6 @@ public final class MethodDatabase {
 
         public void setInstrumented(boolean instrumented) {
             this.instrumented = instrumented;
-        }
-    }
-
-    static class ExtractSuperClass extends ClassVisitor {
-        String superClass;
-
-        public ExtractSuperClass() {
-            super(ASMAPI);
-        }
-
-        @Override
-        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-            this.superClass = superName;
         }
     }
 }

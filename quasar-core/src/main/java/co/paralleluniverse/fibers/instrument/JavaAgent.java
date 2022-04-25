@@ -102,10 +102,23 @@ public class JavaAgent {
     private static final Set<WeakReference<ClassLoader>> classLoaders = Collections.newSetFromMap(new ConcurrentHashMap<WeakReference<ClassLoader>, Boolean>());
 
     public static void premain(String agentArguments, Instrumentation instrumentation) {
-        if (!instrumentation.isRetransformClassesSupported())
+        if (!instrumentation.isRetransformClassesSupported()) {
             System.err.println("Retransforming classes is not supported!");
+        }
 
-        final QuasarInstrumentor instrumentor = new QuasarInstrumentor(false);
+        final Log log = new Log() {
+            @Override
+            public void log(LogLevel level, String msg, Object... args) {
+                System.err.println("[quasar] " + level + ": " + String.format(msg, args));
+            }
+
+            @Override
+            public void error(String msg, Throwable exc) {
+                System.err.println("[quasar] ERROR: " + msg);
+                exc.printStackTrace(System.err);
+            }
+        };
+        final QuasarInstrumentor instrumentor = new QuasarInstrumentor(log);
         ACTIVE = true;
         SuspendableHelper.javaAgent = true;
 
@@ -172,19 +185,6 @@ public class JavaAgent {
             }
         }
 
-        instrumentor.setLog(new Log() {
-            @Override
-            public void log(LogLevel level, String msg, Object... args) {
-                System.err.println("[quasar] " + level + ": " + String.format(msg, args));
-            }
-
-            @Override
-            public void error(String msg, Throwable exc) {
-                System.err.println("[quasar] ERROR: " + msg);
-                exc.printStackTrace(System.err);
-            }
-        });
-
         // CORDA-3666: Access Classes now so we don't deadlock while
         // loading it later.
         //
@@ -212,7 +212,7 @@ public class JavaAgent {
     private static class Transformer implements ClassFileTransformer {
         private final QuasarInstrumentor instrumentor;
 
-        public Transformer(QuasarInstrumentor instrumentor) {
+        Transformer(QuasarInstrumentor instrumentor) {
             this.instrumentor = instrumentor;
         }
 
@@ -254,8 +254,9 @@ public class JavaAgent {
     }
 
     public static byte[] crazyClojureOnceDisable(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-        if (!Boolean.parseBoolean(System.getProperty("co.paralleluniverse.pulsar.disableOnce", "false")))
+        if (!Boolean.getBoolean("co.paralleluniverse.pulsar.disableOnce")) {
             return classfileBuffer;
+        }
 
         final ClassReader cr = new ClassReader(classfileBuffer);
         final ClassWriter cw = new ClassWriter(cr, 0);
