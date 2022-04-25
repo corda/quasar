@@ -47,7 +47,7 @@ class ExtendedStackTraceHotSpot extends ExtendedStackTrace {
 
     @Override
     public Iterator<ExtendedStackTraceElement> iterator() {
-        return new Iterator<ExtendedStackTraceElement>() {
+        return new Iterator<>() {
             private Object chunk = getBacktrace(t);
             private int j = -1;
             private int i = -1;

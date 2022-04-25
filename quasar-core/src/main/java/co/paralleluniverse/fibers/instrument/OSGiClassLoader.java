@@ -1,14 +1,12 @@
 package co.paralleluniverse.fibers.instrument;
 
 import co.paralleluniverse.fibers.instrument.function.ResourceLocator;
-import co.paralleluniverse.fibers.instrument.function.ThrowingBiFunction;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.security.PrivilegedAction;
 import java.util.Collection;
-import java.util.Map;
 import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
@@ -21,15 +19,12 @@ import static java.security.AccessController.doPrivileged;
  * system bundle that hosts the framework classes.
  */
 final class OSGiClassLoader extends ClassLoader {
-    private static final String SUPER_CLASS_EXTRACTOR_CLASS_NAME = "co.paralleluniverse.fibers.osgi.ExtractSuperClasses";
-    private static final String GET_EXTRACTOR_METHOD_NAME = "getExtractorMethod";
     private static final String BUNDLE_LOCATION_MATCHER_CLASS_NAME = "co.paralleluniverse.fibers.osgi.BundleLocationMatcher";
     private static final String GET_MATCHER_METHOD_NAME = "getMatcherMethod";
     private static final String BUNDLE_LOCATOR_CLASS_NAME = "co.paralleluniverse.fibers.osgi.BundleLocator";
     private static final String FIND_RESOURCE_OWNER_METHOD_NAME = "getFindResourceOwnerMethod";
     private static final String BUNDLE_CLASS_NAME = "org.osgi.framework.Bundle";
 
-    private static ThrowingBiFunction<String, ClassLoader, Map<String, String>> superClassExtractor;
     private static BiPredicate<ClassLoader, Collection<Pattern>> bundleLocationExcluder;
     private static ResourceLocator findResourceOwner;
     private static ClassLoader osgiLoader;
@@ -38,7 +33,7 @@ final class OSGiClassLoader extends ClassLoader {
         OSGiClassLoader.registerAsParallelCapable();
 
         // Disable this classloader unless it's part of the OSGi Quasar Java agent.
-        final String resourceName = getOSGiResourceName(SUPER_CLASS_EXTRACTOR_CLASS_NAME);
+        final String resourceName = getOSGiResourceName(BUNDLE_LOCATOR_CLASS_NAME);
         final URL osgiResource = doPrivileged((PrivilegedAction<URL>) () ->
             OSGiClassLoader.class.getClassLoader().getResource(resourceName)
         );
@@ -90,21 +85,6 @@ final class OSGiClassLoader extends ClassLoader {
     }
 
     @SuppressWarnings("unchecked")
-    private static ThrowingBiFunction<String, ClassLoader, Map<String, String>> createSuperClassExtractor(ClassLoader cl) {
-        final ClassLoader loader = getOSGiLoaderFrom(cl);
-        if (loader == null) {
-            return null;
-        }
-
-        try {
-            final Class<?> extractorClass = Class.forName(SUPER_CLASS_EXTRACTOR_CLASS_NAME, false, loader);
-            return (ThrowingBiFunction<String, ClassLoader, Map<String, String>>) extractorClass.getMethod(GET_EXTRACTOR_METHOD_NAME).invoke(null);
-        } catch(ReflectiveOperationException e) {
-            throw new InternalError("Failed to initialise " + SUPER_CLASS_EXTRACTOR_CLASS_NAME, e);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
     private static BiPredicate<ClassLoader, Collection<Pattern>> createBundleLocationMatcher(ClassLoader cl) {
         final ClassLoader loader = getOSGiLoaderFrom(cl);
         if (loader == null) {
@@ -133,16 +113,6 @@ final class OSGiClassLoader extends ClassLoader {
         }
     }
 
-    static synchronized ThrowingBiFunction<String, ClassLoader, Map<String, String>> fetchSuperClassExtractor(ClassLoader cl) {
-        if (superClassExtractor == null) {
-            superClassExtractor = doPrivileged(
-                (PrivilegedAction<? extends ThrowingBiFunction<String, ClassLoader, Map<String, String>>>) () ->
-                    createSuperClassExtractor(cl)
-            );
-        }
-        return superClassExtractor;
-    }
-
     static synchronized BiPredicate<ClassLoader, Collection<Pattern>> fetchBundleLocationMatcher(ClassLoader cl) {
         if (bundleLocationExcluder == null) {
             bundleLocationExcluder = doPrivileged(
@@ -165,7 +135,6 @@ final class OSGiClassLoader extends ClassLoader {
     static synchronized void disable() {
         if (osgiLoader == null) {
             // Only disable OSGi support if it hasn't been activated yet.
-            superClassExtractor = (a, b) -> null;
             bundleLocationExcluder = (a, b) -> false;
             findResourceOwner = MethodDatabase::getBestClassLoaderFor;
         }

@@ -43,6 +43,7 @@ package co.paralleluniverse.fibers.instrument;
 
 import co.paralleluniverse.fibers.instrument.MethodDatabase.ClassEntry;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
+import co.paralleluniverse.fibers.suspend.SuspendExecution;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -56,7 +57,7 @@ import static co.paralleluniverse.fibers.instrument.Classes.INSTRUMENTED_DESC;
 
 /**
  * Check if a class contains suspendable methods.
- * Basicly this class checks if a method is declared to throw {@link SuspendExecution}.
+ * Basically this class checks if a method is declared to throw {@link SuspendExecution}.
  *
  * @author Matthias Mann
  */
@@ -98,7 +99,6 @@ class CheckInstrumentationVisitor extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-
         this.className = name;
         this.isInterface = (access & Opcodes.ACC_INTERFACE) != 0;
         this.classEntry = new ClassEntry(superName);

@@ -120,7 +120,7 @@ public class KotlinClassifier implements SuspendableClassifier {
         }
 
         for (final String[] s : supers) {
-            if (SimpleSuspendableClassifier.extendsOrImplements(s[0], db, className, superClassName, interfaces))
+            if (SimpleSuspendableClassifier.extendsOrImplements(s[0], db, superClassName, interfaces))
                 for (int i = 1; i < s.length; i++) {
                     if (methodName.matches(s[i])) {
                         if (db.isVerbose())
