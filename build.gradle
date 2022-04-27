@@ -810,7 +810,7 @@ artifactory {
     publish {
         contextUrl = 'https://software.r3.com/artifactory'
         repository {
-            repoKey = System.getenv('CORDA_ARTIFACTORY_REPOKEY') ?: System.getProperty('corda.artifactory.repokey')
+            repoKey = System.getenv('CORDA_ARTIFACTORY_REPOKEY') ?: 'corda-dependencies-dev'
             username = project.findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME') ?: System.getProperty('corda.artifactory.username')
             password = project.findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD') ?: System.getProperty('corda.artifactory.password')
             maven = true
