@@ -24,6 +24,7 @@ final class OSGiClassLoader extends ClassLoader {
     private static final String BUNDLE_LOCATOR_CLASS_NAME = "co.paralleluniverse.fibers.osgi.BundleLocator";
     private static final String FIND_RESOURCE_OWNER_METHOD_NAME = "getFindResourceOwnerMethod";
     private static final String BUNDLE_CLASS_NAME = "org.osgi.framework.Bundle";
+    private static final BiPredicate<ClassLoader, Collection<Pattern>> FALSE = (a, b) -> false;
 
     private static BiPredicate<ClassLoader, Collection<Pattern>> bundleLocationExcluder;
     private static ResourceLocator findResourceOwner;
@@ -120,7 +121,7 @@ final class OSGiClassLoader extends ClassLoader {
                     createBundleLocationMatcher(cl)
             );
         }
-        return bundleLocationExcluder;
+        return bundleLocationExcluder != null ? bundleLocationExcluder : FALSE;
     }
 
     static synchronized ResourceLocator findResourceOwner(ClassLoader cl) {
@@ -129,13 +130,13 @@ final class OSGiClassLoader extends ClassLoader {
                 createFindResourceOwner(cl)
             );
         }
-        return findResourceOwner;
+        return findResourceOwner != null ? findResourceOwner : MethodDatabase::getBestClassLoaderFor;
     }
 
     static synchronized void disable() {
         if (osgiLoader == null) {
             // Only disable OSGi support if it hasn't been activated yet.
-            bundleLocationExcluder = (a, b) -> false;
+            bundleLocationExcluder = FALSE;
             findResourceOwner = MethodDatabase::getBestClassLoaderFor;
         }
     }
