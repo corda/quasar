@@ -326,7 +326,7 @@ public final class QuasarInstrumentor {
             return false;
         }
         final BiPredicate<ClassLoader, Collection<Pattern>> bundleMatcher = OSGiClassLoader.fetchBundleLocationMatcher(loader);
-        return bundleMatcher != null && bundleMatcher.test(loader, excludedBundleLocations);
+        return bundleMatcher.test(loader, excludedBundleLocations);
     }
 
     synchronized void addExcludedBundleLocation(String glob) {
@@ -338,7 +338,7 @@ public final class QuasarInstrumentor {
             return false;
         }
         final BiPredicate<ClassLoader, Collection<Pattern>> bundleMatcher = OSGiClassLoader.fetchBundleLocationMatcher(loader);
-        return bundleMatcher != null && bundleMatcher.test(loader, cachedBundleLocations);
+        return bundleMatcher.test(loader, cachedBundleLocations);
     }
 
     synchronized void addCachedBundleLocation(String glob) {
