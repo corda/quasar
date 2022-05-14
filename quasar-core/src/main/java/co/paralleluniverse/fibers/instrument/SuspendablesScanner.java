@@ -38,7 +38,6 @@ import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.net.URLConnection;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -226,9 +225,7 @@ public class SuspendablesScanner extends Task {
                 if (resource.startsWith("java/util") || resource.startsWith("java/lang") || resource.startsWith("co/paralleluniverse/asm"))
                     return;
                 if (isClassFile(url.getFile())) {
-                    URLConnection uc = url.openConnection();
-                    uc.setUseCaches(false);
-                    try (InputStream is = uc.getInputStream()) {
+                    try (InputStream is = url.openStream()) {
                         if (is == null)
                             throw new IOException("Resource " + resource + " not found (" + url + ")");
                         new ClassReader(is)
@@ -664,7 +661,7 @@ public class SuspendablesScanner extends Task {
 
     private ClassNode fill(ClassNode node) {
         if (node.supers == null) {
-            try (InputStream is = ClassLoaderUtil.getResourceAsStream(cl, classToResource(node.name))) {
+            try (InputStream is = cl.getResourceAsStream(classToResource(node.name))) {
                 final ClassReader cr = new ClassReader(is);
                 cr.accept(new ClassNodeVisitor(false, ASMAPI, null), ClassReader.SKIP_DEBUG | ClassReader.SKIP_CODE);
                 assert node.supers != null;
