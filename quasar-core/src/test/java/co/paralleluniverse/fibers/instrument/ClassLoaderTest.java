@@ -167,6 +167,8 @@ public class ClassLoaderTest {
 
     @Test
     public void testClassesForCorrectMethodDatabase() throws Exception {
+        // Load a class from a boot classpath extension.
+        Class.forName("co.paralleluniverse.vtime.Clock", false, ClassLoader.getSystemClassLoader());
         try (URLClassLoader cl = createClassLoaderFor(getTestClassesURL())) {
             Class.forName(DYNAMIC_SUSPENDABLE_CLASS_NAME, false, cl);
             Class.forName(DYNAMIC_FIBER_CLASS_NAME, false, cl);

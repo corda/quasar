@@ -43,6 +43,8 @@ package co.paralleluniverse.fibers.instrument;
 
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 import static java.security.AccessController.doPrivileged;
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableList;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
@@ -76,6 +78,18 @@ import java.util.TreeMap;
  */
 public final class MethodDatabase {
     private static final String JAVA_OBJECT = "java/lang/Object";
+    private static final List<String> JDK_JAVAX_PACKAGES = unmodifiableList(asList(
+        "accessibility/", "annotation/",
+        "crypto", "imageio/",
+        "lang/", "management/",
+        "naming/", "net/",
+        "print/", "rmi/",
+        "script/", "security/",
+        "smartcardio/", "sound/",
+        "sql/", "swing/",
+        "tools/", "transaction/",
+        "xml/"
+    ));
 
     private final WeakReference<ClassLoader> clRef;
     private final SuspendableClassifier classifier;
@@ -205,7 +219,7 @@ public final class MethodDatabase {
             return null;
         }
 
-        final ClassEntry entry = getClassEntry(className);
+        ClassEntry entry = getClassEntry(className);
         if (entry != null) {
             return new Pair<>(this, entry);
         } else {
@@ -215,7 +229,13 @@ public final class MethodDatabase {
                 return null;
             } else {
                 final MethodDatabase ownerDB = lookup.toOwnerDB(this);
-                return new Pair<>(ownerDB, ownerDB.fetchClassEntry(className, lookup.getResource()));
+                if (ownerDB != this) {
+                    entry = ownerDB.getClassEntry(className);
+                }
+                if (entry == null) {
+                    entry = ownerDB.loadClassEntry(className, lookup.getResource());
+                }
+                return new Pair<>(ownerDB, entry);
             }
         }
     }
@@ -304,7 +324,7 @@ public final class MethodDatabase {
     }
 
     void recordSuspendableMethods(String className, ClassEntry entry) {
-        ClassEntry oldEntry;
+        final ClassEntry oldEntry;
         synchronized(classes) {
             oldEntry = classes.put(className, entry);
         }
@@ -369,16 +389,14 @@ public final class MethodDatabase {
         }
     }
 
-    private ClassEntry fetchClassEntry(String className, URL resource) {
-        ClassEntry entry = getClassEntry(className);
-        if (entry == null) {
-            log(LogLevel.INFO, "Reading class: %s", className);
-            try (final InputStream is = privilegedOpenInputStream(resource)) {
-                entry = checkFileAndClose(is).getClassEntry();
-                recordSuspendableMethods(className, entry);
-            } catch(IOException e) {
-                throw new UncheckedIOException("While opening " + className, e);
-            }
+    private ClassEntry loadClassEntry(String className, URL resource) {
+        log(LogLevel.INFO, "Reading class: %s", className);
+        final ClassEntry entry;
+        try (final InputStream is = privilegedOpenInputStream(resource)) {
+            entry = checkFileAndClose(is).getClassEntry();
+            recordSuspendableMethods(className, entry);
+        } catch(IOException e) {
+            throw new UncheckedIOException("While opening " + className, e);
         }
         return entry;
     }
@@ -515,17 +533,7 @@ public final class MethodDatabase {
             return false;
         }
         final String classSubName = className.substring("javax/".length());
-        return classSubName.startsWith("activation/")
-                || classSubName.startsWith("crypto/")
-                || classSubName.startsWith("lang/")
-                || classSubName.startsWith("management/")
-                || classSubName.startsWith("naming/")
-                || classSubName.startsWith("net/")
-                || classSubName.startsWith("script/")
-                || classSubName.startsWith("security/")
-                || classSubName.startsWith("sql/")
-                || classSubName.startsWith("tools/")
-                || classSubName.startsWith("xml/");
+        return JDK_JAVAX_PACKAGES.stream().anyMatch(classSubName::startsWith);
     }
 
     public static boolean isProblematicClass(String className) {

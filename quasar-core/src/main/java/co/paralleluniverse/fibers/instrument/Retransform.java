@@ -21,11 +21,7 @@ import java.io.PrintWriter;
 import java.lang.instrument.ClassDefinition;
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
-import java.lang.ref.WeakReference;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -35,8 +31,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Retransform {
     static volatile Instrumentation instrumentation;
     static volatile QuasarInstrumentor instrumentor;
-    static volatile Set<WeakReference<ClassLoader>> classLoaders = Collections.newSetFromMap(new ConcurrentHashMap<WeakReference<ClassLoader>, Boolean>());
-    
+
     private static final CopyOnWriteArrayList<ClassLoadListener> listeners = new CopyOnWriteArrayList<>();
 
     public static void retransform(Class<?> clazz) throws UnmodifiableClassException {
@@ -59,22 +54,6 @@ public class Retransform {
         return instrumentor;
     }
 
-//    public static boolean isInstrumented(String className) {
-//        for (Iterator<WeakReference<ClassLoader>> it = classLoaders.iterator(); it.hasNext();) {
-//            final WeakReference<ClassLoader> ref = it.next();
-//            final ClassLoader loader = ref.get();
-//            if (loader == null)
-//                it.remove();
-//            else {
-//                try {
-//                    if (isInstrumented(Class.forName(className, false, loader)))
-//                        return true;
-//                } catch (ClassNotFoundException ex) {
-//                }
-//            }
-//        }
-//        return false;
-//    }
     public static void addWaiver(String className, String methodName) {
         SuspendableHelper.addWaiver(className, methodName);
     }

@@ -20,8 +20,7 @@ import co.paralleluniverse.fibers.FiberForkJoinScheduler
 import co.paralleluniverse.fibers.Suspendable
 import co.paralleluniverse.strands.Strand
 import co.paralleluniverse.strands.SuspendableRunnable
-import org.hamcrest.CoreMatchers.equalTo
-import org.junit.Assert.assertThat
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.fail
 import org.junit.Test
 import java.util.concurrent.Executors
@@ -125,7 +124,7 @@ class FiberAsyncTest {
     fun testSyncCallback() {
         val fiber = Fiber<Void>(scheduler, SuspendableRunnable @Suspendable {
             val res = callService(syncService)
-            assertThat(res, equalTo("sync result!"))
+            assertThat(res).isEqualTo("sync result!")
         }).start()
 
         fiber.join()
@@ -138,7 +137,7 @@ class FiberAsyncTest {
                 callService(badSyncService)
                 fail()
             } catch (e: Exception) {
-                assertThat(e.message, equalTo("sync exception!"))
+                assertThat(e.message).isEqualTo("sync exception!")
             }
         }).start()
 
@@ -149,7 +148,7 @@ class FiberAsyncTest {
     fun testAsyncCallback() {
         val fiber = Fiber<Void>(scheduler, SuspendableRunnable @Suspendable {
             val res = callService(asyncService)
-            assertThat(res, equalTo("async result!"))
+            assertThat(res).isEqualTo("async result!")
         }).start()
 
         fiber.join()
@@ -162,7 +161,7 @@ class FiberAsyncTest {
                 callService(badAsyncService)
                 fail()
             } catch (e: Exception) {
-                assertThat(e.message, equalTo("async exception!"))
+                assertThat(e.message).isEqualTo("async exception!")
             }
         }).start()
 
@@ -180,7 +179,7 @@ class FiberAsyncTest {
                 }.run()
                 fail()
             } catch (e: Exception) {
-                assertThat(e.message, equalTo("requestAsync exception!"))
+                assertThat(e.message).isEqualTo("requestAsync exception!")
             }
         }).start()
 
@@ -192,7 +191,7 @@ class FiberAsyncTest {
         val fiber = Fiber<Void>(scheduler, SuspendableRunnable @Suspendable {
             try {
                 val res = callService(asyncService, 100, TimeUnit.MILLISECONDS)
-                assertThat(res, equalTo("async result!"))
+                assertThat(res).isEqualTo("async result!")
             } catch (e: TimeoutException) {
                 throw RuntimeException()
             }
@@ -247,7 +246,7 @@ class FiberAsyncTest {
                 Strand.sleep(300)
                 "ok"
             })
-            assertThat(res, equalTo("ok"))
+            assertThat(res).isEqualTo("ok")
         }).start()
 
         fiber.join()
@@ -261,7 +260,7 @@ class FiberAsyncTest {
                     Strand.sleep(300)
                     "ok"
                 })
-                assertThat(res, equalTo("ok"))
+                assertThat(res).isEqualTo("ok")
             } catch (e: TimeoutException) {
                 fail()
             }

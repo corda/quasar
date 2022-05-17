@@ -15,7 +15,6 @@ package co.paralleluniverse.fibers;
 
 import co.paralleluniverse.common.test.TestUtil;
 import co.paralleluniverse.common.util.CheckedCallable;
-import co.paralleluniverse.common.util.Debug;
 import co.paralleluniverse.strands.SuspendableRunnable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -24,13 +23,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
+
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
@@ -45,7 +42,7 @@ public class FiberAsyncTest {
     @Rule
     public TestRule watchman = TestUtil.WATCHMAN;
 
-    private FiberScheduler scheduler;
+    private final FiberScheduler scheduler;
 
     public FiberAsyncTest() {
         scheduler = new FiberForkJoinScheduler("test", 4, null, false);
@@ -149,7 +146,7 @@ public class FiberAsyncTest {
     }
 
     static abstract class MyFiberAsync extends FiberAsync<String, RuntimeException> implements MyCallback {
-        private final Fiber fiber;
+        private final Fiber<?> fiber;
 
         public MyFiberAsync() {
             this.fiber = Fiber.currentFiber();
@@ -168,11 +165,11 @@ public class FiberAsyncTest {
 
     @Test
     public void testSyncCallback() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 String res = callService(syncService);
-                assertThat(res, equalTo("sync result!"));
+                assertThat(res).isEqualTo("sync result!");
             }
         }).start();
 
@@ -181,14 +178,14 @@ public class FiberAsyncTest {
 
     @Test
     public void testSyncCallbackException() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 try {
                     String res = callService(badSyncService);
                     fail();
                 } catch (Exception e) {
-                    assertThat(e.getMessage(), equalTo("sync exception!"));
+                    assertThat(e.getMessage()).isEqualTo("sync exception!");
                 }
             }
         }).start();
@@ -198,11 +195,11 @@ public class FiberAsyncTest {
 
     @Test
     public void testAsyncCallback() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 String res = callService(asyncService);
-                assertThat(res, equalTo("async result!"));
+                assertThat(res).isEqualTo("async result!");
             }
         }).start();
 
@@ -211,14 +208,14 @@ public class FiberAsyncTest {
 
     @Test
     public void testAsyncCallbackException() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 try {
                     String res = callService(badAsyncService);
                     fail();
                 } catch (Exception e) {
-                    assertThat(e.getMessage(), equalTo("async exception!"));
+                    assertThat(e.getMessage()).isEqualTo("async exception!");
                 }
             }
         }).start();
@@ -228,7 +225,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testAsyncCallbackExceptionInRequestAsync() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 try {
@@ -242,7 +239,7 @@ public class FiberAsyncTest {
                     }.run();
                     fail();
                 } catch (Exception e) {
-                    assertThat(e.getMessage(), equalTo("requestAsync exception!"));
+                    assertThat(e.getMessage()).isEqualTo("requestAsync exception!");
                 }
             }
         }).start();
@@ -252,12 +249,12 @@ public class FiberAsyncTest {
 
     @Test
     public void testTimedAsyncCallbackNoTimeout() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 try {
                     String res = callService(asyncService, 50, TimeUnit.MILLISECONDS);
-                    assertThat(res, equalTo("async result!"));
+                    assertThat(res).isEqualTo("async result!");
                 } catch (TimeoutException e) {
                     throw new RuntimeException();
                 }
@@ -269,7 +266,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testTimedAsyncCallbackWithTimeout() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 try {
@@ -285,7 +282,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testInterrupt1() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 try {
@@ -302,7 +299,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testInterrupt2() throws Exception {
-        final Fiber fiber = new Fiber(scheduler, new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution {
                 try {
@@ -323,7 +320,7 @@ public class FiberAsyncTest {
         final AtomicBoolean started = new AtomicBoolean();
         final AtomicBoolean interrupted = new AtomicBoolean();
 
-        Fiber fiber = new Fiber(new SuspendableRunnable() {
+        Fiber<?> fiber = new Fiber<>(new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 FiberAsync.runBlocking(Executors.newSingleThreadExecutor(),
@@ -353,13 +350,13 @@ public class FiberAsyncTest {
                 fail("InterruptedException not thrown");
         }
         Thread.sleep(100);
-        assertThat(started.get(), is(true));
-        assertThat(interrupted.get(), is(true));
+        assertThat(started.get()).isTrue();
+        assertThat(interrupted.get()).isTrue();
     }
     
     @Test
     public void testRunBlocking() throws Exception {
-        final Fiber fiber = new Fiber(new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 String res = FiberAsync.runBlocking(Executors.newCachedThreadPool(), new CheckedCallable<String, InterruptedException>() {
@@ -368,7 +365,7 @@ public class FiberAsyncTest {
                         return "ok";
                     }
                 });
-                assertThat(res, equalTo("ok"));
+                assertThat(res).isEqualTo("ok");
             }
         }).start();
 
@@ -377,7 +374,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testRunBlockingWithTimeout1() throws Exception {
-        final Fiber fiber = new Fiber(new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 try {
@@ -387,7 +384,7 @@ public class FiberAsyncTest {
                             return "ok";
                         }
                     });
-                    assertThat(res, equalTo("ok"));
+                    assertThat(res).isEqualTo("ok");
                 } catch (TimeoutException e) {
                     fail();
                 }
@@ -399,7 +396,7 @@ public class FiberAsyncTest {
 
     @Test
     public void testRunBlockingWithTimeout2() throws Exception {
-        final Fiber fiber = new Fiber(new SuspendableRunnable() {
+        final Fiber<?> fiber = new Fiber<>(new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 try {

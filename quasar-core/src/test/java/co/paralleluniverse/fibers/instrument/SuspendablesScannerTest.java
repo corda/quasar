@@ -21,11 +21,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
-import static org.junit.Assert.*;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.objectweb.asm.Type;
+
+import static org.junit.Assert.assertTrue;
 
 public class SuspendablesScannerTest {
     private static SuspendablesScanner scanner;
