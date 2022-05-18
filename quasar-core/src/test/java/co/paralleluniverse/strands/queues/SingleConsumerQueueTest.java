@@ -21,14 +21,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Simple, single-threaded tests
@@ -71,10 +73,10 @@ public class SingleConsumerQueueTest {
 
     @Test
     public void testEmptyQueue() {
-        assertThat(queue.size(), is(0));
+        assertThat(queue.size()).isEqualTo(0);
         assertTrue(queue.isEmpty());
-        assertThat(queue.peek(), is(nullValue()));
-        assertThat(queue.poll(), is(nullValue()));
+        assertThat(queue.peek()).isNull();
+        assertThat(queue.poll()).isNull();
         try {
             queue.element();
             fail();
@@ -93,9 +95,9 @@ public class SingleConsumerQueueTest {
         queue.offer("two");
         queue.offer("three");
 
-        assertThat(queue.isEmpty(), is(false));
-        assertThat(queue.size(), is(3));
-        assertThat(list(queue), is(equalTo(list("one", "two", "three"))));
+        assertThat(queue.isEmpty()).isFalse();
+        assertThat(queue.size()).isEqualTo(3);
+        assertThat(list(queue)).isEqualTo(list("one", "two", "three"));
     }
 
     @Test
@@ -106,14 +108,14 @@ public class SingleConsumerQueueTest {
             queue.offer("x" + (j++));
             queue.offer("x" + (j++));
             String s = queue.poll();
-            assertThat(s, equalTo("x" + (k++)));
+            assertThat(s).isEqualTo("x" + (k++));
         }
-        assertThat(queue.size(), is(8));
-        assertThat(list(queue), is(equalTo(list("x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16"))));
+        assertThat(queue.size()).isEqualTo(8);
+        assertThat(list(queue)).isEqualTo(list("x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16"));
 
         for (int i = 0; i < 8; i++) {
             String s = queue.poll();
-            assertThat(s, equalTo("x" + (k++)));
+            assertThat(s).isEqualTo("x" + (k++));
         }
         testEmptyQueue();
     }
@@ -132,7 +134,7 @@ public class SingleConsumerQueueTest {
                 it.remove();
         }
 
-        assertThat(list(queue), is(equalTo(list("x1", "x3", "x5", "x7", "x9"))));
+        assertThat(list(queue)).isEqualTo(list("x1", "x3", "x5", "x7", "x9"));
 
         for (int i = 0; i < 4; i++)
             queue.offer("x" + (j++));
@@ -144,7 +146,7 @@ public class SingleConsumerQueueTest {
                 it.remove();
         }
 
-        assertThat(list(queue), is(equalTo(list("x3", "x7", "x10", "x12"))));
+        assertThat(list(queue)).isEqualTo(list("x3", "x7", "x10", "x12"));
     }
 
     @Test
@@ -160,8 +162,8 @@ public class SingleConsumerQueueTest {
         it.next();
         it.remove();
 
-        assertThat(queue.size(), is(2));
-        assertThat(list(queue), is(equalTo(list("three", "four"))));
+        assertThat(queue.size()).isEqualTo(2);
+        assertThat(list(queue)).isEqualTo(list("three", "four"));
 
         queue.offer("five");
         queue.offer("six");
@@ -171,8 +173,8 @@ public class SingleConsumerQueueTest {
         it.next();
         it.remove();
 
-        assertThat(queue.size(), is(2));
-        assertThat(list(queue), is(equalTo(list("five", "six"))));
+        assertThat(queue.size()).isEqualTo(2);
+        assertThat(list(queue)).isEqualTo(list("five", "six"));
     }
 
     @Test
@@ -192,8 +194,8 @@ public class SingleConsumerQueueTest {
             it.next();
         it.remove();
 
-        assertThat(queue.size(), is(2));
-        assertThat(list(queue), is(equalTo(list("one", "two"))));
+        assertThat(queue.size()).isEqualTo(2);
+        assertThat(list(queue)).isEqualTo(list("one", "two"));
 
         queue.offer("five");
         queue.offer("six");
@@ -208,8 +210,8 @@ public class SingleConsumerQueueTest {
             it.next();
         it.remove();
 
-        assertThat(queue.size(), is(2));
-        assertThat(list(queue), is(equalTo(list("one", "two"))));
+        assertThat(queue.size()).isEqualTo(2);
+        assertThat(list(queue)).isEqualTo(list("one", "two"));
     }
 
     @Test
@@ -222,8 +224,8 @@ public class SingleConsumerQueueTest {
         testEmptyQueue();
 
         queue.offer("one");
-        assertThat(queue.size(), is(1));
-        assertThat(list(queue), is(equalTo(list("one"))));
+        assertThat(queue.size()).isEqualTo(1);
+        assertThat(list(queue)).isEqualTo(list("one"));
 
         it = queue.iterator();
         it.next();
@@ -232,8 +234,8 @@ public class SingleConsumerQueueTest {
         testEmptyQueue();
 
         queue.offer("one");
-        assertThat(queue.size(), is(1));
-        assertThat(list(queue), is(equalTo(list("one"))));
+        assertThat(queue.size()).isEqualTo(1);
+        assertThat(list(queue)).isEqualTo(list("one"));
     }
 
     private static <E> List<E> list(Queue<E> queue) {

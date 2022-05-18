@@ -62,7 +62,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
-import static co.paralleluniverse.common.resource.ClassLoaderUtil.getBestClassLoader;
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 import static java.security.AccessController.doPrivileged;
 
@@ -76,9 +75,25 @@ import static java.security.AccessController.doPrivileged;
  * @author pron
  */
 public final class MethodDatabase {
-    public static final String JRT_PROTOCOL = "jrt";
-
     private static final String JAVA_OBJECT = "java/lang/Object";
+    private static final List<String> JDK_JAVAX_PACKAGES = List.of(
+        "accessibility/", "annotation/",
+        "crypto/", "imageio/",
+        "lang/", "management/",
+        "naming/", "net/",
+        "print/", "rmi/",
+        "script/", "security/",
+        "smartcardio/", "sound/",
+        "sql/", "swing/",
+        "tools/", "transaction/xa/",
+        "xml/"
+   );
+    private static final List<String> JDK_ORG_PACKAGES = List.of(
+        "w3c/dom/",
+        "xml/sax/",
+        "jcp/xml/",
+        "ietf/jgss/"
+    );
 
     private final WeakReference<ClassLoader> clRef;
     private final SuspendableClassifier classifier;
@@ -209,7 +224,7 @@ public final class MethodDatabase {
             return null;
         }
 
-        final ClassEntry entry = getClassEntry(className);
+        ClassEntry entry = getClassEntry(className);
         if (entry != null) {
             return new Pair<>(this, entry);
         } else {
@@ -219,7 +234,13 @@ public final class MethodDatabase {
                 return null;
             } else {
                 final MethodDatabase ownerDB = lookup.toOwnerDB(this);
-                return new Pair<>(ownerDB, ownerDB.fetchClassEntry(className, lookup.getResource()));
+                if (ownerDB != this) {
+                    entry = ownerDB.getClassEntry(className);
+                }
+                if (entry == null) {
+                    entry = ownerDB.loadClassEntry(className, lookup.getResource());
+                }
+                return new Pair<>(ownerDB, entry);
             }
         }
     }
@@ -308,7 +329,7 @@ public final class MethodDatabase {
     }
 
     void recordSuspendableMethods(String className, ClassEntry entry) {
-        ClassEntry oldEntry;
+        final ClassEntry oldEntry;
         synchronized(classes) {
             oldEntry = classes.put(className, entry);
         }
@@ -377,16 +398,14 @@ public final class MethodDatabase {
         }
     }
 
-    private ClassEntry fetchClassEntry(String className, URL resource) {
-        ClassEntry entry = getClassEntry(className);
-        if (entry == null) {
-            log(LogLevel.INFO, "Reading class: %s", className);
-            try (final InputStream is = privilegedOpenInputStream(resource)) {
-                entry = checkFileAndClose(is).getClassEntry();
-                recordSuspendableMethods(className, entry);
-            } catch(IOException e) {
-                throw new UncheckedIOException("While opening " + className, e);
-            }
+    private ClassEntry loadClassEntry(String className, URL resource) {
+        log(LogLevel.INFO, "Reading class: %s", className);
+        final ClassEntry entry;
+        try (final InputStream is = privilegedOpenInputStream(resource)) {
+            entry = checkFileAndClose(is).getClassEntry();
+            recordSuspendableMethods(className, entry);
+        } catch(IOException e) {
+            throw new UncheckedIOException("While opening " + className, e);
         }
         return entry;
     }
@@ -494,7 +513,7 @@ public final class MethodDatabase {
         MethodDatabase toOwnerDB(MethodDatabase db) {
             // Identify which classloader actually contains the byte-code for this class,
             // because its ClassEntry should belong to that classloader's MethodDatabase.
-            final ClassLoader ownerCl = doPrivileged((PrivilegedAction<? extends ClassLoader>) () ->
+            final ClassLoader ownerCl = doPrivileged((PrivilegedAction<? extends ClassLoader>)() ->
                 OSGiClassLoader.findResourceOwner(classloader).locate(classloader, resourceName, resource)
             );
             return (ownerCl == classloader) ? db : db.instrumentor.getMethodDatabase(ownerCl);
@@ -522,6 +541,8 @@ public final class MethodDatabase {
                || isJavaxInternal(className)
                || className.startsWith("sun/")
                || className.startsWith("jdk/")
+               || isOrgInternal(className)
+               || className.startsWith("netscape/javascript/")
                || (className.startsWith("com/sun/") && !className.startsWith("com/sun/jersey"));
     }
 
@@ -530,9 +551,15 @@ public final class MethodDatabase {
             return false;
         }
         final String classSubName = className.substring("javax/".length());
-        return classSubName.startsWith("crypto/")
-                || classSubName.startsWith("management/")
-                || classSubName.startsWith("net/");
+        return JDK_JAVAX_PACKAGES.stream().anyMatch(classSubName::startsWith);
+    }
+
+    private static boolean isOrgInternal(String className) {
+        if (!className.startsWith("org/")) {
+            return false;
+        }
+        final String classSubName = className.substring("org/".length());
+        return JDK_ORG_PACKAGES.stream().anyMatch(classSubName::startsWith);
     }
 
     public static boolean isProblematicClass(String className) {
@@ -542,21 +569,6 @@ public final class MethodDatabase {
                || className.startsWith("ch/qos/logback/")
                || className.startsWith("org/apache/logging/log4j/")
                || className.startsWith("org/apache/log4j/");
-    }
-
-    static ClassLoader getBestClassLoaderFor(ClassLoader cl, String resourceName, URL resource) {
-        if (resource != null) {
-            return doPrivileged((PrivilegedAction<? extends ClassLoader>)() -> {
-                if (JRT_PROTOCOL.equals(resource.getProtocol())) {
-                    // This resource is from the Java runtime base image.
-                    return ClassLoader.getPlatformClassLoader();
-                } else {
-                    // Get the first classloader in the hierarchy that can provide this resource.
-                    return getBestClassLoader(cl, resourceName, resource);
-                }
-            });
-        }
-        return cl;
     }
 
     public enum SuspendableType {

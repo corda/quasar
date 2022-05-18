@@ -21,21 +21,22 @@ import co.paralleluniverse.fibers.suspend.SuspendExecution;
 import co.paralleluniverse.strands.Strand;
 import co.paralleluniverse.strands.SuspendableRunnable;
 import co.paralleluniverse.strands.channels.Channels.OverflowPolicy;
-import static co.paralleluniverse.strands.channels.Selector.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import static org.hamcrest.CoreMatchers.*;
 import org.junit.After;
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
+import static co.paralleluniverse.strands.channels.Selector.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assume.*;
 
 /**
  *
@@ -170,11 +171,11 @@ public class GeneralSelectorTest {
             //System.out.println("receiving");
             Integer x = in.receive();
             //System.out.println("receied " + x);
-            assertThat(x, is(i));
+            assertThat(x).isEqualTo(i);
         }
         out.close();
-        assertThat(in.receive(), nullValue());
-        assertThat(in.isClosed(), is(true));
+        assertThat(in.receive()).isNull();
+        assertThat(in.isClosed()).isTrue();
     }
 
     @Test
@@ -198,11 +199,11 @@ public class GeneralSelectorTest {
             ms[m] = true;
         }
         for (int i = 0; i < n; i++)
-            assertThat(ms[i], is(true));
+            assertThat(ms[i]).isTrue();
 
 
         out.close();
-        assertThat(in.receive(), nullValue());
-        assertThat(in.isClosed(), is(true));
+        assertThat(in.receive()).isNull();
+        assertThat(in.isClosed()).isTrue();
     }
 }

@@ -14,7 +14,6 @@
 package co.paralleluniverse.fibers;
 
 import co.paralleluniverse.common.test.TestUtil;
-import co.paralleluniverse.common.util.Debug;
 import co.paralleluniverse.common.util.Exceptions;
 import co.paralleluniverse.fibers.suspend.SuspendExecution;
 import co.paralleluniverse.io.serialization.ByteArraySerializer;
@@ -39,11 +38,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.hamcrest.CoreMatchers.*;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Rule;
@@ -52,6 +49,11 @@ import org.junit.rules.TestRule;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  *
@@ -64,7 +66,7 @@ public class FiberTest implements Serializable {
     @Rule
     public TestRule watchman = TestUtil.WATCHMAN;
 
-    private transient FiberScheduler scheduler;
+    private final transient FiberScheduler scheduler;
 
 //    public FiberTest() {
 ////        this.scheduler = new FiberExecutorScheduler("test", Executors.newFixedThreadPool(1)); 
@@ -122,10 +124,10 @@ public class FiberTest implements Serializable {
             }
         });
 
-        assertThat(fiber.getPriority(), is(Strand.NORM_PRIORITY));
+        assertThat(fiber.getPriority()).isEqualTo(Strand.NORM_PRIORITY);
         
         fiber.setPriority(3);
-        assertThat(fiber.getPriority(), is(3));
+        assertThat(fiber.getPriority()).isEqualTo(3);
         
         try {
             fiber.setPriority(Strand.MAX_PRIORITY + 1);
@@ -182,8 +184,8 @@ public class FiberTest implements Serializable {
 
         int res = fiber2.get();
 
-        assertThat(res, is(123));
-        assertThat(fiber1.get(), is(123));
+        assertThat(res).isEqualTo(123);
+        assertThat(fiber1.get()).isEqualTo(123);
     }
 
     @Test
@@ -225,8 +227,8 @@ public class FiberTest implements Serializable {
         Thread.sleep(20);
         fiber.cancel(true);
         fiber.join(5, TimeUnit.MILLISECONDS);
-        assertThat(started.get(), is(true));
-        assertThat(terminated.get(), is(true));
+        assertThat(started.get()).isEqualTo(true);
+        assertThat(terminated.get()).isEqualTo(true);
     }
 
     @Test
@@ -254,8 +256,8 @@ public class FiberTest implements Serializable {
             fail();
         } catch (CancellationException e) {
         }
-        assertThat(started.get(), is(false));
-        assertThat(terminated.get(), is(false));
+        assertThat(started.get()).isFalse();
+        assertThat(terminated.get()).isFalse();
     }
 
     @Test
@@ -268,26 +270,26 @@ public class FiberTest implements Serializable {
         Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                assertThat(tl1.get(), is(nullValue()));
-                assertThat(tl2.get(), is("bar"));
+                assertThat(tl1.get()).isNull();
+                assertThat(tl2.get()).isEqualTo("bar");
 
                 tl1.set("koko");
                 tl2.set("bubu");
 
-                assertThat(tl1.get(), is("koko"));
-                assertThat(tl2.get(), is("bubu"));
+                assertThat(tl1.get()).isEqualTo("koko");
+                assertThat(tl2.get()).isEqualTo("bubu");
 
                 Fiber.sleep(100);
 
-                assertThat(tl1.get(), is("koko"));
-                assertThat(tl2.get(), is("bubu"));
+                assertThat(tl1.get()).isEqualTo("koko");
+                assertThat(tl2.get()).isEqualTo("bubu");
             }
         });
         fiber.start();
         fiber.join();
 
-        assertThat(tl1.get(), is("foo"));
-        assertThat(tl2.get(), is("bar"));
+        assertThat(tl1.get()).isEqualTo("foo");
+        assertThat(tl2.get()).isEqualTo("bar");
     }
     
     @Test
@@ -300,21 +302,21 @@ public class FiberTest implements Serializable {
         Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                assertThat(tl1.get(), is(nullValue()));
-                assertThat(tl2.get(), is(nullValue()));
+                assertThat(tl1.get()).isNull();
+                assertThat(tl2.get()).isNull();
 
                 tl1.set("koko");
                 tl2.set("bubu");
 
-                assertThat(tl1.get(), is("koko"));
-                assertThat(tl2.get(), is("bubu"));
+                assertThat(tl1.get()).isEqualTo("koko");
+                assertThat(tl2.get()).isEqualTo("bubu");
             }
         }).setNoLocals(true);
         fiber.start();
         fiber.join();
 
-        assertThat(tl1.get(), is("foo"));
-        assertThat(tl2.get(), is("bar"));
+        assertThat(tl1.get()).isEqualTo("foo");
+        assertThat(tl2.get()).isEqualTo("bar");
     }
 
     @Test
@@ -325,25 +327,25 @@ public class FiberTest implements Serializable {
         Fiber<?> fiber = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                assertThat(tl1.get(), is("foo"));
+                assertThat(tl1.get()).isEqualTo("foo");
 
                 Fiber.sleep(100);
 
-                assertThat(tl1.get(), is("foo"));
+                assertThat(tl1.get()).isEqualTo("foo");
 
                 tl1.set("koko");
 
-                assertThat(tl1.get(), is("koko"));
+                assertThat(tl1.get()).isEqualTo("koko");
 
                 Fiber.sleep(100);
 
-                assertThat(tl1.get(), is("koko"));
+                assertThat(tl1.get()).isEqualTo("koko");
             }
         });
         fiber.inheritThreadLocals().start();
         fiber.join();
 
-        assertThat(tl1.get(), is("foo"));
+        assertThat(tl1.get()).isEqualTo("foo");
     }
     
     
@@ -363,9 +365,9 @@ public class FiberTest implements Serializable {
                     for (int j = 0; j < loops; j++) {
                         final String tlValue = "tl-" + id + "-" + j;
                         tl.set(tlValue);
-                        assertThat(tl.get(), equalTo(tlValue));
+                        assertThat(tl.get()).isEqualTo(tlValue);
                         Strand.sleep(10);
-                        assertThat(tl.get(), equalTo(tlValue));
+                        assertThat(tl.get()).isEqualTo(tlValue);
                     }
                 }
             });
@@ -393,9 +395,9 @@ public class FiberTest implements Serializable {
                     for (int j = 0; j < loops; j++) {
                         final String tlValue = "tl-" + id + "-" + j;
                         tl.set(tlValue);
-                        assertThat(tl.get(), equalTo(tlValue));
+                        assertThat(tl.get()).isEqualTo(tlValue);
                         Strand.sleep(10);
-                        assertThat(tl.get(), equalTo(tlValue));
+                        assertThat(tl.get()).isEqualTo(tlValue);
                     }
                 }
             }).inheritThreadLocals();
@@ -420,7 +422,7 @@ public class FiberTest implements Serializable {
         });
 
         StackTraceElement[] st = fiber.getStackTrace();
-        assertThat(st, is(nullValue()));
+        assertThat(st).isNull();
     }
 
     @Test
@@ -438,7 +440,7 @@ public class FiberTest implements Serializable {
         fiber.join();
 
         StackTraceElement[] st = fiber.getStackTrace();
-        assertThat(st, is(nullValue()));
+        assertThat(st).isNull();
     }
 
     @Test
@@ -453,10 +455,10 @@ public class FiberTest implements Serializable {
                 StackTraceElement[] st = Fiber.currentFiber().getStackTrace();
 
                 // Strand.printStackTrace(st, System.err);
-                assertThat(st[0].getMethodName(), equalTo("getStackTrace"));
-                assertThat(st[1].getMethodName(), equalTo("foo"));
-                assertThat(st[st.length - 1].getMethodName(), equalTo("run"));
-                assertThat(st[st.length - 1].getClassName(), equalTo(Fiber.class.getName()));
+                assertThat(st[0].getMethodName()).isEqualTo("getStackTrace");
+                assertThat(st[1].getMethodName()).isEqualTo("foo");
+                assertThat(st[st.length - 1].getMethodName()).isEqualTo("run");
+                assertThat(st[st.length - 1].getClassName()).isEqualTo(Fiber.class.getName());
             }
         }).start();
 
@@ -492,9 +494,9 @@ public class FiberTest implements Serializable {
                 break;
             }
         }
-        assertThat(found, is(true));
-        assertThat(st[st.length - 1].getMethodName(), equalTo("run"));
-        assertThat(st[st.length - 1].getClassName(), equalTo(Fiber.class.getName()));
+        assertThat(found).isTrue();
+        assertThat(st[st.length - 1].getMethodName()).isEqualTo("run");
+        assertThat(st[st.length - 1].getClassName()).isEqualTo(Fiber.class.getName());
 
         fiber.join();
     }
@@ -526,7 +528,7 @@ public class FiberTest implements Serializable {
         StackTraceElement[] st = fiber.getStackTrace();
 
         // Strand.printStackTrace(st, System.err);
-        assertThat(st[0].getMethodName(), equalTo("park"));
+        assertThat(st[0].getMethodName()).isEqualTo("park");
         boolean found = false;
         for (StackTraceElement ste : st) {
             if (ste.getMethodName().equals("foo")) {
@@ -534,9 +536,9 @@ public class FiberTest implements Serializable {
                 break;
             }
         }
-        assertThat(found, is(true));
-        assertThat(st[st.length - 1].getMethodName(), equalTo("run"));
-        assertThat(st[st.length - 1].getClassName(), equalTo(Fiber.class.getName()));
+        assertThat(found).isTrue();
+        assertThat(st[st.length - 1].getMethodName()).isEqualTo("run");
+        assertThat(st[st.length - 1].getClassName()).isEqualTo(Fiber.class.getName());
 
         flag.set(true);
         cond.signalAll();
@@ -574,7 +576,7 @@ public class FiberTest implements Serializable {
                 StackTraceElement[] st = fiber.getStackTrace();
 
                 // Strand.printStackTrace(st, System.err);
-                assertThat(st[0].getMethodName(), equalTo("park"));
+                assertThat(st[0].getMethodName()).isEqualTo("park");
                 boolean found = false;
                 for (StackTraceElement ste : st) {
                     if (ste.getMethodName().equals("foo")) {
@@ -582,9 +584,9 @@ public class FiberTest implements Serializable {
                         break;
                     }
                 }
-                assertThat(found, is(true));
-                assertThat(st[st.length - 1].getMethodName(), equalTo("run"));
-                assertThat(st[st.length - 1].getClassName(), equalTo(Fiber.class.getName()));
+                assertThat(found).isTrue();
+                assertThat(st[st.length - 1].getMethodName()).isEqualTo("run");
+                assertThat(st[st.length - 1].getClassName()).isEqualTo(Fiber.class.getName());
             }
         }).start();
 
@@ -615,7 +617,7 @@ public class FiberTest implements Serializable {
         StackTraceElement[] st = fiber.getStackTrace();
 
         // Strand.printStackTrace(st, System.err);
-        assertThat(st[0].getMethodName(), equalTo("sleep"));
+        assertThat(st[0].getMethodName()).isEqualTo("sleep");
         boolean found = false;
         for (int i = 0; i < st.length; i++) {
             if (st[i].getMethodName().equals("foo")) {
@@ -623,9 +625,9 @@ public class FiberTest implements Serializable {
                 break;
             }
         }
-        assertThat(found, is(true));
-        assertThat(st[st.length - 1].getMethodName(), equalTo("run"));
-        assertThat(st[st.length - 1].getClassName(), equalTo(Fiber.class.getName()));
+        assertThat(found).isTrue();
+        assertThat(st[st.length - 1].getMethodName()).isEqualTo("run");
+        assertThat(st[st.length - 1].getClassName()).isEqualTo(Fiber.class.getName());
 
         fiber.join();
     }
@@ -680,10 +682,10 @@ public class FiberTest implements Serializable {
             f.join();
             fail();
         } catch (ExecutionException e) {
-            assertThat(e.getCause().getMessage(), equalTo("foo"));
+            assertThat(e.getCause().getMessage()).isEqualTo("foo");
         }
 
-        assertThat(t.get().getMessage(), equalTo("foo"));
+        assertThat(t.get().getMessage()).isEqualTo("foo");
     }
 
     @Test
@@ -711,12 +713,12 @@ public class FiberTest implements Serializable {
             f.join();
             fail();
         } catch (ExecutionException e) {
-            assertThat(e.getCause().getMessage(), equalTo("foo"));
+            assertThat(e.getCause().getMessage()).isEqualTo("foo");
         }
         final Throwable th = t.get();
 
         assertNotNull(th);
-        assertThat(th.getMessage(), equalTo("foo"));
+        assertThat(th.getMessage()).isEqualTo("foo");
     }
 
     @Test
@@ -735,7 +737,7 @@ public class FiberTest implements Serializable {
         }
 
         final List<String> results = FiberUtil.get(fibers);
-        assertThat(results, equalTo(expectedResults));
+        assertThat(results).isEqualTo(expectedResults);
     }
 
     @Test
@@ -754,7 +756,7 @@ public class FiberTest implements Serializable {
         }
 
         final List<String> results = FiberUtil.get(1, TimeUnit.SECONDS, fibers);
-        assertThat(results, equalTo(expectedResults));
+        assertThat(results).isEqualTo(expectedResults);
     }
 
     @Test(expected = TimeoutException.class)
@@ -773,7 +775,7 @@ public class FiberTest implements Serializable {
         }
 
         final List<String> results = FiberUtil.get(0, TimeUnit.SECONDS, fibers);
-        assertThat(results, equalTo(expectedResults));
+        assertThat(results).isEqualTo(expectedResults);
     }
 
     @Test(expected = TimeoutException.class)
@@ -795,7 +797,7 @@ public class FiberTest implements Serializable {
 
         // must be less than 60 (3 * 20) or else the test could sometimes pass.
         final List<String> results = FiberUtil.get(55, TimeUnit.MILLISECONDS, fibers);
-        assertThat(results, equalTo(expectedResults));
+        assertThat(results).isEqualTo(expectedResults);
     }
 
     @Test
@@ -806,7 +808,7 @@ public class FiberTest implements Serializable {
         Fiber<Integer> f1 = new SerFiber1(scheduler, new SettableFutureFiberWriter(buf)).start();
         Fiber<Integer> f2 = Fiber.unparkSerialized(buf.get(), scheduler);
 
-        assertThat(f2.get(), is(55));
+        assertThat(f2.get()).isEqualTo(55);
     }
 
     static class SerFiber1 extends SerFiber<Integer> {
@@ -836,7 +838,7 @@ public class FiberTest implements Serializable {
         Fiber<Integer> f1 = new SerFiber2(scheduler, new SettableFutureFiberWriter(buf)).start();
         Fiber<Integer> f2 = Fiber.unparkSerialized(buf.get(), scheduler);
 
-        assertThat(f2.get(), is(55));
+        assertThat(f2.get()).isEqualTo(55);
     }
 
     static class SerFiber2 extends Fiber<Integer> {
@@ -871,7 +873,7 @@ public class FiberTest implements Serializable {
         Fiber<Integer> f1 = new SerFiber3(scheduler, new SettableFutureFiberWriter(buf), tl1, tl2).start();
         Fiber<Integer> f2 = Fiber.unparkSerialized(buf.get(), scheduler);
 
-        assertThat(f2.get(), is(55));
+        assertThat(f2.get()).isEqualTo(55);
     }
 
     static class SerFiber3 extends SerFiber<Integer> {
@@ -886,8 +888,8 @@ public class FiberTest implements Serializable {
 
         @Override
         public Integer run() throws SuspendExecution, InterruptedException {
-            assertThat(tl1.get(), is(nullValue()));
-            assertThat(tl2.get(), is("bar"));
+            assertThat(tl1.get()).isNull();
+            assertThat(tl2.get()).isEqualTo("bar");
 
             tl1.set("koko");
             tl2.set("bubu");
@@ -901,8 +903,8 @@ public class FiberTest implements Serializable {
                 }
             }
 
-            assertThat(tl1.get(), is("koko"));
-            assertThat(tl2.get(), is("bubu"));
+            assertThat(tl1.get()).isEqualTo("koko");
+            assertThat(tl2.get()).isEqualTo("bubu");
             return sum;
         }
     }
@@ -929,7 +931,7 @@ public class FiberTest implements Serializable {
         Fiber<Integer> f1 = new CustomSerFiber(scheduler, new SettableFutureCustomWriter(buf)).start();
         Fiber<Integer> f2 = Fiber.unparkSerialized(buf.get(), scheduler);
 
-        assertThat(f2.get(), is(55));
+        assertThat(f2.get()).isEqualTo(55);
     }
 
     static class CustomSerFiber extends Fiber<Integer> implements Serializable {

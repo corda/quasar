@@ -13,7 +13,6 @@
  */
 package co.paralleluniverse.strands.channels;
 
-import static co.paralleluniverse.common.test.Matchers.*;
 import co.paralleluniverse.common.test.TestUtil;
 import co.paralleluniverse.common.util.Debug;
 import co.paralleluniverse.fibers.Fiber;
@@ -25,17 +24,8 @@ import co.paralleluniverse.strands.SuspendableRunnable;
 import co.paralleluniverse.strands.channels.Channels.OverflowPolicy;
 import co.paralleluniverse.strands.queues.QueueCapacityExceededException;
 import com.google.common.collect.ImmutableSet;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
-
-import static org.hamcrest.CoreMatchers.*;
 import org.junit.After;
-import org.junit.AfterClass;
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,6 +33,19 @@ import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
+
+import static co.paralleluniverse.common.test.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.*;
 
 /**
  *
@@ -114,7 +117,7 @@ public class ChannelTest {
             public void run() throws SuspendExecution, InterruptedException {
                 String m = ch.receive();
 
-                assertThat(m, equalTo("a message"));
+                assertThat(m).isEqualTo("a message");
             }
         }).start();
 
@@ -139,7 +142,7 @@ public class ChannelTest {
             public void run() throws SuspendExecution, InterruptedException {
                 String m = ch.receive();
 
-                assertThat(m, equalTo("a message"));
+                assertThat(m).isEqualTo("a message");
             }
         }).start();
 
@@ -164,7 +167,7 @@ public class ChannelTest {
 
         String m = ch.receive();
 
-        assertThat(m, equalTo("a message"));
+        assertThat(m).isEqualTo("a message");
 
         fib.join();
     }
@@ -189,7 +192,7 @@ public class ChannelTest {
 
         String m = ch.receive();
 
-        assertThat(m, equalTo("a message"));
+        assertThat(m).isEqualTo("a message");
 
         thread.join();
     }
@@ -219,9 +222,9 @@ public class ChannelTest {
         Thread.sleep(150);
 
         String m = ch.receive();
-        assertThat(m, equalTo("message 1"));
+        assertThat(m).isEqualTo("message 1");
         m = ch.receive(100, TimeUnit.MILLISECONDS);
-        assertThat(m, equalTo("message 2"));
+        assertThat(m).isEqualTo("message 2");
 
         thread.join();
     }
@@ -251,7 +254,7 @@ public class ChannelTest {
         Thread.sleep(250);
 
         String m = ch.receive();
-        assertThat(m, equalTo("message 1"));
+        assertThat(m).isEqualTo("message 1");
         m = ch.receive(100, TimeUnit.MILLISECONDS);
         assertNull(m);
 
@@ -269,7 +272,7 @@ public class ChannelTest {
             public void run() throws SuspendExecution, InterruptedException {
                 String m = ch.receive();
 
-                assertThat(m, equalTo("a message"));
+                assertThat(m).isEqualTo("a message");
             }
         }).start();
 
@@ -304,7 +307,7 @@ public class ChannelTest {
             public void run() throws SuspendExecution, InterruptedException {
                 String m = ch.receive();
 
-                assertThat(m, equalTo("a message"));
+                assertThat(m).isEqualTo("a message");
             }
         }).start();
 
@@ -347,7 +350,7 @@ public class ChannelTest {
 
         String m = ch.receive();
 
-        assertThat(m, equalTo("a message"));
+        assertThat(m).isEqualTo("a message");
 
         fib.join();
     }
@@ -442,7 +445,7 @@ public class ChannelTest {
         }).start();
 
         try {
-            assertThat(receiver.get(), is(10));
+            assertThat(receiver.get()).isEqualTo(10);
             sender.join();
         } catch (Throwable t) {
             Debug.dumpRecorder("channels.log");
@@ -472,7 +475,7 @@ public class ChannelTest {
             ch.send(i);
         ch.close();
 
-        assertThat(fib.get(), is(10));
+        assertThat(fib.get()).isEqualTo(10);
     }
 
     @Test
@@ -485,12 +488,12 @@ public class ChannelTest {
                 for (int i = 1; i <= 5; i++) {
                     Integer m = ch.receive();
 
-                    assertThat(m, equalTo(i));
+                    assertThat(m).isEqualTo(i);
                 }
 
                 Integer m = ch.receive();
 
-                assertThat(m, nullValue());
+                assertThat(m).isNull();
                 assertTrue(ch.isClosed());
             }
         }).start();
@@ -520,14 +523,14 @@ public class ChannelTest {
                 for (int i = 1; i <= 5; i++) {
                     Integer m = ch.receive();
 
-                    assertThat(m, equalTo(i));
+                    assertThat(m).isEqualTo(i);
                 }
 
                 try {
                     ch.receive();
                     fail();
                 } catch (ProducerException e) {
-                    assertThat(e.getCause().getMessage(), equalTo("foo"));
+                    assertThat(e.getCause().getMessage()).isEqualTo("foo");
                 }
                 assertTrue(ch.isClosed());
             }
@@ -558,12 +561,12 @@ public class ChannelTest {
                 for (int i = 1; i <= 5; i++) {
                     Integer m = ch.receive();
 
-                    assertThat(m, equalTo(i));
+                    assertThat(m).isEqualTo(i);
                 }
 
                 Integer m = ch.receive();
 
-                assertThat(m, nullValue());
+                assertThat(m).isNull();
                 assertTrue(ch.isClosed());
             }
         }).start();
@@ -594,14 +597,14 @@ public class ChannelTest {
                 for (int i = 1; i <= 5; i++) {
                     Integer m = ch.receive();
 
-                    assertThat(m, equalTo(i));
+                    assertThat(m).isEqualTo(i);
                 }
 
                 try {
                     Integer m = ch.receive();
                     fail("m = " + m);
                 } catch (ProducerException e) {
-                    assertThat(e.getCause().getMessage(), equalTo("foo"));
+                    assertThat(e.getCause().getMessage()).isEqualTo("foo");
                 }
                 assertTrue(ch.isClosed());
             }
@@ -682,7 +685,7 @@ public class ChannelTest {
                     for (int i = 1; i <= 5; i++) {
                         int m = ch.receiveInt();
 
-                        assertThat(m, is(i));
+                        assertThat(m).isEqualTo(i);
                     }
                 } catch (QueueChannel.EOFException e) {
                     fail();
@@ -726,7 +729,7 @@ public class ChannelTest {
                     for (int i = 1; i <= 5; i++) {
                         int m = ch.receiveInt();
 
-                        assertThat(m, is(i));
+                        assertThat(m).isEqualTo(i);
                     }
                 } catch (QueueChannel.EOFException e) {
                     fail();
@@ -736,7 +739,7 @@ public class ChannelTest {
                     int m = ch.receiveInt();
                     fail("m = " + m);
                 } catch (ProducerException e) {
-                    assertThat(e.getCause().getMessage(), equalTo("foo"));
+                    assertThat(e.getCause().getMessage()).isEqualTo("foo");
                 } catch (ReceivePort.EOFException e) {
                     fail();
                 }
@@ -775,24 +778,24 @@ public class ChannelTest {
         Fiber<?> f1 = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                assertThat(channel1.receive(), equalTo("hello"));
-                assertThat(channel1.receive(), equalTo("world!"));
+                assertThat(channel1.receive()).isEqualTo("hello");
+                assertThat(channel1.receive()).isEqualTo("world!");
             }
         }).start();
 
         Fiber<?> f2 = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                assertThat(channel2.receive(), equalTo("hello"));
-                assertThat(channel2.receive(), equalTo("world!"));
+                assertThat(channel2.receive()).isEqualTo("hello");
+                assertThat(channel2.receive()).isEqualTo("world!");
             }
         }).start();
 
         Fiber<?> f3 = new Fiber<>(scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                assertThat(channel3.receive(), equalTo("hello"));
-                assertThat(channel3.receive(), equalTo("world!"));
+                assertThat(channel3.receive()).isEqualTo("hello");
+                assertThat(channel3.receive()).isEqualTo("world!");
             }
         }).start();
 
@@ -820,8 +823,8 @@ public class ChannelTest {
                 String m1 = group.receive();
                 String m2 = channel2.receive();
 
-                assertThat(m1, equalTo("hello"));
-                assertThat(m2, equalTo("world!"));
+                assertThat(m1).isEqualTo("hello");
+                assertThat(m2).isEqualTo("world!");
             }
         }).start();
 
@@ -852,10 +855,10 @@ public class ChannelTest {
                 String m3 = group.receive(10, TimeUnit.MILLISECONDS);
                 String m4 = group.receive(200, TimeUnit.MILLISECONDS);
 
-                assertThat(m1, equalTo("hello"));
-                assertThat(m2, equalTo("world!"));
-                assertThat(m3, nullValue());
-                assertThat(m4, equalTo("foo"));
+                assertThat(m1).isEqualTo("hello");
+                assertThat(m2).isEqualTo("world!");
+                assertThat(m3).isNull();
+                assertThat(m4).isEqualTo("foo");
             }
         }).start();
 
@@ -896,17 +899,17 @@ public class ChannelTest {
                 final String m5 = group.receive(10, TimeUnit.MILLISECONDS);
                 final String m6 = group.receive(200, TimeUnit.MILLISECONDS);
 
-                assertThat(m1, equalTo("hello"));
-                assertThat(m2, equalTo("world!"));
-                assertThat(m3, nullValue());
-                assertThat(m4, equalTo("foo"));
-                assertThat(m5, nullValue());
-                assertThat(m6, equalTo("bar"));
+                assertThat(m1).isEqualTo("hello");
+                assertThat(m2).isEqualTo("world!");
+                assertThat(m3).isNull();
+                assertThat(m4).isEqualTo("foo");
+                assertThat(m5).isNull();
+                assertThat(m6).isEqualTo("bar");
 
                 sync.receive(); // 5
                 sync.receive(); // 6
                 final String m7 = group.receive();
-                assertThat(m7, equalTo("2-solo-sings"));
+                assertThat(m7).isEqualTo("2-solo-sings");
 
                 sync.receive(); // 7
                 sync.receive(); // 8
@@ -919,21 +922,21 @@ public class ChannelTest {
                 String m10 = group.receive();
                 while (m10 != null && m10.contains("leaks"))
                     m10 = group.receive();
-                assertThat(ImmutableSet.of(m8, m9, m10), equalTo(ImmutableSet.of("1-paused-by-2-solo-waits", "3-paused-by-2-solo-waits", "1-normal")));
+                assertThat(ImmutableSet.of(m8, m9, m10)).isEqualTo(ImmutableSet.of("1-paused-by-2-solo-waits", "3-paused-by-2-solo-waits", "1-normal"));
 
                 sync.receive(); // 9
                 sync.receive(); // 10
                 String m11 = group.receive();
                 while (m11 != null && m11.contains("leaks"))
                     m11 = group.receive();
-                assertThat(m11, equalTo("2-solo-sings-again"));
+                assertThat(m11).isEqualTo("2-solo-sings-again");
 
                 sync.receive(); // 11
                 sync.receive(); // 12
                 String m12 = group.receive();
                 while (m12 != null && m12.contains("leaks"))
                     m12 = group.receive();
-                assertThat(m12, nullValue());
+                assertThat(m12).isNull();
             }
         }).start();
 

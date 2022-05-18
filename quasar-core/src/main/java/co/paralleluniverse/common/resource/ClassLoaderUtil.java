@@ -40,6 +40,7 @@ import java.net.URLClassLoader;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -54,10 +55,20 @@ public final class ClassLoaderUtil {
         void visit(String resource, URL url, ClassLoader cl) throws IOException;
     }
 
+    private static final String MODULE_INFO_CLASS = "module-info.class";
     private static final String CLASS_FILE_NAME_EXTENSION = ".class";
+    private static final String JAR_PROTOCOL = "jar";
+    private static final String JRT_PROTOCOL = "jrt";
 
     public static boolean isClassFile(String resourceName) {
-        return resourceName.endsWith(CLASS_FILE_NAME_EXTENSION) && !resourceName.endsWith("module-info.class");
+        return resourceName.endsWith(CLASS_FILE_NAME_EXTENSION) && !isModuleInfoClass(resourceName);
+    }
+
+    private static boolean isModuleInfoClass(String resourceName) {
+        final int modInfoLength = MODULE_INFO_CLASS.length();
+        final int resourceLength = resourceName.length();
+        return resourceName.endsWith(MODULE_INFO_CLASS)
+            && (resourceLength == modInfoLength || resourceName.charAt(resourceLength - modInfoLength - 1) == '/');
     }
 
     public static String classToResource(String className) {
@@ -200,26 +211,88 @@ public final class ClassLoaderUtil {
      * @return {@code loader}'s remotest parent that can still find {@code target}.
      */
     public static ClassLoader getBestClassLoader(ClassLoader loader, String resourceName, URL target) {
-        final ClassLoader platformClassLoader = ClassLoader.getPlatformClassLoader();
-        final ClassLoader bootstrapClassLoader = platformClassLoader.getParent();
-        ClassLoader current = loader;
-        for (;;) {
-            ClassLoader next = current.getParent();
-            if (next == bootstrapClassLoader) {
-                if (current == platformClassLoader) {
-                    break;
-                }
-                next = platformClassLoader;
-            }
-
-            final URL resource = next.getResource(resourceName);
-            if (!target.equals(resource)) {
-                break;
-            }
-
-            current = next;
+        if (JRT_PROTOCOL.equals(target.getProtocol())) {
+            // The URL format is jrt:/<module-name>/<module-resource-item>
+            final String jrtFile = target.getFile();
+            final String moduleName = jrtFile.substring(1, jrtFile.indexOf('/', 1));
+            final ClassLoader cl = ModuleLayer.boot().findLoader(moduleName);
+            final ClassLoader platformClassLoader = ClassLoader.getPlatformClassLoader();
+            return cl == platformClassLoader.getParent() ? platformClassLoader : cl;
+        } else {
+            final ClassLoader bestCl = new BestLookup(resourceName, target).lookup(loader);
+            return (bestCl == null) ? loader : bestCl;
         }
-        return current;
+    }
+
+    private static String getUnderlyingURL(URL url) {
+        if (JAR_PROTOCOL.equals(url.getProtocol())) {
+            // This is probably (but not necessarily) a file:/ URL.
+            final String file = url.getFile();
+            return file.substring(0, file.indexOf("!/"));
+        } else {
+            return url.toString();
+        }
+    }
+
+    /**
+     * Worker class for {@link #getBestClassLoader(ClassLoader, String, URL)}.
+     * We need to search from the bootstrap classloader upwards in order to
+     * mirror how {@link ClassLoader#getResource(String)} works.
+     *
+     * We are expected already to be running with the correct security context.
+     */
+    private static final class BestLookup {
+        private final String resourceName;
+        private final URL target;
+        private final Predicate<String> underlyingMatcher;
+        private final ClassLoader platformClassLoader;
+        private final ClassLoader bootstrapClassLoader;
+
+        BestLookup(String resourceName, URL resource) {
+            this.resourceName = resourceName;
+            this.target = resource;
+            final String underlyingURL = getUnderlyingURL(target);
+            this.underlyingMatcher = underlyingURL.endsWith(CLASS_FILE_NAME_EXTENSION)
+                ? u -> underlyingURL.equals(u) || (u.endsWith("/") && underlyingURL.startsWith(u))
+                : underlyingURL::equals;
+            this.platformClassLoader = ClassLoader.getPlatformClassLoader();
+            this.bootstrapClassLoader = platformClassLoader.getParent();
+        }
+
+        ClassLoader lookup(ClassLoader current) {
+            if (current == platformClassLoader || current == bootstrapClassLoader) {
+                // Support jars added via -Xbootclasspath/a:<jar>. This probably
+                // KILLS performance, but I cannot find any other way to search
+                // the JVM's entire boot classpath.
+                if (target.equals(platformClassLoader.getResource(resourceName))) {
+                    return platformClassLoader;
+                }
+            } else {
+                final ClassLoader candidate = lookup(current.getParent());
+                if (candidate != null) {
+                    return candidate;
+                }
+
+                if (current instanceof URLClassLoader) {
+                    // Important optimisation, because invoking getResource() is not cheap!
+                    if (isTargetFrom(((URLClassLoader) current).getURLs())) {
+                        return current;
+                    }
+                } else if (target.equals(current.getResource(resourceName))) {
+                    return current;
+                }
+            }
+            return null;
+        }
+
+        private boolean isTargetFrom(URL[] urls) {
+            for (URL url : urls) {
+                if (underlyingMatcher.test(url.toString())) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     /**

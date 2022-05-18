@@ -13,7 +13,6 @@
  */
 package co.paralleluniverse.strands.channels;
 
-import static co.paralleluniverse.common.test.Matchers.*;
 import co.paralleluniverse.common.test.TestUtil;
 import co.paralleluniverse.common.util.Debug;
 import co.paralleluniverse.fibers.Fiber;
@@ -22,13 +21,13 @@ import co.paralleluniverse.fibers.FiberScheduler;
 import co.paralleluniverse.fibers.suspend.SuspendExecution;
 import co.paralleluniverse.strands.Strand;
 import co.paralleluniverse.strands.SuspendableRunnable;
-import static org.hamcrest.CoreMatchers.*;
 import org.junit.After;
-import static org.junit.Assert.*;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  *
@@ -66,15 +65,15 @@ public class TickerChannelTest {
                 Integer m;
                 while ((m = ch.receive()) != null) {
                     //System.out.println(Strand.currentStrand() + ": " + m);
-                    long index = ((TickerChannelConsumer)ch).getLastIndexRead();
-                    assertThat("index", index, greaterThan(prevIndex));
-                    assertThat("message", m.intValue(), greaterThan(prev));
+                    long index = ((TickerChannelConsumer<?>)ch).getLastIndexRead();
+                    assertThat(index).describedAs("index").isGreaterThan(prevIndex);
+                    assertThat(m.intValue()).describedAs("message").isGreaterThan(prev);
 
                     prev = m;
                     prevIndex = index;
                 }
 
-                assertThat(ch.isClosed(), is(true));
+                assertThat(ch.isClosed()).isTrue();
             }
         };
 

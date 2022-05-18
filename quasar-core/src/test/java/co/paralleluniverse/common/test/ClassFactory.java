@@ -8,9 +8,10 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.ProtectionDomain;
+import java.util.Objects;
 
 import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToResource;
@@ -35,7 +36,7 @@ public final class ClassFactory {
         final byte[] byteCode = templateResource.openStream().readAllBytes();
         final ClassWriter writer = new ClassWriter(COMPUTE_MAXS);
         new ClassReader(byteCode).accept(new RenameVisitor(classToSlashed(className), writer), SKIP_DEBUG | SKIP_FRAMES);
-        return new ByteCodeClassLoader(className, writer.toByteArray(), parent).createClass();
+        return new ByteCodeClassLoader(className, writer.toByteArray(), template.getProtectionDomain(), parent).createClass();
     }
 
     private static class RenameVisitor extends ClassVisitor {
@@ -52,42 +53,54 @@ public final class ClassFactory {
         }
     }
 
-    private static class ByteCodeClassLoader extends ClassLoader {
+    private static final class ByteCodeClassLoader extends ClassLoader {
         private final String resourceName;
         private final String className;
         private final byte[] byteCode;
+        private final ProtectionDomain pd;
 
-        ByteCodeClassLoader(String className, byte[] byteCode, ClassLoader parent) {
+        ByteCodeClassLoader(String className, byte[] byteCode, ProtectionDomain pd, ClassLoader parent) {
             super(parent);
             this.resourceName = classToResource(className);
             this.className = className;
             this.byteCode = byteCode;
+            this.pd = pd;
         }
 
         Class<?> createClass() {
-            Class<?> clazz = defineClass(className, byteCode, 0, byteCode.length);
+            Class<?> clazz = defineClass(className, byteCode, 0, byteCode.length, pd);
             resolveClass(clazz);
             return clazz;
         }
 
         @Override
-        public URL getResource(String name) {
+        protected URL findResource(String name) {
             if (resourceName.equals(name)) {
                 try {
                     return new URL("file", "bytecode", resourceName);
-                } catch (MalformedURLException e) {
-                    throw new UncheckedIOException(e);
+                } catch (MalformedURLException ignored) {
                 }
             }
-            return super.getResource(name);
+            return null;
         }
 
         @Override
         public InputStream getResourceAsStream(String name) {
-            if (resourceName.equals(name)) {
-                return new ByteArrayInputStream(byteCode);
+            Objects.requireNonNull(name);
+            final URL resource = getResource(name);
+            if (resource != null) {
+                if ("file".equals(resource.getProtocol())
+                        && "bytecode".equals(resource.getHost())
+                        && resourceName.equals(resource.getFile())) {
+                    return new ByteArrayInputStream(byteCode);
+                } else {
+                    try {
+                        return resource.openStream();
+                    } catch (IOException ignored) {
+                    }
+                }
             }
-            return super.getResourceAsStream(name);
+            return null;
         }
     }
 }

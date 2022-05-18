@@ -34,10 +34,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import static org.hamcrest.CoreMatchers.*;
 import org.junit.After;
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,6 +42,14 @@ import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.*;
 
 /**
  *
@@ -109,128 +114,128 @@ public class TransformingChannelTest {
     }
 
     @Test
-    public void transformingReceiveChannelIsEqualToChannel() throws Exception {
+    public void transformingReceiveChannelIsEqualToChannel() {
         final Channel<Integer> ch = newChannel();
-        ReceivePort<Integer> ch1 = Channels.filter((ReceivePort<Integer>) ch, new Predicate<Integer>() {
+        ReceivePort<Integer> ch1 = Channels.filter(ch, new Predicate<Integer>() {
             @Override
             public boolean apply(Integer input) {
                 return input % 2 == 0;
             }
         });
-        ReceivePort<Integer> ch2 = Channels.map((ReceivePort<Integer>) ch, new Function<Integer, Integer>() {
+        ReceivePort<Integer> ch2 = Channels.map(ch, new Function<Integer, Integer>() {
             @Override
             public Integer apply(Integer input) {
                 return input + 10;
             }
         });
-        ReceivePort<Integer> ch3 = Channels.flatMap((ReceivePort<Integer>) ch, new Function<Integer, ReceivePort<Integer>>() {
+        ReceivePort<Integer> ch3 = Channels.flatMap(ch, new Function<Integer, ReceivePort<Integer>>() {
             @Override
             public ReceivePort<Integer> apply(Integer input) {
                 return Channels.toReceivePort(Arrays.asList(new Integer[]{input * 10, input * 100, input * 1000}));
             }
         });
-        ReceivePort<Integer> ch4 = Channels.reduce((ReceivePort<Integer>) ch, new Function2<Integer, Integer, Integer>() {
+        ReceivePort<Integer> ch4 = Channels.reduce(ch, new Function2<Integer, Integer, Integer>() {
             @Override
             public Integer apply(Integer accum, Integer input) {
                 return (accum += input);
             }
         }, 0);
-        ReceivePort<Integer> ch5 = Channels.take((ReceivePort<Integer>) ch, 1);
+        ReceivePort<Integer> ch5 = Channels.take(ch, 1);
 
-        assertTrue(ch1.equals(ch));
-        assertTrue(ch.equals(ch1));
-        assertTrue(ch2.equals(ch));
-        assertTrue(ch.equals(ch2));
-        assertTrue(ch3.equals(ch));
-        assertTrue(ch.equals(ch3));
-        assertTrue(ch4.equals(ch));
-        assertTrue(ch.equals(ch4));
-        assertTrue(ch5.equals(ch));
-        assertTrue(ch.equals(ch5));
+        assertEquals(ch1, ch);
+        assertEquals(ch, ch1);
+        assertEquals(ch2, ch);
+        assertEquals(ch, ch2);
+        assertEquals(ch3, ch);
+        assertEquals(ch, ch3);
+        assertEquals(ch4, ch);
+        assertEquals(ch, ch4);
+        assertEquals(ch5, ch);
+        assertEquals(ch, ch5);
 
-        assertTrue(ch1.equals(ch1));
-        assertTrue(ch1.equals(ch2));
-        assertTrue(ch1.equals(ch3));
-        assertTrue(ch1.equals(ch4));
-        assertTrue(ch1.equals(ch5));
-        assertTrue(ch2.equals(ch1));
-        assertTrue(ch2.equals(ch2));
-        assertTrue(ch2.equals(ch3));
-        assertTrue(ch2.equals(ch4));
-        assertTrue(ch2.equals(ch5));
-        assertTrue(ch3.equals(ch1));
-        assertTrue(ch3.equals(ch2));
-        assertTrue(ch3.equals(ch3));
-        assertTrue(ch3.equals(ch4));
-        assertTrue(ch3.equals(ch5));
-        assertTrue(ch4.equals(ch1));
-        assertTrue(ch4.equals(ch2));
-        assertTrue(ch4.equals(ch3));
-        assertTrue(ch4.equals(ch4));
-        assertTrue(ch4.equals(ch5));
-        assertTrue(ch5.equals(ch1));
-        assertTrue(ch5.equals(ch2));
-        assertTrue(ch5.equals(ch3));
-        assertTrue(ch5.equals(ch4));
-        assertTrue(ch5.equals(ch5));
+        assertEquals(ch1, ch1);
+        assertEquals(ch1, ch2);
+        assertEquals(ch1, ch3);
+        assertEquals(ch1, ch4);
+        assertEquals(ch1, ch5);
+        assertEquals(ch2, ch1);
+        assertEquals(ch2, ch2);
+        assertEquals(ch2, ch3);
+        assertEquals(ch2, ch4);
+        assertEquals(ch2, ch5);
+        assertEquals(ch3, ch1);
+        assertEquals(ch3, ch2);
+        assertEquals(ch3, ch3);
+        assertEquals(ch3, ch4);
+        assertEquals(ch3, ch5);
+        assertEquals(ch4, ch1);
+        assertEquals(ch4, ch2);
+        assertEquals(ch4, ch3);
+        assertEquals(ch4, ch4);
+        assertEquals(ch4, ch5);
+        assertEquals(ch5, ch1);
+        assertEquals(ch5, ch2);
+        assertEquals(ch5, ch3);
+        assertEquals(ch5, ch4);
+        assertEquals(ch5, ch5);
     }
 
     @Test
     public void transformingSendChannelIsEqualToChannel() throws Exception {
         final Channel<Integer> ch = newChannel();
-        SendPort<Integer> ch1 = Channels.filterSend((SendPort<Integer>) ch, new Predicate<Integer>() {
+        SendPort<Integer> ch1 = Channels.filterSend(ch, new Predicate<Integer>() {
             @Override
             public boolean apply(Integer input) {
                 return input % 2 == 0;
             }
         });
 
-        SendPort<Integer> ch2 = Channels.mapSend((SendPort<Integer>) ch, new Function<Integer, Integer>() {
+        SendPort<Integer> ch2 = Channels.mapSend(ch, new Function<Integer, Integer>() {
             @Override
             public Integer apply(Integer input) {
                 return input + 10;
             }
         });
 
-        SendPort<Integer> ch3 = Channels.flatMapSend(Channels.<Integer>newChannel(1), (SendPort<Integer>) ch, new Function<Integer, ReceivePort<Integer>>() {
+        SendPort<Integer> ch3 = Channels.flatMapSend(Channels.<Integer>newChannel(1), ch, new Function<Integer, ReceivePort<Integer>>() {
             @Override
             public ReceivePort<Integer> apply(Integer input) {
                 return Channels.toReceivePort(Arrays.asList(new Integer[]{input * 10, input * 100, input * 1000}));
             }
         });
 
-        SendPort<Integer> ch4 = Channels.reduceSend((SendPort<Integer>) ch, new Function2<Integer, Integer, Integer>() {
+        SendPort<Integer> ch4 = Channels.reduceSend(ch, new Function2<Integer, Integer, Integer>() {
             @Override
             public Integer apply(Integer accum, Integer input) {
                 return (accum += input);
             }
         }, 0);
 
-        assertTrue(ch1.equals(ch));
-        assertTrue(ch.equals(ch1));
-        assertTrue(ch2.equals(ch));
-        assertTrue(ch.equals(ch2));
-        assertTrue(ch3.equals(ch));
-        assertTrue(ch.equals(ch3));
-        assertTrue(ch4.equals(ch));
-        assertTrue(ch.equals(ch4));
+        assertEquals(ch1, ch);
+        assertEquals(ch, ch1);
+        assertEquals(ch2, ch);
+        assertEquals(ch, ch2);
+        assertEquals(ch3, ch);
+        assertEquals(ch, ch3);
+        assertEquals(ch4, ch);
+        assertEquals(ch, ch4);
 
-        assertTrue(ch1.equals(ch1));
-        assertTrue(ch1.equals(ch2));
-        assertTrue(ch1.equals(ch3));
-        assertTrue(ch1.equals(ch4));
-        assertTrue(ch2.equals(ch1));
-        assertTrue(ch2.equals(ch2));
-        assertTrue(ch2.equals(ch3));
-        assertTrue(ch2.equals(ch4));
-        assertTrue(ch3.equals(ch1));
-        assertTrue(ch3.equals(ch2));
-        assertTrue(ch3.equals(ch3));
-        assertTrue(ch3.equals(ch4));
-        assertTrue(ch4.equals(ch1));
-        assertTrue(ch4.equals(ch2));
-        assertTrue(ch4.equals(ch3));
-        assertTrue(ch4.equals(ch4));
+        assertEquals(ch1, ch1);
+        assertEquals(ch1, ch2);
+        assertEquals(ch1, ch3);
+        assertEquals(ch1, ch4);
+        assertEquals(ch2, ch1);
+        assertEquals(ch2, ch2);
+        assertEquals(ch2, ch3);
+        assertEquals(ch2, ch4);
+        assertEquals(ch3, ch1);
+        assertEquals(ch3, ch2);
+        assertEquals(ch3, ch3);
+        assertEquals(ch3, ch4);
+        assertEquals(ch4, ch1);
+        assertEquals(ch4, ch2);
+        assertEquals(ch4, ch3);
+        assertEquals(ch4, ch4);
     }
 
     @Test
@@ -240,7 +245,7 @@ public class TransformingChannelTest {
         Fiber<?> fib1 = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                ReceivePort<Integer> ch1 = Channels.filter((ReceivePort<Integer>) ch, new Predicate<Integer>() {
+                ReceivePort<Integer> ch1 = Channels.filter(ch, new Predicate<Integer>() {
                     @Override
                     public boolean apply(Integer input) {
                         return input % 2 == 0;
@@ -251,9 +256,9 @@ public class TransformingChannelTest {
                 Integer m2 = ch1.receive();
                 Integer m3 = ch1.receive();
 
-                assertThat(m1, equalTo(2));
-                assertThat(m2, equalTo(4));
-                assertThat(m3, is(nullValue()));
+                assertThat(m1).isEqualTo(2);
+                assertThat(m2).isEqualTo(4);
+                assertThat(m3).isNull();
             }
         }).start();
 
@@ -282,7 +287,7 @@ public class TransformingChannelTest {
         Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                ReceivePort<Integer> ch1 = Channels.filter((ReceivePort<Integer>) ch, new Predicate<Integer>() {
+                ReceivePort<Integer> ch1 = Channels.filter(ch, new Predicate<Integer>() {
                     @Override
                     public boolean apply(Integer input) {
                         return input % 2 == 0;
@@ -293,9 +298,9 @@ public class TransformingChannelTest {
                 Integer m2 = ch1.receive();
                 Integer m3 = ch1.receive();
 
-                assertThat(m1, equalTo(2));
-                assertThat(m2, equalTo(4));
-                assertThat(m3, is(nullValue()));
+                assertThat(m1).isEqualTo(2);
+                assertThat(m2).isEqualTo(4);
+                assertThat(m3).isNull();
             }
         }).start();
 
@@ -331,7 +336,7 @@ public class TransformingChannelTest {
             }
         }).start();
 
-        ReceivePort<Integer> ch1 = Channels.filter((ReceivePort<Integer>) ch, new Predicate<Integer>() {
+        ReceivePort<Integer> ch1 = Channels.filter(ch, new Predicate<Integer>() {
             @Override
             public boolean apply(Integer input) {
                 return input % 2 == 0;
@@ -342,9 +347,9 @@ public class TransformingChannelTest {
         Integer m2 = ch1.receive();
         Integer m3 = ch1.receive();
 
-        assertThat(m1, equalTo(2));
-        assertThat(m2, equalTo(4));
-        assertThat(m3, is(nullValue()));
+        assertThat(m1).isEqualTo(2);
+        assertThat(m2).isEqualTo(4);
+        assertThat(m3).isNull();
 
         fib.join();
     }
@@ -358,7 +363,7 @@ public class TransformingChannelTest {
         final Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                final ReceivePort<Integer> ch1 = Channels.filter((ReceivePort<Integer>) ch, new Predicate<Integer>() {
+                final ReceivePort<Integer> ch1 = Channels.filter(ch, new Predicate<Integer>() {
                     @Override
                     public boolean apply(Integer input) {
                         return input % 2 == 0;
@@ -373,10 +378,10 @@ public class TransformingChannelTest {
                 final Integer m2 = ch1.receive(190, TimeUnit.MILLISECONDS);
                 final Integer m3 = ch1.receive(30, TimeUnit.MILLISECONDS);
 
-                assertThat(m1, equalTo(2));
-                assertThat(m0, is(nullValue()));
-                assertThat(m2, equalTo(4));
-                assertThat(m3, is(nullValue()));
+                assertThat(m1).isEqualTo(2);
+                assertThat(m0).isNull();
+                assertThat(m2).isEqualTo(4);
+                assertThat(m3).isNull();
             }
         }).start();
 
@@ -407,16 +412,16 @@ public class TransformingChannelTest {
                 Integer m2 = ch.receive();
                 Integer m3 = ch.receive();
 
-                assertThat(m1, equalTo(2));
-                assertThat(m2, equalTo(4));
-                assertThat(m3, is(nullValue()));
+                assertThat(m1).isEqualTo(2);
+                assertThat(m2).isEqualTo(4);
+                assertThat(m3).isNull();
             }
         }).start();
 
         Fiber<?> fib2 = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                SendPort<Integer> ch1 = Channels.filterSend((SendPort<Integer>) ch, new Predicate<Integer>() {
+                SendPort<Integer> ch1 = Channels.filterSend(ch, new Predicate<Integer>() {
                     @Override
                     public boolean apply(Integer input) {
                         return input % 2 == 0;
@@ -449,13 +454,13 @@ public class TransformingChannelTest {
                 Integer m2 = ch.receive();
                 Integer m3 = ch.receive();
 
-                assertThat(m1, equalTo(2));
-                assertThat(m2, equalTo(4));
-                assertThat(m3, is(nullValue()));
+                assertThat(m1).isEqualTo(2);
+                assertThat(m2).isEqualTo(4);
+                assertThat(m3).isNull();
             }
         }).start();
 
-        SendPort<Integer> ch1 = Channels.filterSend((SendPort<Integer>) ch, new Predicate<Integer>() {
+        SendPort<Integer> ch1 = Channels.filterSend(ch, new Predicate<Integer>() {
             @Override
             public boolean apply(Integer input) {
                 return input % 2 == 0;
@@ -483,7 +488,7 @@ public class TransformingChannelTest {
             public void run() throws SuspendExecution, InterruptedException {
                 Fiber.sleep(100);
 
-                SendPort<Integer> ch1 = Channels.filterSend((SendPort<Integer>) ch, new Predicate<Integer>() {
+                SendPort<Integer> ch1 = Channels.filterSend(ch, new Predicate<Integer>() {
                     @Override
                     public boolean apply(Integer input) {
                         return input % 2 == 0;
@@ -505,9 +510,9 @@ public class TransformingChannelTest {
         Integer m2 = ch.receive();
         Integer m3 = ch.receive();
 
-        assertThat(m1, equalTo(2));
-        assertThat(m2, equalTo(4));
-        assertThat(m3, is(nullValue()));
+        assertThat(m1).isEqualTo(2);
+        assertThat(m2).isEqualTo(4);
+        assertThat(m3).isNull();
 
         fib.join();
     }
@@ -529,14 +534,14 @@ public class TransformingChannelTest {
                 final Integer m2 = ch.receive(190, TimeUnit.MILLISECONDS);
                 final Integer m3 = ch.receive(30, TimeUnit.MILLISECONDS);
 
-                assertThat(m1, equalTo(2));
-                assertThat(m0, is(nullValue()));
-                assertThat(m2, equalTo(4));
-                assertThat(m3, is(nullValue()));
+                assertThat(m1).isEqualTo(2);
+                assertThat(m0).isNull();
+                assertThat(m2).isEqualTo(4);
+                assertThat(m3).isNull();
             }
         }).start();
 
-        SendPort<Integer> ch1 = Channels.filterSend((SendPort<Integer>) ch, new Predicate<Integer>() {
+        SendPort<Integer> ch1 = Channels.filterSend(ch, new Predicate<Integer>() {
             @Override
             public boolean apply(Integer input) {
                 return input % 2 == 0;
@@ -566,7 +571,7 @@ public class TransformingChannelTest {
         Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                ReceivePort<Integer> ch1 = Channels.map((ReceivePort<Integer>) ch, new Function<Integer, Integer>() {
+                ReceivePort<Integer> ch1 = Channels.map(ch, new Function<Integer, Integer>() {
                     @Override
                     public Integer apply(Integer input) {
                         return input + 10;
@@ -580,12 +585,12 @@ public class TransformingChannelTest {
                 Integer m5 = ch1.receive();
                 Integer m6 = ch1.receive();
 
-                assertThat(m1, equalTo(11));
-                assertThat(m2, equalTo(12));
-                assertThat(m3, equalTo(13));
-                assertThat(m4, equalTo(14));
-                assertThat(m5, equalTo(15));
-                assertThat(m6, is(nullValue()));
+                assertThat(m1).isEqualTo(11);
+                assertThat(m2).isEqualTo(12);
+                assertThat(m3).isEqualTo(13);
+                assertThat(m4).isEqualTo(14);
+                assertThat(m5).isEqualTo(15);
+                assertThat(m6).isNull();
             }
         }).start();
 
@@ -615,16 +620,16 @@ public class TransformingChannelTest {
                 Integer m5 = ch.receive();
                 Integer m6 = ch.receive();
 
-                assertThat(m1, equalTo(11));
-                assertThat(m2, equalTo(12));
-                assertThat(m3, equalTo(13));
-                assertThat(m4, equalTo(14));
-                assertThat(m5, equalTo(15));
-                assertThat(m6, is(nullValue()));
+                assertThat(m1).isEqualTo(11);
+                assertThat(m2).isEqualTo(12);
+                assertThat(m3).isEqualTo(13);
+                assertThat(m4).isEqualTo(14);
+                assertThat(m5).isEqualTo(15);
+                assertThat(m6).isNull();
             }
         }).start();
 
-        SendPort<Integer> ch1 = Channels.mapSend((SendPort<Integer>) ch, new Function<Integer, Integer>() {
+        SendPort<Integer> ch1 = Channels.mapSend(ch, new Function<Integer, Integer>() {
             @Override
             public Integer apply(Integer input) {
                 return input + 10;
@@ -650,7 +655,7 @@ public class TransformingChannelTest {
         Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                final ReceivePort<Integer> ch1 = Channels.reduce((ReceivePort<Integer>) ch, new Function2<Integer, Integer, Integer>() {
+                final ReceivePort<Integer> ch1 = Channels.reduce(ch, new Function2<Integer, Integer, Integer>() {
                     @Override
                     public Integer apply(Integer accum, Integer input) {
                         return accum + input;
@@ -664,12 +669,12 @@ public class TransformingChannelTest {
                 final Integer m5 = ch1.receive();
                 final Integer m6 = ch1.receive();
 
-                assertThat(m1, equalTo(1));
-                assertThat(m2, equalTo(3));
-                assertThat(m3, equalTo(6));
-                assertThat(m4, equalTo(10));
-                assertThat(m5, equalTo(15));
-                assertThat(m6, is(nullValue()));
+                assertThat(m1).isEqualTo(1);
+                assertThat(m2).isEqualTo(3);
+                assertThat(m3).isEqualTo(6);
+                assertThat(m4).isEqualTo(10);
+                assertThat(m5).isEqualTo(15);
+                assertThat(m6).isNull();
             }
         }).start();
 
@@ -692,7 +697,7 @@ public class TransformingChannelTest {
         Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                final ReceivePort<Integer> ch1 = Channels.reduce((ReceivePort<Integer>) ch, new Function2<Integer, Integer, Integer>() {
+                final ReceivePort<Integer> ch1 = Channels.reduce(ch, new Function2<Integer, Integer, Integer>() {
                     @Override
                     public Integer apply(Integer accum, Integer input) {
                         return accum + input;
@@ -702,7 +707,7 @@ public class TransformingChannelTest {
                 final Integer m1 = ch1.receive();
                 final Integer m2 = ch1.receive();
 
-                assertThat(m1, equalTo(0));
+                assertThat(m1).isEqualTo(0);
                 assertNull(m2);
             }
         }).start();
@@ -721,20 +726,20 @@ public class TransformingChannelTest {
         final Channel<Object> takeSourceCh = newChannel();
 
         // Test 2 fibers failing immediately on take 0 of 1
-        final ReceivePort<Object> take0RP = Channels.take((ReceivePort<Object>) takeSourceCh, 0);
+        final ReceivePort<Object> take0RP = Channels.take(takeSourceCh, 0);
         final SuspendableRunnable take0SR = new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                assertThat(take0RP.receive(), is(nullValue()));
-                assertThat(take0RP.tryReceive(), is(nullValue()));
+                assertThat(take0RP.receive()).isNull();
+                assertThat(take0RP.tryReceive()).isNull();
                 long start = System.nanoTime();
-                assertThat(take0RP.receive(10, TimeUnit.SECONDS), is(nullValue()));
+                assertThat(take0RP.receive(10, TimeUnit.SECONDS)).isNull();
                 long end = System.nanoTime();
-                assertThat(end - start, lessThan(new Long(5 * 1000 * 1000 * 1000))); // Should be immediate
+                assertThat(end - start).isLessThan(5 * 1000 * 1000 * 1000L); // Should be immediate
                 start = System.nanoTime();
-                assertThat(take0RP.receive(new Timeout(10, TimeUnit.SECONDS)), is(nullValue()));
+                assertThat(take0RP.receive(new Timeout(10, TimeUnit.SECONDS))).isNull();
                 end = System.nanoTime();
-                assertThat(end - start, lessThan(new Long(5 * 1000 * 1000 * 1000))); // Should be immediate
+                assertThat(end - start).isLessThan(5 * 1000 * 1000 * 1000L); // Should be immediate
             }
         };
         final Fiber<?> take0Of1Fiber1 = new Fiber<>("take-0-of-1_fiber1", scheduler, take0SR).start();
@@ -742,17 +747,17 @@ public class TransformingChannelTest {
         takeSourceCh.send(new Object());
         take0Of1Fiber1.join();
         take0Of1Fiber2.join();
-        assertThat(takeSourceCh.receive(), is(notNullValue())); // 1 left in source, check and cleanup
+        assertThat(takeSourceCh.receive()).isNotNull(); // 1 left in source, check and cleanup
 
         // Test tryReceive failing immediately when fiber blocked in receive on take 1 of 2
-        final ReceivePort<Object> take1Of2RP = Channels.take((ReceivePort<Object>) takeSourceCh, 1);
+        final ReceivePort<Object> take1Of2RP = Channels.take(takeSourceCh, 1);
         final Fiber<?> timeoutSucceedingTake1Of2 = new Fiber<>("take-1-of-2_timeout_success", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 final long start = System.nanoTime();
-                assertThat(take1Of2RP.receive(1, TimeUnit.SECONDS), is(notNullValue()));
+                assertThat(take1Of2RP.receive(1, TimeUnit.SECONDS)).isNotNull();
                 final long end = System.nanoTime();
-                assertThat(end - start, lessThan(new Long(500 * 1000 * 1000)));
+                assertThat(end - start).isLessThan(500 * 1000 * 1000L);
             }
         }).start();
         Thread.sleep(100); // Let the fiber blocks in receive before starting the try
@@ -760,9 +765,9 @@ public class TransformingChannelTest {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 final long start = System.nanoTime();
-                assertThat(take1Of2RP.tryReceive(), is(nullValue()));
+                assertThat(take1Of2RP.tryReceive()).isNull();
                 final long end = System.nanoTime();
-                assertThat(end - start, lessThan(new Long(500 * 1000 * 1000))); // Should be immediate
+                assertThat(end - start).isLessThan(500 * 1000 * 1000L); // Should be immediate
             }
         }).start();
         Thread.sleep(100);
@@ -771,7 +776,7 @@ public class TransformingChannelTest {
         takeSourceCh.send(new Object());
         timeoutSucceedingTake1Of2.join();
         tryFailingTake1Of2.join();
-        assertThat(takeSourceCh.receive(), is(notNullValue())); // 1 left in source, check and cleanup
+        assertThat(takeSourceCh.receive()).isNotNull(); // 1 left in source, check and cleanup
 
         // Comprehensive take + contention test:
         //
@@ -785,7 +790,7 @@ public class TransformingChannelTest {
         // - 4th fiber taking over, receiving with 1s timeout => success
         // - 5th fiber asking untimed receive, waiting in monitor, will bail out because of take threshold
 
-        final ReceivePort<Object> take2Of3RPComprehensive = Channels.take((ReceivePort<Object>) takeSourceCh, 2);
+        final ReceivePort<Object> take2Of3RPComprehensive = Channels.take(takeSourceCh, 2);
         final Function2<Long, Integer, Fiber<?>> take1SRFun = new Function2<Long, Integer, Fiber<?>>() {
             @Override
             public Fiber<?> apply(final Long timeoutMS, final Integer position) {
@@ -800,24 +805,24 @@ public class TransformingChannelTest {
                         final long end = System.nanoTime();
                         switch (position) {
                             case 1:
-                                assertThat(res, is(notNullValue()));
-                                assertThat(end - start, lessThan(new Long(300 * 1000 * 1000)));
+                                assertThat(res).isNotNull();
+                                assertThat(end - start).isLessThan(300 * 1000 * 1000L);
                                 break;
                             case 2:
-                                assertThat(res, is(nullValue()));
-                                assertThat(end - start, greaterThan(new Long(300 * 1000 * 1000)));
+                                assertThat(res).isNull();
+                                assertThat(end - start).isGreaterThan(300 * 1000 * 1000L);
                                 break;
                             case 3:
-                                assertThat(res, is(nullValue()));
-                                assertThat(end - start, greaterThan(new Long(200 * 1000 * 1000)));
+                                assertThat(res).isNull();
+                                assertThat(end - start).isGreaterThan(200 * 1000 * 1000L);
                                 break;
                             case 4:
-                                assertThat(res, is(notNullValue()));
-                                assertThat(end - start, lessThan(new Long(1000 * 1000 * 1000)));
+                                assertThat(res).isNotNull();
+                                assertThat(end - start).isLessThan(1000 * 1000 * 1000L);
                                 break;
                             case 5:
-                                assertThat(res, is(nullValue()));
-                                assertThat(end - start, lessThan(new Long(1000 * 1000 * 1000))); // Should be almost instantaneous
+                                assertThat(res).isNull();
+                                assertThat(end - start).isLessThan(1000 * 1000 * 1000L); // Should be almost instantaneous
                                 break;
                             default:
                                 fail();
@@ -829,41 +834,41 @@ public class TransformingChannelTest {
         };
         final Fiber<?>[] competing = new Fiber[5];
         // First front fiber winning first message
-        competing[0] = take1SRFun.apply(300l, 1).start();
+        competing[0] = take1SRFun.apply(300L, 1).start();
         // Make 1 message available immediately for the first front fiber to consume
         takeSourceCh.send(new Object());
         Thread.sleep(100);
         // Second front fiber losing (waiting too little for second message)
-        competing[1] = take1SRFun.apply(300l, 2).start();
+        competing[1] = take1SRFun.apply(300L, 2).start();
         Thread.sleep(100);
         // First waiter, will fail (not waiting enough)
-        competing[2] = take1SRFun.apply(200l, 3).start();
+        competing[2] = take1SRFun.apply(200L, 3).start();
         Thread.sleep(300); // First waiter takeover
         // Second waiter, will win second message (waiting enough)
-        competing[3] = take1SRFun.apply(1000l, 4).start();
+        competing[3] = take1SRFun.apply(1000L, 4).start();
         Thread.sleep(300); // Second waiter takeover
         // Third waiter, will try after take threshold and will bail out
-        competing[4] = take1SRFun.apply(-1l, 5).start();
+        competing[4] = take1SRFun.apply(-1L, 5).start();
         // Make 2 more messages available
         takeSourceCh.send(new Object());
         takeSourceCh.send(new Object());
         // Wait fibers to finsh
         for (final Fiber<?> f : competing)
             f.join();
-        assertThat(takeSourceCh.receive(), is(notNullValue())); // 1 left in source, check and cleanup
+        assertThat(takeSourceCh.receive()).isNotNull(); // 1 left in source, check and cleanup
 
         // Explicit (and uncoupled from source) closing of TakeSP
-        final ReceivePort<Object> take1Of0ExplicitClose = Channels.take((ReceivePort<Object>) takeSourceCh, 1);
+        final ReceivePort<Object> take1Of0ExplicitClose = Channels.take(takeSourceCh, 1);
         final SuspendableRunnable explicitCloseSR = new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 final long start = System.nanoTime();
                 final Object ret = take1Of0ExplicitClose.receive();
                 final long end = System.nanoTime();
-                assertThat(ret, is(nullValue()));
+                assertThat(ret).isNull();
                 assertTrue(take1Of0ExplicitClose.isClosed());
                 assertFalse(takeSourceCh.isClosed());
-                assertThat(end - start, lessThan(new Long(500 * 1000 * 1000)));
+                assertThat(end - start).isLessThan(500 * 1000 * 1000L);
             }
         };
         final Fiber<?> explicitCloseF1 = new Fiber<>("take-explicit-close-1", scheduler, explicitCloseSR);
@@ -886,16 +891,16 @@ public class TransformingChannelTest {
                 Integer m5 = ch.receive();
                 Integer m6 = ch.receive();
 
-                assertThat(m1, equalTo(1));
-                assertThat(m2, equalTo(3));
-                assertThat(m3, equalTo(6));
-                assertThat(m4, equalTo(10));
-                assertThat(m5, equalTo(15));
-                assertThat(m6, is(nullValue()));
+                assertThat(m1).isEqualTo(1);
+                assertThat(m2).isEqualTo(3);
+                assertThat(m3).isEqualTo(6);
+                assertThat(m4).isEqualTo(10);
+                assertThat(m5).isEqualTo(15);
+                assertThat(m6).isNull();
             }
         }).start();
 
-        final SendPort<Integer> ch1 = Channels.reduceSend((SendPort<Integer>) ch, new Function2<Integer, Integer, Integer>() {
+        final SendPort<Integer> ch1 = Channels.reduceSend(ch, new Function2<Integer, Integer, Integer>() {
             @Override
             public Integer apply(Integer accum, Integer input) {
                 return accum + input;
@@ -924,12 +929,12 @@ public class TransformingChannelTest {
                 Integer m1 = ch.receive();
                 Integer m2 = ch.receive();
 
-                assertThat(m1, equalTo(0));
+                assertThat(m1).isEqualTo(0);
                 assertNull(m2);
             }
         }).start();
 
-        final SendPort<Integer> ch1 = Channels.reduceSend((SendPort<Integer>) ch, new Function2<Integer, Integer, Integer>() {
+        final SendPort<Integer> ch1 = Channels.reduceSend(ch, new Function2<Integer, Integer, Integer>() {
             @Override
             public Integer apply(Integer accum, Integer input) {
                 return accum + input;
@@ -962,10 +967,10 @@ public class TransformingChannelTest {
                 String m3 = ch.receive();
                 String m4 = ch.receive();
 
-                assertThat(m1, equalTo("a1"));
-                assertThat(m2, equalTo("b2"));
-                assertThat(m3, equalTo("c3"));
-                assertThat(m4, is(nullValue()));
+                assertThat(m1).isEqualTo("a1");
+                assertThat(m2).isEqualTo("b2");
+                assertThat(m3).isEqualTo("c3");
+                assertThat(m4).isNull();
             }
         }).start();
 
@@ -1011,11 +1016,11 @@ public class TransformingChannelTest {
                 sync.receive(); // 3
                 final String m4 = ch.receive(30, TimeUnit.MILLISECONDS);
 
-                assertThat(m1, equalTo("a1"));
-                assertThat(m0, is(nullValue()));
-                assertThat(m2, equalTo("b2"));
-                assertThat(m3, equalTo("c3"));
-                assertThat(m4, is(nullValue()));
+                assertThat(m1).isEqualTo("a1");
+                assertThat(m0).isNull();
+                assertThat(m2).isEqualTo("b2");
+                assertThat(m3).isEqualTo("c3");
+                assertThat(m4).isNull();
             }
         }).start();
 
@@ -1054,22 +1059,22 @@ public class TransformingChannelTest {
                         if (x == 3)
                             return null;
                         if (x % 2 == 0)
-                            return Channels.toReceivePort(Arrays.asList(new Integer[]{x * 10, x * 100, x * 1000}));
+                            return Channels.toReceivePort(Arrays.asList(x * 10, x * 100, x * 1000));
                         else
                             return Channels.singletonReceivePort(x);
                     }
                 });
 
-                assertThat(ch.receive(), is(1));
-                assertThat(ch.receive(), is(20));
-                assertThat(ch.receive(), is(200));
-                assertThat(ch.receive(), is(2000));
-                assertThat(ch.receive(), is(40));
-                assertThat(ch.receive(), is(400));
-                assertThat(ch.receive(), is(4000));
-                assertThat(ch.receive(), is(5));
-                assertThat(ch.receive(), is(nullValue()));
-                assertThat(ch.isClosed(), is(true));
+                assertThat(ch.receive()).isEqualTo(1);
+                assertThat(ch.receive()).isEqualTo(20);
+                assertThat(ch.receive()).isEqualTo(200);
+                assertThat(ch.receive()).isEqualTo(2000);
+                assertThat(ch.receive()).isEqualTo(40);
+                assertThat(ch.receive()).isEqualTo(400);
+                assertThat(ch.receive()).isEqualTo(4000);
+                assertThat(ch.receive()).isEqualTo(5);
+                assertThat(ch.receive()).isNull();
+                assertThat(ch.isClosed()).isTrue();
             }
         }).start();
 
@@ -1098,33 +1103,33 @@ public class TransformingChannelTest {
                         if (x == 3)
                             return null; // Discard
                         if (x % 2 == 0)
-                            return Channels.toReceivePort(Arrays.asList(new Integer[]{x * 10, x * 100, x * 1000}));
+                            return Channels.toReceivePort(Arrays.asList(x * 10, x * 100, x * 1000));
                         else
                             return Channels.singletonReceivePort(x);
                     }
                 });
 
                 sync.receive(); // 0
-                assertThat(ch.receive(200, TimeUnit.MILLISECONDS), is(1));
+                assertThat(ch.receive(200, TimeUnit.MILLISECONDS)).isEqualTo(1);
 
                 sync.receive(); // 1
-                assertThat(ch.receive(10, TimeUnit.MILLISECONDS), is(nullValue()));
-                assertThat(ch.receive(190, TimeUnit.MILLISECONDS), is(20));
-                assertThat(ch.receive(10, TimeUnit.MILLISECONDS), is(200));
-                assertThat(ch.receive(10, TimeUnit.MILLISECONDS), is(2000));
+                assertThat(ch.receive(10, TimeUnit.MILLISECONDS)).isNull();
+                assertThat(ch.receive(190, TimeUnit.MILLISECONDS)).isEqualTo(20);
+                assertThat(ch.receive(10, TimeUnit.MILLISECONDS)).isEqualTo(200);
+                assertThat(ch.receive(10, TimeUnit.MILLISECONDS)).isEqualTo(2000);
 
                 sync.receive(); // 2
-                assertThat(ch.receive(200, TimeUnit.MILLISECONDS), is(40));
-                assertThat(ch.receive(10, TimeUnit.MILLISECONDS), is(400));
-                assertThat(ch.receive(10, TimeUnit.MILLISECONDS), is(4000));
+                assertThat(ch.receive(200, TimeUnit.MILLISECONDS)).isEqualTo(40);
+                assertThat(ch.receive(10, TimeUnit.MILLISECONDS)).isEqualTo(400);
+                assertThat(ch.receive(10, TimeUnit.MILLISECONDS)).isEqualTo(4000);
 
                 sync.receive(); // 3
-                assertThat(ch.receive(10, TimeUnit.MILLISECONDS), is(nullValue()));
-                assertThat(ch.receive(190, TimeUnit.MILLISECONDS), is(5));
+                assertThat(ch.receive(10, TimeUnit.MILLISECONDS)).isNull();
+                assertThat(ch.receive(190, TimeUnit.MILLISECONDS)).isEqualTo(5);
 
                 sync.receive(); // 4
-                assertThat(ch.receive(30, TimeUnit.MILLISECONDS), is(nullValue()));
-                assertThat(ch.isClosed(), is(true));
+                assertThat(ch.receive(30, TimeUnit.MILLISECONDS)).isNull();
+                assertThat(ch.isClosed()).isTrue();
             }
         }).start();
 
@@ -1172,10 +1177,10 @@ public class TransformingChannelTest {
         Fiber<?> fib1 = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                assertThat(out.receive(), equalTo(20));
-                assertThat(out.receive(), equalTo(40));
-                assertThat(out.receive(), equalTo(1234));
-                assertThat(out.receive(), is(nullValue()));
+                assertThat(out.receive()).isEqualTo(20);
+                assertThat(out.receive()).isEqualTo(40);
+                assertThat(out.receive()).isEqualTo(1234);
+                assertThat(out.receive()).isNull();
             }
         }).start();
 
@@ -1204,16 +1209,16 @@ public class TransformingChannelTest {
         Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                assertThat(ch.receive(), is(1));
-                assertThat(ch.receive(), is(20));
-                assertThat(ch.receive(), is(200));
-                assertThat(ch.receive(), is(2000));
-                assertThat(ch.receive(), is(40));
-                assertThat(ch.receive(), is(400));
-                assertThat(ch.receive(), is(4000));
-                assertThat(ch.receive(), is(5));
-                assertThat(ch.receive(), is(nullValue()));
-                assertThat(ch.isClosed(), is(true));
+                assertThat(ch.receive()).isEqualTo(1);
+                assertThat(ch.receive()).isEqualTo(20);
+                assertThat(ch.receive()).isEqualTo(200);
+                assertThat(ch.receive()).isEqualTo(2000);
+                assertThat(ch.receive()).isEqualTo(40);
+                assertThat(ch.receive()).isEqualTo(400);
+                assertThat(ch.receive()).isEqualTo(4000);
+                assertThat(ch.receive()).isEqualTo(5);
+                assertThat(ch.receive()).isNull();
+                assertThat(ch.isClosed()).isTrue();
             }
         }).start();
 
@@ -1223,7 +1228,7 @@ public class TransformingChannelTest {
                 if (x == 3)
                     return null;
                 if (x % 2 == 0)
-                    return Channels.toReceivePort(Arrays.asList(new Integer[]{x * 10, x * 100, x * 1000}));
+                    return Channels.toReceivePort(Arrays.asList(x * 10, x * 100, x * 1000));
                 else
                     return Channels.singletonReceivePort(x);
             }
@@ -1245,18 +1250,18 @@ public class TransformingChannelTest {
         Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                assertThat(ch.receive(), is(1));
-                assertThat(ch.receive(30, TimeUnit.MILLISECONDS), is(nullValue()));
-                assertThat(ch.receive(40, TimeUnit.MILLISECONDS), is(20));
-                assertThat(ch.receive(), is(200));
-                assertThat(ch.receive(), is(2000));
-                assertThat(ch.receive(), is(40));
-                assertThat(ch.receive(), is(400));
-                assertThat(ch.receive(), is(4000));
-                assertThat(ch.receive(30, TimeUnit.MILLISECONDS), is(nullValue()));
-                assertThat(ch.receive(40, TimeUnit.MILLISECONDS), is(5));
-                assertThat(ch.receive(), is(nullValue()));
-                assertThat(ch.isClosed(), is(true));
+                assertThat(ch.receive()).isEqualTo(1);
+                assertThat(ch.receive(30, TimeUnit.MILLISECONDS)).isNull();
+                assertThat(ch.receive(40, TimeUnit.MILLISECONDS)).isEqualTo(20);
+                assertThat(ch.receive()).isEqualTo(200);
+                assertThat(ch.receive()).isEqualTo(2000);
+                assertThat(ch.receive()).isEqualTo(40);
+                assertThat(ch.receive()).isEqualTo(400);
+                assertThat(ch.receive()).isEqualTo(4000);
+                assertThat(ch.receive(30, TimeUnit.MILLISECONDS)).isNull();
+                assertThat(ch.receive(40, TimeUnit.MILLISECONDS)).isEqualTo(5);
+                assertThat(ch.receive()).isNull();
+                assertThat(ch.isClosed()).isTrue();
             }
         }).start();
 
@@ -1266,7 +1271,7 @@ public class TransformingChannelTest {
                 if (x == 3)
                     return null;
                 if (x % 2 == 0)
-                    return Channels.toReceivePort(Arrays.asList(new Integer[]{x * 10, x * 100, x * 1000}));
+                    return Channels.toReceivePort(Arrays.asList(x * 10, x * 100, x * 1000));
                 else
                     return Channels.singletonReceivePort(x);
             }
@@ -1288,9 +1293,9 @@ public class TransformingChannelTest {
     public void testSendSplitThreadToFiber() throws Exception {
         final Channel<String> chF1 = newChannel();
         final Channel<String> chF2 = newChannel();
-        final SendPort<String> splitSP = new SplitSendPort<String>() {
+        final SendPort<String> splitSP = new SplitSendPort<>() {
             @Override
-            protected SendPort select(final String m) {
+            protected SendPort<String> select(final String m) {
                 if (m.equals("f1"))
                     return chF1;
                 else
@@ -1300,20 +1305,20 @@ public class TransformingChannelTest {
         final Fiber<?> f1 = new Fiber<>("split-send-1", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                assertThat(chF1.receive(), is("f1"));
-                assertThat(chF1.receive(100, TimeUnit.NANOSECONDS), is(nullValue()));
-                assertThat(chF1.receive(new Timeout(100, TimeUnit.NANOSECONDS)), is(nullValue()));
-                assertThat(chF1.receive(), is(nullValue()));
+                assertThat(chF1.receive()).isEqualTo("f1");
+                assertThat(chF1.receive(100, TimeUnit.NANOSECONDS)).isNull();
+                assertThat(chF1.receive(new Timeout(100, TimeUnit.NANOSECONDS))).isNull();
+                assertThat(chF1.receive()).isNull();
                 assertTrue(chF1.isClosed());
             }
         }).start();
         final Fiber<?> f2 = new Fiber<>("split-send-2", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
-                assertThat(chF2.receive(), is(not("f1")));
-                assertThat(chF2.receive(100, TimeUnit.NANOSECONDS), is(nullValue()));
-                assertThat(chF2.receive(new Timeout(100, TimeUnit.NANOSECONDS)), is(nullValue()));
-                assertThat(chF2.receive(), is(nullValue()));
+                assertThat(chF2.receive()).isNotEqualTo("f1");
+                assertThat(chF2.receive(100, TimeUnit.NANOSECONDS)).isNull();
+                assertThat(chF2.receive(new Timeout(100, TimeUnit.NANOSECONDS))).isNull();
+                assertThat(chF2.receive()).isNull();
                 assertTrue(chF2.isClosed());
             }
         }).start();
@@ -1335,7 +1340,7 @@ public class TransformingChannelTest {
     public void testForEach() throws Exception {
         final Channel<Integer> ch = newChannel();
 
-        Fiber<List<Integer>> fib = new Fiber<List<Integer>>("fiber", scheduler, new SuspendableCallable() {
+        Fiber<List<Integer>> fib = new Fiber<List<Integer>>("fiber", scheduler, new SuspendableCallable<>() {
             @Override
             public List<Integer> run() throws SuspendExecution, InterruptedException {
                 final List<Integer> list = new ArrayList<>();
@@ -1361,6 +1366,6 @@ public class TransformingChannelTest {
         ch.close();
 
         List<Integer> list = fib.get();
-        assertThat(list, equalTo(Arrays.asList(new Integer[]{1, 2, 3, 4, 5})));
+        assertThat(list).isEqualTo(Arrays.asList(1, 2, 3, 4, 5));
     }
 }

@@ -9,13 +9,10 @@ import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 
 import java.net.URL;
-import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Map;
 
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.getBestClassLoader;
-import static co.paralleluniverse.fibers.instrument.MethodDatabase.JRT_PROTOCOL;
-import static java.security.AccessController.doPrivileged;
 
 /**
  * This class is not used directly because {@link ClassLoader#getSystemClassLoader()}
@@ -32,16 +29,8 @@ public final class BundleLocator {
     }
 
     private static ClassLoader findResourceOwner(ClassLoader cl, String resourceName, URL resource) {
-        return doPrivileged((PrivilegedAction<? extends ClassLoader>)() -> findResourceBundle(cl, resourceName, resource));
-    }
-
-    private static ClassLoader findResourceBundle(ClassLoader cl, String resourceName, URL resource) {
         if (resource != null) {
-            final String protocol = resource.getProtocol();
-            if (JRT_PROTOCOL.equals(protocol)) {
-                // This resource is from the Java runtime base image.
-                return ClassLoader.getPlatformClassLoader();
-            } else if (BUNDLE_PROTOCOL.equals(protocol) && (cl instanceof BundleReference)) {
+            if (BUNDLE_PROTOCOL.equals(resource.getProtocol()) && (cl instanceof BundleReference)) {
                 final Bundle bundle = ((BundleReference) cl).getBundle();
                 final BundleWiring wiring = new WiringView(resourceName, resource).getBundleWiring(bundle);
                 if (wiring != null) {

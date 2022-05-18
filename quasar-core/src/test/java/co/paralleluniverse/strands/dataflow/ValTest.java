@@ -20,15 +20,12 @@ import co.paralleluniverse.strands.Strand;
 import co.paralleluniverse.strands.SuspendableCallable;
 import co.paralleluniverse.strands.SuspendableRunnable;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  *
@@ -76,8 +73,8 @@ public class ValTest {
 
         t1.join();
 
-        assertThat(res.get(), equalTo("yes!"));
-        assertThat(val.get(), equalTo("yes!"));
+        assertThat(res.get()).isEqualTo("yes!");
+        assertThat(val.get()).isEqualTo("yes!");
     }
 
     @Test
@@ -98,8 +95,8 @@ public class ValTest {
 
         f1.join();
 
-        assertThat(f1.get(), equalTo("yes!"));
-        assertThat(val.get(), equalTo("yes!"));
+        assertThat(f1.get()).isEqualTo("yes!");
+        assertThat(val.get()).isEqualTo("yes!");
     }
 
     @Test
@@ -136,9 +133,9 @@ public class ValTest {
         t1.join();
         f1.join();
 
-        assertThat(f1.get(), equalTo("yes!"));
-        assertThat(res.get(), equalTo("yes!"));
-        assertThat(val.get(), equalTo("yes!"));
+        assertThat(f1.get()).isEqualTo("yes!");
+        assertThat(res.get()).isEqualTo("yes!");
+        assertThat(val.get()).isEqualTo("yes!");
     }
 
     @Test
@@ -182,9 +179,9 @@ public class ValTest {
         t1.join();
         f1.join();
 
-        assertThat(f1.get(), equalTo(13));
-        assertThat(res.get(), equalTo(40));
-        assertThat(myRes, is(3));
+        assertThat(f1.get()).isEqualTo(13);
+        assertThat(res.get()).isEqualTo(40);
+        assertThat(myRes).isEqualTo(3);
 
         f2.join();
     }
@@ -228,7 +225,7 @@ public class ValTest {
         val1.set(1);
 
         int myRes = val4.get();
-        assertThat(myRes, is(5));
+        assertThat(myRes).isEqualTo(5);
 
         t1.join();
         f1.join();
