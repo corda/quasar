@@ -33,12 +33,10 @@ package co.paralleluniverse.common.resource;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.net.URLConnection;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
@@ -192,16 +190,6 @@ public final class ClassLoaderUtil {
             } catch (IOException ignored) {
             }
         }
-    }
-
-    public static InputStream getResourceAsStream(ClassLoader cl, String resource) throws IOException {
-        final URL url = cl.getResource(resource);
-        if (url == null) {
-            return null;
-        }
-        final URLConnection uc = url.openConnection();
-        uc.setUseCaches(false);
-        return uc.getInputStream();
     }
 
     /**

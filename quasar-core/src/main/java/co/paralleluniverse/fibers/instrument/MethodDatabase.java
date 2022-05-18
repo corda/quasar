@@ -50,7 +50,6 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.net.URL;
-import java.net.URLConnection;
 import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.HashMap;
@@ -395,9 +394,7 @@ public final class MethodDatabase {
     private InputStream privilegedOpenInputStream(URL resource) {
         return doPrivileged((PrivilegedAction<InputStream>)() -> {
             try {
-                final URLConnection uc = resource.openConnection();
-                uc.setUseCaches(false);
-                return uc.getInputStream();
+                return resource.openStream();
             } catch(IOException e) {
                 final String message = "While opening " + resource;
                 error(message, e);
