@@ -17,9 +17,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.List;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
 import org.apache.tools.ant.Task;
@@ -28,7 +26,8 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.ModuleVisitor;
-import org.objectweb.asm.Opcodes;
+
+import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 
 /**
  * <p>
@@ -50,9 +49,6 @@ public class ModuleFilterTask extends Task {
     @Override
     public void execute() throws BuildException {
         try {
-            final List<URL> urls = new ArrayList<>();
-
-
             for (FileSet fs : filesets) {
                 final DirectoryScanner ds = fs.getDirectoryScanner(getProject());
                 final String[] includedFiles = ds.getIncludedFiles();
@@ -76,14 +72,14 @@ public class ModuleFilterTask extends Task {
 
     private void filter(File file) {
         try {
-            ClassWriter cw = null;
+            ClassWriter cw;
             try (FileInputStream fis = new FileInputStream(file)) {
                 ClassReader cr = new ClassReader(fis);
                 cw = new ClassWriter(cr, 0);
-                cr.accept(new ClassVisitor(Opcodes.ASM7, cw) {
+                cr.accept(new ClassVisitor(ASMAPI, cw) {
                     @Override
                     public ModuleVisitor visitModule(String name, int access, String version) {
-                        return new ModuleVisitor(Opcodes.ASM7, super.visitModule(name, access, version)) {
+                        return new ModuleVisitor(api, super.visitModule(name, access, version)) {
                             @Override
                             public void visitRequire(String module, int access, String version) {
                                 if (!module.contains(mod)) {

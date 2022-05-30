@@ -18,7 +18,7 @@ import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToSlashed
 import static org.objectweb.asm.ClassReader.SKIP_FRAMES;
 
 public final class ASMUtil {
-    public static final int ASMAPI = Opcodes.ASM7;
+    public static final int ASMAPI = Opcodes.ASM9;
 
     public static void findMethod(
         Class<?> clazz,
