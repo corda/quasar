@@ -12,7 +12,7 @@
     --add-opens, 'java.base/java.net=ALL-UNNAMED'
 -runpath: \
     com.esotericsoftware.reflectasm;version=${project.reflectAsmVersion},\
-    org.objectweb.asm;version=${project.asmVer}
+    org.objectweb.asm;version=${project.asmVersion}
 -runsystempackages: \
     co.paralleluniverse.fibers.instrument;version=${project.quasarOsgiVersion},\
     co.paralleluniverse.fibers.suspend;version=${project.quasarOsgiVersion},\
