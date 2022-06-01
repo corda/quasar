@@ -79,16 +79,17 @@ import java.util.TreeMap;
 public final class MethodDatabase {
     private static final String JAVA_OBJECT = "java/lang/Object";
     private static final List<String> JDK_JAVAX_PACKAGES = unmodifiableList(asList(
-        "accessibility/", "annotation/",
-        "crypto", "imageio/",
-        "lang/", "management/",
-        "naming/", "net/",
-        "print/", "rmi/",
-        "script/", "security/",
-        "smartcardio/", "sound/",
-        "sql/", "swing/",
-        "tools/", "transaction/",
-        "xml/"
+        "accessibility/", "activation/",
+        "activity/", "annotation/",
+        "crypto/", "imageio/",
+        "jws/", "lang/",
+        "management/", "naming/",
+        "net/", "print/",
+        "rmi/", "script/",
+        "security/", "smartcardio/",
+        "sound/", "sql/",
+        "swing/", "tools/",
+        "transaction/", "xml/"
     ));
 
     private final WeakReference<ClassLoader> clRef;
