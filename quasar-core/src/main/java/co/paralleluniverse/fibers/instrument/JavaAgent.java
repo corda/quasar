@@ -81,15 +81,12 @@ import org.objectweb.asm.MethodVisitor;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
-import java.lang.ref.WeakReference;
 import java.security.ProtectionDomain;
-import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 import static co.paralleluniverse.fibers.instrument.Classes.FIBER_CLASS_NAME;
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
+import static java.security.AccessController.doPrivileged;
 
 /*
  * @author pron
@@ -99,7 +96,6 @@ import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 public class JavaAgent {
     private static final String USAGE = "Usage: vdmcbx(exclusion;...)l(exclusion;...) (verbose, debug, allow monitors, check class, allow blocking)";
     private static volatile boolean ACTIVE;
-    private static final Set<WeakReference<ClassLoader>> classLoaders = Collections.newSetFromMap(new ConcurrentHashMap<WeakReference<ClassLoader>, Boolean>());
 
     public static void premain(String agentArguments, Instrumentation instrumentation) {
         if (!instrumentation.isRetransformClassesSupported()) {
@@ -196,7 +192,6 @@ public class JavaAgent {
 
         Retransform.instrumentation = instrumentation;
         Retransform.instrumentor = instrumentor;
-        Retransform.classLoaders = classLoaders;
 
         instrumentation.addTransformer(new Transformer(instrumentor), true);
     }
@@ -219,10 +214,7 @@ public class JavaAgent {
         @Override
         public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
             if (loader == null) {
-                loader = Thread.currentThread().getContextClassLoader();
-                if (loader == null) {
-                    loader = ClassLoader.getSystemClassLoader();
-                }
+                loader = doPrivileged(new GetExtensionClassLoader());
             }
 
             if (!instrumentor.shouldInstrument(loader)) {
@@ -236,8 +228,6 @@ public class JavaAgent {
                 return null;
 
             Retransform.beforeTransform(className, classBeingRedefined, classfileBuffer);
-
-            classLoaders.add(new WeakReference<>(loader));
 
             try {
                 final byte[] transformed = instrumentor.instrumentClass(loader, className, classfileBuffer);

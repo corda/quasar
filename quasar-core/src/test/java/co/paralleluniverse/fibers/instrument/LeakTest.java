@@ -18,13 +18,12 @@ import co.paralleluniverse.fibers.Stack;
 import co.paralleluniverse.fibers.SuspendExecution;
 import co.paralleluniverse.fibers.TestsHelper;
 import co.paralleluniverse.strands.SuspendableRunnable;
-import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * See bug #282 (https://github.com/puniverse/quasar/issues/282)
@@ -34,7 +33,7 @@ public class LeakTest implements SuspendableRunnable {
     private static volatile String leaked = "leaked";
     @Test
     public void leaky() throws Exception {
-        Fiber co = new Fiber((String)null, null, this);
+        Fiber<?> co = new Fiber<>((String)null, null, this);
         
         leaked = "leaked";
         
@@ -49,7 +48,7 @@ public class LeakTest implements SuspendableRunnable {
         List<Object> stack = Arrays.asList((Object[])objectsField.get(stackField.get(co)));
         
 //        System.out.println(stack);
-        assertThat(stack, not(hasItem(leaked)));
+        assertThat(stack).doesNotContain(leaked);
 //        assertThat(stack, everyItem(nullValue()));
         
 //        WeakReference<String> ref = new WeakReference<>(leaked);

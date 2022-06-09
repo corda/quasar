@@ -33,17 +33,28 @@ package co.paralleluniverse.common.resource;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.PrivilegedAction;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+
+import static java.security.AccessController.doPrivileged;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.unmodifiableSet;
 
 /**
  *
@@ -54,10 +65,19 @@ public final class ClassLoaderUtil {
         void visit(String resource, URL url, ClassLoader cl) throws IOException;
     }
 
+    private static final String MODULE_INFO_CLASS = "module-info.class";
     private static final String CLASS_FILE_NAME_EXTENSION = ".class";
+    private static final String JAR_PROTOCOL = "jar";
 
     public static boolean isClassFile(String resourceName) {
-        return resourceName.endsWith(CLASS_FILE_NAME_EXTENSION);
+        return resourceName.endsWith(CLASS_FILE_NAME_EXTENSION) && !isModuleInfoClass(resourceName);
+    }
+
+    private static boolean isModuleInfoClass(String resourceName) {
+        final int modInfoLength = MODULE_INFO_CLASS.length();
+        final int resourceLength = resourceName.length();
+        return resourceName.endsWith(MODULE_INFO_CLASS)
+            && (resourceLength == modInfoLength || resourceName.charAt(resourceLength - modInfoLength - 1) == '/');
     }
 
     public static String classToResource(String className) {
@@ -194,26 +214,124 @@ public final class ClassLoaderUtil {
      * @return {@code loader}'s remotest parent that can still find {@code target}.
      */
     public static ClassLoader getBestClassLoader(ClassLoader loader, String resourceName, URL target) {
-        final ClassLoader extensionClassLoader = ClassLoader.getSystemClassLoader().getParent();
-        final ClassLoader bootstrapClassLoader = extensionClassLoader.getParent();
-        ClassLoader current = loader;
-        for (;;) {
-            ClassLoader next = current.getParent();
-            if (next == bootstrapClassLoader) {
-                if (current == extensionClassLoader) {
-                    break;
-                }
-                next = extensionClassLoader;
-            }
+        final ClassLoader bestCl = new BestLookup(resourceName, target).lookup(loader);
+        return (bestCl == null) ? loader : bestCl;
+    }
 
-            final URL resource = next.getResource(resourceName);
-            if (!target.equals(resource)) {
-                break;
-            }
-
-            current = next;
+    private static String getUnderlyingURL(URL url) {
+        if (JAR_PROTOCOL.equals(url.getProtocol())) {
+            // This is probably (but not necessarily) a file:/ URL.
+            final String file = url.getFile();
+            return file.substring(0, file.indexOf("!/"));
+        } else {
+            return url.toString();
         }
-        return current;
+    }
+
+    /**
+     * Worker class for {@link #getBestClassLoader(ClassLoader, String, URL)}.
+     * We need to search from the bootstrap classloader upwards in order to
+     * mirror how {@link ClassLoader#getResource(String)} works.
+     *
+     * We are expected already to be running with the correct security context.
+     */
+    private static final class BestLookup {
+        private static final Set<String> BOOT_CLASS_PATH = doPrivileged(new GetBootClassPath());
+
+        private final String resourceName;
+        private final URL target;
+        private final Predicate<String> underlyingMatcher;
+        private final ClassLoader extensionClassLoader;
+        private final ClassLoader bootstrapClassLoader;
+
+        BestLookup(String resourceName, URL resource) {
+            this.resourceName = resourceName;
+            this.target = resource;
+            String underlyingURL = getUnderlyingURL(target);
+            this.underlyingMatcher = underlyingURL.endsWith(CLASS_FILE_NAME_EXTENSION)
+                ? new IsEqualOrContains(underlyingURL) : new IsEqual(underlyingURL);
+            this.extensionClassLoader = ClassLoader.getSystemClassLoader().getParent();
+            this.bootstrapClassLoader = extensionClassLoader.getParent();
+        }
+
+        private static final class IsEqualOrContains implements Predicate<String> {
+            private final String underlyingURL;
+
+            IsEqualOrContains(String underlyingURL) {
+                this.underlyingURL = underlyingURL;
+            }
+
+            @Override
+            public boolean test(String url) {
+                return underlyingURL.equals(url) || (url.endsWith("/") && underlyingURL.startsWith(url));
+            }
+        }
+
+        private static final class IsEqual implements Predicate<String> {
+            private final String underlyingURL;
+
+            IsEqual(String underlyingURL) {
+                this.underlyingURL = underlyingURL;
+            }
+
+            @Override
+            public boolean test(String url) {
+                return underlyingURL.equals(url);
+            }
+        }
+
+        ClassLoader lookup(ClassLoader current) {
+            if (current == bootstrapClassLoader) {
+                if (BOOT_CLASS_PATH.isEmpty()) {
+                    // Fall-back strategy if sun.boot.class.path property unavailable.
+                    // This checks both the extension and bootstrap classloaders, but
+                    // we are hoping never to reach here in practice.
+                    final URL url = extensionClassLoader.getResource(resourceName);
+                    if (target.equals(url)) {
+                        return extensionClassLoader;
+                    }
+                } else if (isTargetFrom(BOOT_CLASS_PATH)) {
+                    // We are conflating the bootstrap and extension
+                    // classloaders as far as Quasar is concerned.
+                    return extensionClassLoader;
+                }
+            } else {
+                final ClassLoader candidate = lookup(current.getParent());
+                if (candidate != null) {
+                    return candidate;
+                }
+
+                if (current instanceof URLClassLoader) {
+                    // Important optimisation, because invoking getResource() is not cheap!
+                    // This also works for the application and extension classloaders on Java 8.
+                    if (isTargetFrom(((URLClassLoader) current).getURLs())) {
+                        return current;
+                    }
+                } else if (target.equals(current.getResource(resourceName))) {
+                    return current;
+                }
+            }
+            return null;
+        }
+
+        private boolean isTargetFrom(URL[] urls) {
+            for (URL url : urls) {
+                if (underlyingMatcher.test(url.toString())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @SuppressWarnings("SameParameterValue")
+        private boolean isTargetFrom(Iterable<String> paths) {
+            for (String path : paths) {
+                if (underlyingMatcher.test(path)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     /**
@@ -258,6 +376,37 @@ public final class ClassLoaderUtil {
             return uri;
         else
             return new File(jarFile.getParentFile(), path.replace('/', File.separatorChar)).toURI();
+    }
+
+    /**
+     * Computes the URLs that the bootstrap classloader would use, if it
+     * were an instance of {@link URLClassLoader}. Note that the
+     * sun.boot.class.path system property is technically an undocumented
+     * implementation detail, and so we cannot be sure it will exist.
+     */
+    private static class GetBootClassPath implements PrivilegedAction<Set<String>> {
+        @Override
+        public Set<String> run() {
+            final String bootClassPath = System.getProperty("sun.boot.class.path");
+            if (bootClassPath == null || bootClassPath.isEmpty()) {
+                return emptySet();
+            }
+
+            try {
+                final String[] elements = bootClassPath.split(File.pathSeparator);
+                final Set<String> bootPath = new LinkedHashSet<>();
+                for (String element : elements) {
+                    final Path path = Paths.get(element);
+                    if (Files.exists(path)) {
+                        bootPath.add(path.toUri().toURL().toString());
+                    }
+                }
+                return unmodifiableSet(bootPath);
+            } catch (MalformedURLException e) {
+                System.err.println("[quasar] ERROR: Invalid sun.boot.class.path property - " + e.getMessage());
+                return emptySet();
+            }
+        }
     }
 
     private ClassLoaderUtil() {
