@@ -24,16 +24,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  *
@@ -172,7 +169,7 @@ public class FiberAsyncTest {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 String res = callService(syncService);
-                assertThat(res, equalTo("sync result!"));
+                assertThat(res).isEqualTo("sync result!");
             }
         }).start();
 
@@ -188,7 +185,7 @@ public class FiberAsyncTest {
                     String res = callService(badSyncService);
                     fail();
                 } catch (Exception e) {
-                    assertThat(e.getMessage(), equalTo("sync exception!"));
+                    assertThat(e.getMessage()).isEqualTo("sync exception!");
                 }
             }
         }).start();
@@ -202,7 +199,7 @@ public class FiberAsyncTest {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 String res = callService(asyncService);
-                assertThat(res, equalTo("async result!"));
+                assertThat(res).isEqualTo("async result!");
             }
         }).start();
 
@@ -218,7 +215,7 @@ public class FiberAsyncTest {
                     String res = callService(badAsyncService);
                     fail();
                 } catch (Exception e) {
-                    assertThat(e.getMessage(), equalTo("async exception!"));
+                    assertThat(e.getMessage()).isEqualTo("async exception!");
                 }
             }
         }).start();
@@ -242,7 +239,7 @@ public class FiberAsyncTest {
                     }.run();
                     fail();
                 } catch (Exception e) {
-                    assertThat(e.getMessage(), equalTo("requestAsync exception!"));
+                    assertThat(e.getMessage()).isEqualTo("requestAsync exception!");
                 }
             }
         }).start();
@@ -257,7 +254,7 @@ public class FiberAsyncTest {
             public void run() throws SuspendExecution, InterruptedException {
                 try {
                     String res = callService(asyncService, 50, TimeUnit.MILLISECONDS);
-                    assertThat(res, equalTo("async result!"));
+                    assertThat(res).isEqualTo("async result!");
                 } catch (TimeoutException e) {
                     throw new RuntimeException();
                 }
@@ -353,8 +350,8 @@ public class FiberAsyncTest {
                 fail("InterruptedException not thrown");
         }
         Thread.sleep(100);
-        assertThat(started.get(), is(true));
-        assertThat(interrupted.get(), is(true));
+        assertThat(started.get()).isTrue();
+        assertThat(interrupted.get()).isTrue();
     }
     
     @Test
@@ -368,7 +365,7 @@ public class FiberAsyncTest {
                         return "ok";
                     }
                 });
-                assertThat(res, equalTo("ok"));
+                assertThat(res).isEqualTo("ok");
             }
         }).start();
 
@@ -387,7 +384,7 @@ public class FiberAsyncTest {
                             return "ok";
                         }
                     });
-                    assertThat(res, equalTo("ok"));
+                    assertThat(res).isEqualTo("ok");
                 } catch (TimeoutException e) {
                     fail();
                 }

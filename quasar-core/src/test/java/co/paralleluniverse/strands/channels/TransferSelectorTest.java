@@ -23,10 +23,10 @@ import co.paralleluniverse.strands.Strand;
 import co.paralleluniverse.strands.SuspendableRunnable;
 import co.paralleluniverse.strands.channels.Channels.OverflowPolicy;
 import static co.paralleluniverse.strands.channels.Selector.*;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.concurrent.TimeUnit;
-import static org.hamcrest.CoreMatchers.*;
 import org.junit.After;
-import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -78,7 +78,7 @@ public class TransferSelectorTest {
         final Channel<String> channel2 = newChannel();
         final Channel<String> channel3 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 SelectAction<String> sa1 = select(
@@ -94,10 +94,10 @@ public class TransferSelectorTest {
                         receive(channel3));
                 String m2 = sa2.message();
 
-                assertThat(sa1.index(), is(0));
-                assertThat(m1, equalTo("hello"));
-                assertThat(sa2.index(), is(2));
-                assertThat(m2, equalTo("world!"));
+                assertThat(sa1.index()).isEqualTo(0);
+                assertThat(m1).isEqualTo("hello");
+                assertThat(sa2.index()).isEqualTo(2);
+                assertThat(m2).isEqualTo("world!");
             }
         }).start();
 
@@ -117,7 +117,7 @@ public class TransferSelectorTest {
         final Channel<String> channel2 = newChannel();
         final Channel<String> channel3 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 Strand.sleep(200);
@@ -142,10 +142,10 @@ public class TransferSelectorTest {
                 String m1 = sa1.message();
                 String m2 = sa2.message();
 
-                assertThat(sa1.index(), is(0));
-                assertThat(m1, equalTo("hello"));
-                assertThat(sa2.index(), is(2));
-                assertThat(m2, equalTo("world!"));
+                assertThat(sa1.index()).isEqualTo(0);
+                assertThat(m1).isEqualTo("hello");
+                assertThat(sa2.index()).isEqualTo(2);
+                assertThat(m2).isEqualTo("world!");
             }
         }).start();
 
@@ -161,7 +161,7 @@ public class TransferSelectorTest {
         final Channel<String> channel2 = newChannel();
         final Channel<String> channel3 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 SelectAction<String> sa1 = select(
@@ -177,9 +177,9 @@ public class TransferSelectorTest {
                         receive(channel3));
                 String m2 = sa2.message();
 
-                assertThat(sa1.index(), is(2));
-                assertThat(m1, nullValue());
-                assertThat(m2, nullValue());
+                assertThat(sa1.index()).isEqualTo(2);
+                assertThat(m1).isNull();
+                assertThat(m2).isNull();
             }
         }).start();
 
@@ -195,7 +195,7 @@ public class TransferSelectorTest {
         final Channel<String> channel2 = newChannel();
         final Channel<String> channel3 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 Strand.sleep(200);
@@ -213,9 +213,9 @@ public class TransferSelectorTest {
                         receive(channel3));
                 String m2 = sa2.message();
 
-                assertThat(sa1.index(), is(2));
-                assertThat(m1, nullValue());
-                assertThat(m2, nullValue());
+                assertThat(sa1.index()).isEqualTo(2);
+                assertThat(m1).isNull();
+                assertThat(m2).isNull();
             }
         }).start();
 
@@ -230,7 +230,7 @@ public class TransferSelectorTest {
         final Channel<String> channel2 = newChannel();
         final Channel<String> channel3 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 SelectAction<String> sa1 = select(1, TimeUnit.MILLISECONDS,
@@ -244,9 +244,9 @@ public class TransferSelectorTest {
                         receive(channel3));
                 String m2 = sa2.message();
 
-                assertThat(sa1, is(nullValue()));
-                assertThat(sa2.index(), is(0));
-                assertThat(m2, equalTo("hello"));
+                assertThat(sa1).isNull();
+                assertThat(sa2.index()).isEqualTo(0);
+                assertThat(m2).isEqualTo("hello");
             }
         }).start();
 
@@ -263,7 +263,7 @@ public class TransferSelectorTest {
         final Channel<String> channel2 = newChannel();
         final Channel<String> channel3 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 SelectAction<String> sa1 = select(
@@ -279,9 +279,9 @@ public class TransferSelectorTest {
                         receive(TimeoutChannel.<String>timeout(300, TimeUnit.MILLISECONDS)));
                 String m2 = sa2.message();
 
-                assertThat(sa1.index(), is(3));
-                assertThat(sa2.index(), is(0));
-                assertThat(m2, equalTo("hello"));
+                assertThat(sa1.index()).isEqualTo(3);
+                assertThat(sa2.index()).isEqualTo(0);
+                assertThat(m2).isEqualTo("hello");
             }
         }).start();
 
@@ -298,7 +298,7 @@ public class TransferSelectorTest {
         final Channel<String> channel2 = newChannel();
         final Channel<String> channel3 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 SelectAction<String> sa1 = select(
@@ -311,19 +311,19 @@ public class TransferSelectorTest {
                         send(channel2, "hi2"),
                         send(channel3, "hi3"));
 
-                assertThat(sa1.index(), is(1));
-                assertThat(sa2.index(), is(0));
+                assertThat(sa1.index()).isEqualTo(1);
+                assertThat(sa2.index()).isEqualTo(0);
             }
         }).start();
 
         Thread.sleep(200);
 
         String m1 = channel2.receive();
-        assertThat(m1, equalTo("hi2"));
+        assertThat(m1).isEqualTo("hi2");
 
         Thread.sleep(200);
         String m2 = channel1.receive();
-        assertThat(m2, equalTo("hi1"));
+        assertThat(m2).isEqualTo("hi1");
 
         fib.join();
     }
@@ -334,7 +334,7 @@ public class TransferSelectorTest {
         final Channel<String> channel2 = newChannel();
         final Channel<String> channel3 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 Strand.sleep(200);
@@ -349,16 +349,16 @@ public class TransferSelectorTest {
                         send(channel2, "hi2"),
                         send(channel3, "hi3"));
 
-                assertThat(sa1.index(), is(1));
-                assertThat(sa2.index(), is(0));
+                assertThat(sa1.index()).isEqualTo(1);
+                assertThat(sa2.index()).isEqualTo(0);
             }
         }).start();
 
         String m1 = channel2.receive();
-        assertThat(m1, equalTo("hi2"));
+        assertThat(m1).isEqualTo("hi2");
 
         String m2 = channel1.receive();
-        assertThat(m2, equalTo("hi1"));
+        assertThat(m2).isEqualTo("hi1");
 
         fib.join();
     }
@@ -369,7 +369,7 @@ public class TransferSelectorTest {
         final Channel<String> channel2 = newChannel();
         final Channel<String> channel3 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 SelectAction<String> sa1 = select(
@@ -382,8 +382,8 @@ public class TransferSelectorTest {
                         send(channel2, "hi2"),
                         send(channel3, "hi3"));
 
-                assertThat(sa1.index(), is(1));
-                assertThat(sa2.index(), is(1));
+                assertThat(sa1.index()).isEqualTo(1);
+                assertThat(sa2.index()).isEqualTo(1);
             }
         }).start();
 
@@ -400,7 +400,7 @@ public class TransferSelectorTest {
         final Channel<String> channel2 = newChannel();
         final Channel<String> channel3 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 Strand.sleep(200);
@@ -415,8 +415,8 @@ public class TransferSelectorTest {
                         send(channel2, "hi2"),
                         send(channel3, "hi3"));
 
-                assertThat(sa1.index(), is(1));
-                assertThat(sa2.index(), is(1));
+                assertThat(sa1.index()).isEqualTo(1);
+                assertThat(sa2.index()).isEqualTo(1);
             }
         }).start();
 
@@ -432,7 +432,7 @@ public class TransferSelectorTest {
         final Channel<String> channel2 = newChannel();
         final Channel<String> channel3 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 SelectAction<String> sa1 = select(1, TimeUnit.MILLISECONDS,
@@ -445,8 +445,8 @@ public class TransferSelectorTest {
                         send(channel2, "bye2"),
                         send(channel3, "bye3"));
 
-                assertThat(sa1, is(nullValue()));
-                assertThat(sa2.index(), is(2));
+                assertThat(sa1).isNull();
+                assertThat(sa2.index()).isEqualTo(2);
             }
         }).start();
 
@@ -454,7 +454,7 @@ public class TransferSelectorTest {
 
         String m1 = channel3.receive();
 
-        assertThat(m1, equalTo("bye3")); // the first send is cancelled
+        assertThat(m1).isEqualTo("bye3"); // the first send is cancelled
 
         fib.join();
     }
@@ -465,7 +465,7 @@ public class TransferSelectorTest {
         final Channel<String> channel2 = newChannel();
         final Channel<String> channel3 = newChannel();
 
-        Fiber fib = new Fiber("fiber", scheduler, new SuspendableRunnable() {
+        Fiber<?> fib = new Fiber<>("fiber", scheduler, new SuspendableRunnable() {
             @Override
             public void run() throws SuspendExecution, InterruptedException {
                 SelectAction<String> sa1 = select(
@@ -480,8 +480,8 @@ public class TransferSelectorTest {
                         send(channel3, "bye3"),
                         receive(TimeoutChannel.<String>timeout(300, TimeUnit.MILLISECONDS)));
 
-                assertThat(sa1.index(), is(3));
-                assertThat(sa2.index(), is(2));
+                assertThat(sa1.index()).isEqualTo(3);
+                assertThat(sa2.index()).isEqualTo(2);
             }
         }).start();
 
@@ -489,7 +489,7 @@ public class TransferSelectorTest {
 
         String m1 = channel3.receive();
 
-        assertThat(m1, equalTo("bye3")); // the first send is cancelled
+        assertThat(m1).isEqualTo("bye3"); // the first send is cancelled
 
         fib.join();
     }

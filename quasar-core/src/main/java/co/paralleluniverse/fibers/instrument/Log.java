@@ -33,6 +33,6 @@ package co.paralleluniverse.fibers.instrument;
  */
 public interface Log {
     void log(LogLevel level, String msg, Object ... args);
-    
+
     void error(String msg, Throwable ex);
 }

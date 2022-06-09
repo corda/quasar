@@ -27,8 +27,6 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.After;
@@ -36,6 +34,10 @@ import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -120,11 +122,11 @@ public class PipelineTest {
                 final Integer m2 = o.receive();
                 final Integer m3 = o.receive();
                 final Integer m4 = o.receive();
-                assertThat(m1, notNullValue());
-                assertThat(m2, notNullValue());
-                assertThat(m3, notNullValue());
-                assertThat(m4, notNullValue());
-                assertThat(ImmutableSet.of(m1, m2, m3, m4), equalTo(ImmutableSet.of(2, 3, 4, 5)));
+                assertThat(m1).isNotNull();
+                assertThat(m2).isNotNull();
+                assertThat(m3).isNotNull();
+                assertThat(m4).isNotNull();
+                assertThat(ImmutableSet.of(m1, m2, m3, m4)).isEqualTo(ImmutableSet.of(2, 3, 4, 5));
                 try {
                     pf.join();
                 } catch (ExecutionException ex) {
@@ -144,8 +146,8 @@ public class PipelineTest {
         i.close();
 
         long transferred = pf.get(); // Join pipeline
-        assertThat(transferred, equalTo(p.getTransferred()));
-        assertThat(transferred, equalTo(4l));
+        assertThat(transferred).isEqualTo(p.getTransferred());
+        assertThat(transferred).isEqualTo(4L);
 
         receiver.join();
     }

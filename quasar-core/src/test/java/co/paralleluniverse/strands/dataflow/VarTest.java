@@ -13,8 +13,6 @@
  */
 package co.paralleluniverse.strands.dataflow;
 
-import co.paralleluniverse.common.test.Matchers;
-import static co.paralleluniverse.common.test.Matchers.*;
 import co.paralleluniverse.common.test.TestUtil;
 import co.paralleluniverse.fibers.Fiber;
 import co.paralleluniverse.fibers.suspend.SuspendExecution;
@@ -24,13 +22,10 @@ import co.paralleluniverse.strands.SuspendableRunnable;
 import co.paralleluniverse.strands.channels.Channel;
 import co.paralleluniverse.strands.channels.Channels;
 import static java.util.concurrent.TimeUnit.*;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
@@ -73,8 +68,8 @@ public class VarTest {
 
         t1.join();
 
-        assertThat(res.get(), equalTo("yes!"));
-        assertThat(var.get(), equalTo("yes!"));
+        assertThat(res.get()).isEqualTo("yes!");
+        assertThat(var.get()).isEqualTo("yes!");
     }
 
     @Test
@@ -95,8 +90,8 @@ public class VarTest {
 
         f1.join();
 
-        assertThat(f1.get(), equalTo("yes!"));
-        assertThat(var.get(), equalTo("yes!"));
+        assertThat(f1.get()).isEqualTo("yes!");
+        assertThat(var.get()).isEqualTo("yes!");
     }
 
     @Test
@@ -133,9 +128,9 @@ public class VarTest {
         t1.join();
         f1.join();
 
-        assertThat(f1.get(), equalTo("yes!"));
-        assertThat(res.get(), equalTo("yes!"));
-        assertThat(var.get(), equalTo("yes!"));
+        assertThat(f1.get()).isEqualTo("yes!");
+        assertThat(res.get()).isEqualTo("yes!");
+        assertThat(var.get()).isEqualTo("yes!");
     }
 
     @Test
@@ -167,8 +162,8 @@ public class VarTest {
         for (int i = 0; i < 10; i++)
             var.set(i + 1);
 
-        assertThat(f1.get(), equalTo(55));
-        assertThat(f2.get(), equalTo(55));
+        assertThat(f1.get()).isEqualTo(55);
+        assertThat(f2.get()).isEqualTo(55);
     }
 
     @Test
@@ -199,7 +194,7 @@ public class VarTest {
         for (int i = 0; i < 10; i++)
             var.set(i + 1);
 
-        assertThat(f1.get(), not(equalTo(55)));
+        assertThat(f1.get()).isNotEqualTo(55);
         f2.join();
     }
 
@@ -221,24 +216,24 @@ public class VarTest {
         });
 
         b.set(2);
-        assertThat(ch.receive(50, MILLISECONDS), is(nullValue()));
+        assertThat(ch.receive(50, MILLISECONDS)).isNull();
 
         a.set(1);
-        assertThat(ch.receive(50, MILLISECONDS), is(3));
+        assertThat(ch.receive(50, MILLISECONDS)).isEqualTo(3);
 
-        assertThat(ch.receive(), is(3));
+        assertThat(ch.receive()).isEqualTo(3);
 
-        assertThat(ch.receive(50, MILLISECONDS), is(nullValue()));
+        assertThat(ch.receive(50, MILLISECONDS)).isNull();
 
         a.set(2);
-        assertThat(ch.receive(), is(4));
+        assertThat(ch.receive()).isEqualTo(4);
 
-        assertThat(ch.receive(50, MILLISECONDS), is(nullValue()));
+        assertThat(ch.receive(50, MILLISECONDS)).isNull();
         b.set(3);
-        assertThat(ch.receive(50, MILLISECONDS), is(5));
+        assertThat(ch.receive(50, MILLISECONDS)).isEqualTo(5);
 
-        assertThat(ch.receive(50, MILLISECONDS), is(nullValue()));
+        assertThat(ch.receive(50, MILLISECONDS)).isNull();
         a.set(4);
-        assertThat(ch.receive(50, MILLISECONDS), is(7));
+        assertThat(ch.receive(50, MILLISECONDS)).isEqualTo(7);
     }
 }

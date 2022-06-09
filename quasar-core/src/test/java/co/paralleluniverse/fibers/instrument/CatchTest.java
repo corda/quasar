@@ -89,7 +89,7 @@ public class CatchTest {
         results.clear();
 
         try {
-            Fiber co = new Fiber((String) null, null, new Runnable1());
+            Fiber<?> co = new Fiber<>((String) null, null, new Runnable1());
             exec(co);
             results.add("B");
             exec(co);
@@ -145,7 +145,7 @@ public class CatchTest {
         results.clear();
 
         try {
-            Fiber co = new Fiber((String) null, null, new Callable1());
+            Fiber<?> co = new Fiber<>((String) null, null, new Callable1());
             exec(co);
             results.add("B");
             exec(co);
@@ -167,7 +167,7 @@ public class CatchTest {
     // See #211
     @Test
     public void testParkBeforeCatch() throws ExecutionException, InterruptedException {
-        new Fiber(new SuspendableRunnable() {
+        new Fiber<>(new SuspendableRunnable() {
             @Override
             public final void run() throws SuspendExecution, InterruptedException {
                 catchSuspendable();

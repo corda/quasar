@@ -31,9 +31,9 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.*;
-import static org.hamcrest.CoreMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.After;
-import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -86,12 +86,12 @@ public class FiberAsyncIOTest {
                         // long-typed reqeust/response
                         int n = ch.read(buf);
 
-                        assertThat(n, is(8)); // we assume the message is sent in a single packet
+                        assertThat(n).isEqualTo(8); // we assume the message is sent in a single packet
 
                         buf.flip();
                         long req = buf.getLong();
 
-                        assertThat(req, is(12345678L));
+                        assertThat(req).isEqualTo(12345678L);
 
                         buf.clear();
                         long res = 87654321L;
@@ -100,7 +100,7 @@ public class FiberAsyncIOTest {
 
                         n = ch.write(buf);
 
-                        assertThat(n, is(8));
+                        assertThat(n).isEqualTo(8);
 
                         // String reqeust/response
                         buf.clear();
@@ -109,7 +109,7 @@ public class FiberAsyncIOTest {
                         buf.flip();
                         String req2 = decoder.decode(buf).toString();
 
-                        assertThat(req2, is("my request"));
+                        assertThat(req2).isEqualTo("my request");
 
                         String res2 = "my response";
                         ch.write(encoder.encode(CharBuffer.wrap(res2)));
@@ -140,17 +140,17 @@ public class FiberAsyncIOTest {
 
                     int n = ch.write(buf);
 
-                    assertThat(n, is(8));
+                    assertThat(n).isEqualTo(8);
 
                     buf.clear();
                     n = ch.read(buf);
 
-                    assertThat(n, is(8)); // we assume the message is sent in a single packet
+                    assertThat(n).isEqualTo(8); // we assume the message is sent in a single packet
 
                     buf.flip();
                     long res = buf.getLong();
 
-                    assertThat(res, is(87654321L));
+                    assertThat(res).isEqualTo(87654321L);
 
                     // String reqeust/response
                     String req2 = "my request";
@@ -162,13 +162,13 @@ public class FiberAsyncIOTest {
                     buf.flip();
                     String res2 = decoder.decode(buf).toString();
 
-                    assertThat(res2, is("my response"));
+                    assertThat(res2).isEqualTo("my response");
 
                     // verify that the server has closed the socket
                     buf.clear();
                     n = ch.read(buf);
 
-                    assertThat(n, is(-1));
+                    assertThat(n).isEqualTo(-1);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -196,7 +196,7 @@ public class FiberAsyncIOTest {
                     buf.flip();
                     String read = decoder.decode(buf).toString();
                     
-                    assertThat(read, equalTo(text));
+                    assertThat(read).isEqualTo(text);
                     
                     buf.clear();
                     
@@ -206,7 +206,7 @@ public class FiberAsyncIOTest {
                     buf.flip();
                     read = decoder.decode(buf).toString();
                     
-                    assertThat(read, equalTo(text.substring(5)));
+                    assertThat(read).isEqualTo(text.substring(5));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

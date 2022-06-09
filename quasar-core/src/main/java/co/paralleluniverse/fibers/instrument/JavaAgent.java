@@ -89,6 +89,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
 import java.util.Arrays;
 import java.util.Set;
@@ -97,6 +98,7 @@ import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
+import static java.security.AccessController.doPrivileged;
 
 /*
  * @author pron
@@ -286,10 +288,7 @@ public class JavaAgent {
         @Override
         public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
             if (loader == null) {
-                loader = Thread.currentThread().getContextClassLoader();
-                if (loader == null) {
-                    loader = ClassLoader.getSystemClassLoader();
-                }
+                loader = doPrivileged((PrivilegedAction<ClassLoader>) ClassLoader::getPlatformClassLoader);
             }
 
             if (!instrumentor.shouldInstrument(loader)) {

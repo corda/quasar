@@ -11,6 +11,7 @@ import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToResource;
+import static co.paralleluniverse.common.resource.ClassLoaderUtil.getBestClassLoader;
 import static java.security.AccessController.doPrivileged;
 
 /**
@@ -114,6 +115,10 @@ final class OSGiClassLoader extends ClassLoader {
         }
     }
 
+    private static ClassLoader fallbackFindResourceOwner(ClassLoader loader, String resourceName, URL resource) {
+        return resource == null ? loader : getBestClassLoader(loader, resourceName, resource);
+    }
+
     static synchronized BiPredicate<ClassLoader, Collection<Pattern>> fetchBundleLocationMatcher(ClassLoader cl) {
         if (bundleLocationExcluder == null) {
             bundleLocationExcluder = doPrivileged(
@@ -130,14 +135,14 @@ final class OSGiClassLoader extends ClassLoader {
                 createFindResourceOwner(cl)
             );
         }
-        return findResourceOwner != null ? findResourceOwner : MethodDatabase::getBestClassLoaderFor;
+        return findResourceOwner != null ? findResourceOwner : OSGiClassLoader::fallbackFindResourceOwner;
     }
 
     static synchronized void disable() {
         if (osgiLoader == null) {
             // Only disable OSGi support if it hasn't been activated yet.
             bundleLocationExcluder = FALSE;
-            findResourceOwner = MethodDatabase::getBestClassLoaderFor;
+            findResourceOwner = OSGiClassLoader::fallbackFindResourceOwner;
         }
     }
 }

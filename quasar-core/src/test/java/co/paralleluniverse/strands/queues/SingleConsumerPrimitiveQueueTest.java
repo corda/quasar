@@ -21,14 +21,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Simple, single-threaded tests
@@ -81,10 +83,10 @@ public class SingleConsumerPrimitiveQueueTest {
     }
 
     private void testEmptyQueue(SingleConsumerQueue<?> queue) {
-        assertThat(queue.size(), is(0));
+        assertThat(queue.size()).isEqualTo(0);
         assertTrue(queue.isEmpty());
-        assertThat(queue.peek(), is(nullValue()));
-        assertThat(queue.poll(), is(nullValue()));
+        assertThat(queue.peek()).isNull();
+        assertThat(queue.poll()).isNull();
         try {
             queue.element();
             fail();
@@ -103,18 +105,18 @@ public class SingleConsumerPrimitiveQueueTest {
         wordQueue.offer(2);
         wordQueue.offer(3);
 
-        assertThat(wordQueue.isEmpty(), is(false));
-        assertThat(wordQueue.size(), is(3));
-        assertThat(wordQueue.peek(), is(1));
-        assertThat(list(wordQueue), is(equalTo(list(1, 2, 3))));
+        assertThat(wordQueue.isEmpty()).isFalse();
+        assertThat(wordQueue.size()).isEqualTo(3);
+        assertThat(wordQueue.peek()).isEqualTo(1);
+        assertThat(list(wordQueue)).isEqualTo(list(1, 2, 3));
 
         dwordQueue.offer(1.2);
         dwordQueue.offer(2.3);
         dwordQueue.offer(3.4);
 
-        assertThat(dwordQueue.isEmpty(), is(false));
-        assertThat(dwordQueue.size(), is(3));
-        assertThat(list(dwordQueue), is(equalTo(list(1.2, 2.3, 3.4))));
+        assertThat(dwordQueue.isEmpty()).isFalse();
+        assertThat(dwordQueue.size()).isEqualTo(3);
+        assertThat(list(dwordQueue)).isEqualTo(list(1.2, 2.3, 3.4));
     }
 
     @Test
@@ -125,14 +127,14 @@ public class SingleConsumerPrimitiveQueueTest {
             wordQueue.offer((j++));
             wordQueue.offer((j++));
             Integer s = wordQueue.poll();
-            assertThat(s, equalTo((k++)));
+            assertThat(s).isEqualTo(k++);
         }
-        assertThat(wordQueue.size(), is(8));
-        assertThat(list(wordQueue), is(equalTo(list(9, 10, 11, 12, 13, 14, 15, 16))));
+        assertThat(wordQueue.size()).isEqualTo(8);
+        assertThat(list(wordQueue)).isEqualTo(list(9, 10, 11, 12, 13, 14, 15, 16));
 
         for (int i = 0; i < 8; i++) {
             Integer s = wordQueue.poll();
-            assertThat(s, equalTo((k++)));
+            assertThat(s).isEqualTo(k++);
         }
         testEmptyQueue(wordQueue);
 
@@ -142,14 +144,14 @@ public class SingleConsumerPrimitiveQueueTest {
             dwordQueue.offer(0.1 + (j++));
             dwordQueue.offer(0.1 + (j++));
             Double s = dwordQueue.poll();
-            assertThat(s, equalTo(0.1 + (k++)));
+            assertThat(s).isEqualTo(0.1 + (k++));
         }
-        assertThat(dwordQueue.size(), is(8));
-        assertThat(list(dwordQueue), is(equalTo(list(9.1, 10.1, 11.1, 12.1, 13.1, 14.1, 15.1, 16.1))));
+        assertThat(dwordQueue.size()).isEqualTo(8);
+        assertThat(list(dwordQueue)).isEqualTo(list(9.1, 10.1, 11.1, 12.1, 13.1, 14.1, 15.1, 16.1));
 
         for (int i = 0; i < 8; i++) {
             Double s = dwordQueue.poll();
-            assertThat(s, equalTo(0.1 + (k++)));
+            assertThat(s).isEqualTo(0.1 + (k++));
         }
         testEmptyQueue(dwordQueue);
     }
@@ -168,7 +170,7 @@ public class SingleConsumerPrimitiveQueueTest {
                 it.remove();
         }
 
-        assertThat(list(wordQueue), is(equalTo(list(1, 3, 5, 7, 9))));
+        assertThat(list(wordQueue)).isEqualTo(list(1, 3, 5, 7, 9));
 
         for (int i = 0; i < 4; i++)
             wordQueue.offer((j++));
@@ -180,7 +182,7 @@ public class SingleConsumerPrimitiveQueueTest {
                 it.remove();
         }
 
-        assertThat(list(wordQueue), is(equalTo(list(3, 7, 10, 12))));
+        assertThat(list(wordQueue)).isEqualTo(list(3, 7, 10, 12));
 
         j = 1;
         k = 1;
@@ -194,7 +196,7 @@ public class SingleConsumerPrimitiveQueueTest {
                 it.remove();
         }
 
-        assertThat(list(dwordQueue), is(equalTo(list(1.1, 3.1, 5.1, 7.1, 9.1))));
+        assertThat(list(dwordQueue)).isEqualTo(list(1.1, 3.1, 5.1, 7.1, 9.1));
 
         for (int i = 0; i < 4; i++)
             dwordQueue.offer(0.1 + (j++));
@@ -206,7 +208,7 @@ public class SingleConsumerPrimitiveQueueTest {
                 it.remove();
         }
 
-        assertThat(list(dwordQueue), is(equalTo(list(3.1, 7.1, 10.1, 12.1))));
+        assertThat(list(dwordQueue)).isEqualTo(list(3.1, 7.1, 10.1, 12.1));
     }
 
     @Test
@@ -223,8 +225,8 @@ public class SingleConsumerPrimitiveQueueTest {
             it.next();
             it.remove();
 
-            assertThat(wordQueue.size(), is(2));
-            assertThat(list(wordQueue), is(equalTo(list(3, 4))));
+            assertThat(wordQueue.size()).isEqualTo(2);
+            assertThat(list(wordQueue)).isEqualTo(list(3, 4));
 
             wordQueue.offer(5);
             wordQueue.offer(6);
@@ -234,8 +236,8 @@ public class SingleConsumerPrimitiveQueueTest {
             it.next();
             it.remove();
 
-            assertThat(wordQueue.size(), is(2));
-            assertThat(list(wordQueue), is(equalTo(list(5, 6))));
+            assertThat(wordQueue.size()).isEqualTo(2);
+            assertThat(list(wordQueue)).isEqualTo(list(5, 6));
         }
 
         {
@@ -250,8 +252,8 @@ public class SingleConsumerPrimitiveQueueTest {
             it.next();
             it.remove();
 
-            assertThat(dwordQueue.size(), is(2));
-            assertThat(list(dwordQueue), is(equalTo(list(3.4, 4.5))));
+            assertThat(dwordQueue.size()).isEqualTo(2);
+            assertThat(list(dwordQueue)).isEqualTo(list(3.4, 4.5));
 
             dwordQueue.offer(5.6);
             dwordQueue.offer(6.7);
@@ -261,8 +263,8 @@ public class SingleConsumerPrimitiveQueueTest {
             it.next();
             it.remove();
 
-            assertThat(dwordQueue.size(), is(2));
-            assertThat(list(dwordQueue), is(equalTo(list(5.6, 6.7))));
+            assertThat(dwordQueue.size()).isEqualTo(2);
+            assertThat(list(dwordQueue)).isEqualTo(list(5.6, 6.7));
         }
     }
 
@@ -284,8 +286,8 @@ public class SingleConsumerPrimitiveQueueTest {
                 it.next();
             it.remove();
 
-            assertThat(wordQueue.size(), is(2));
-            assertThat(list(wordQueue), is(equalTo(list(1, 2))));
+            assertThat(wordQueue.size()).isEqualTo(2);
+            assertThat(list(wordQueue)).isEqualTo(list(1, 2));
 
             wordQueue.offer(5);
             wordQueue.offer(6);
@@ -300,8 +302,8 @@ public class SingleConsumerPrimitiveQueueTest {
                 it.next();
             it.remove();
 
-            assertThat(wordQueue.size(), is(2));
-            assertThat(list(wordQueue), is(equalTo(list(1, 2))));
+            assertThat(wordQueue.size()).isEqualTo(2);
+            assertThat(list(wordQueue)).isEqualTo(list(1, 2));
         }
 
         {
@@ -320,8 +322,8 @@ public class SingleConsumerPrimitiveQueueTest {
                 it.next();
             it.remove();
 
-            assertThat(dwordQueue.size(), is(2));
-            assertThat(list(dwordQueue), is(equalTo(list(1.2, 2.3))));
+            assertThat(dwordQueue.size()).isEqualTo(2);
+            assertThat(list(dwordQueue)).isEqualTo(list(1.2, 2.3));
 
             dwordQueue.offer(5.6);
             dwordQueue.offer(6.7);
@@ -336,8 +338,8 @@ public class SingleConsumerPrimitiveQueueTest {
                 it.next();
             it.remove();
 
-            assertThat(dwordQueue.size(), is(2));
-            assertThat(list(dwordQueue), is(equalTo(list(1.2, 2.3))));
+            assertThat(dwordQueue.size()).isEqualTo(2);
+            assertThat(list(dwordQueue)).isEqualTo(list(1.2, 2.3));
         }
     }
 
@@ -352,8 +354,8 @@ public class SingleConsumerPrimitiveQueueTest {
             testEmptyQueue(wordQueue);
 
             wordQueue.offer(1);
-            assertThat(wordQueue.size(), is(1));
-            assertThat(list(wordQueue), is(equalTo(list(1))));
+            assertThat(wordQueue.size()).isEqualTo(1);
+            assertThat(list(wordQueue)).isEqualTo(list(1));
 
             it = wordQueue.iterator();
             it.next();
@@ -362,8 +364,8 @@ public class SingleConsumerPrimitiveQueueTest {
             testEmptyQueue(wordQueue);
 
             wordQueue.offer(1);
-            assertThat(wordQueue.size(), is(1));
-            assertThat(list(wordQueue), is(equalTo(list(1))));
+            assertThat(wordQueue.size()).isEqualTo(1);
+            assertThat(list(wordQueue)).isEqualTo(list(1));
         }
 
         {
@@ -375,8 +377,8 @@ public class SingleConsumerPrimitiveQueueTest {
             testEmptyQueue(dwordQueue);
 
             dwordQueue.offer(1.2);
-            assertThat(dwordQueue.size(), is(1));
-            assertThat(list(dwordQueue), is(equalTo(list(1.2))));
+            assertThat(dwordQueue.size()).isEqualTo(1);
+            assertThat(list(dwordQueue)).isEqualTo(list(1.2));
 
             it = dwordQueue.iterator();
             it.next();
@@ -385,8 +387,8 @@ public class SingleConsumerPrimitiveQueueTest {
             testEmptyQueue(dwordQueue);
 
             dwordQueue.offer(1.2);
-            assertThat(dwordQueue.size(), is(1));
-            assertThat(list(dwordQueue), is(equalTo(list(1.2))));
+            assertThat(dwordQueue.size()).isEqualTo(1);
+            assertThat(list(dwordQueue)).isEqualTo(list(1.2));
         }
     }
 
