@@ -37,7 +37,6 @@ import org.objectweb.asm.ClassWriter;
  * @author Matthias Mann
  */
 class DBClassWriter extends ClassWriter {
-
     private final MethodDatabase db;
 
     DBClassWriter(MethodDatabase db, ClassReader classReader) {
@@ -47,6 +46,15 @@ class DBClassWriter extends ClassWriter {
 
     @Override
     protected String getCommonSuperClass(String type1, String type2) {
-        return db.getCommonSuperClass(type1, type2);
+        final String commonSuperClass = db.getCommonSuperClass(type1, type2);
+
+        // ASM does not expect ClassWriter.getCommonSuperClass() to return null.
+        // However, we cannot safely assume that we can return java.lang.Object
+        // if it does, e.g. finding a common Throwable type inside a catch block.
+        // Abort instrumenting this class rather than risk generating broken code.
+        if (commonSuperClass == null) {
+            throw new IllegalStateException("Cannot determine common super class of [" + type1 + ',' + type2 + ']');
+        }
+        return commonSuperClass;
     }
 }
