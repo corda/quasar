@@ -808,7 +808,7 @@ configure(publishedProjects) { subproject ->
 
 artifactory {
     publish {
-        contextUrl = 'https://software.r3.com/artifactory'
+        contextUrl = artifactoryContextUrl
         repository {
             repoKey = System.getenv('CORDA_ARTIFACTORY_REPOKEY') ?: 'corda-dependencies-dev'
             username = project.findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME') ?: System.getProperty('corda.artifactory.username')

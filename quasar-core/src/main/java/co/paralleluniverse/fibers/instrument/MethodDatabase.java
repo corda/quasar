@@ -57,6 +57,7 @@ import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -340,24 +341,23 @@ public final class MethodDatabase {
         if (JAVA_OBJECT.equals(classA) || JAVA_OBJECT.equals(classB)) {
             return JAVA_OBJECT;
         }
-        final List<String> listA = getSuperClasses(classA);
-        final List<String> listB = getSuperClasses(classB);
+        final Deque<String> listA = getSuperClasses(classA);
+        final Deque<String> listB = getSuperClasses(classB);
         if (listA == null || listB == null) {
             return null;
         }
-        final int num = Math.min(listA.size(), listB.size());
-        int idx = 0;
-        for (; idx < num; idx++) {
-            final String superClassA = listA.get(idx);
-            final String superClassB = listB.get(idx);
+        String commonSuperClass = JAVA_OBJECT;
+        int count = Math.min(listA.size(), listB.size());
+        while (count > 0) {
+            final String superClassA = listA.removeFirst();
+            final String superClassB = listB.removeFirst();
             if (!superClassA.equals(superClassB)) {
                 break;
             }
+            commonSuperClass = superClassA;
+            --count;
         }
-        if (idx > 0) {
-            return listA.get(idx - 1);
-        }
-        return null;
+        return commonSuperClass;
     }
 
     public boolean isException(final String className) {
@@ -420,8 +420,8 @@ public final class MethodDatabase {
         }
     }
 
-    private List<String> getSuperClasses(final String className) {
-        final LinkedList<String> result = new LinkedList<>();
+    private Deque<String> getSuperClasses(final String className) {
+        final Deque<String> result = new LinkedList<>();
         String currentClassName = className;
         MethodDatabase currentDB = this;
         for (;;) {
