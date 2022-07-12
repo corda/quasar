@@ -98,16 +98,17 @@ final class FiberHelper {
                     for (String callsite : callsites) {
                         if (callsite.endsWith(nameAndDescSuffix)) {
                             final String ownerName = getCallsiteOwner(callsite);
-                            Class<?> callsiteOwner;
-                            try {
-                                callsiteOwner = Class.forName(ownerName, true, Thread.currentThread().getContextClassLoader());
-                            } catch (ClassNotFoundException e) {
+                            final Class<?> callsiteOwner = doPrivileged((PrivilegedAction<Class<?>>)() -> {
                                 try {
-                                    callsiteOwner = Class.forName(ownerName, true, FiberHelper.class.getClassLoader());
-                                } catch (ClassNotFoundException e2) {
-                                    callsiteOwner = null;
+                                    return Class.forName(ownerName, true, Thread.currentThread().getContextClassLoader());
+                                } catch (ClassNotFoundException e) {
+                                    try {
+                                        return Class.forName(ownerName, true, FiberHelper.class.getClassLoader());
+                                    } catch (ClassNotFoundException e2) {
+                                        return null;
+                                    }
                                 }
-                            }
+                            });
                             if (callsiteOwner != null) {
                                 final Class<?> owner = callee.getDeclaringClass();
                                 if (doPrivileged(new DeclareInCommonAncestor(nameAndDescSuffix, owner, callsiteOwner))) {
