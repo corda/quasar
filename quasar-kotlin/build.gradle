@@ -58,8 +58,8 @@ tasks.named('check') {
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     kotlinOptions {
         jvmTarget = '11'
-        apiVersion = '1.6'
-        languageVersion = '1.6'
+        apiVersion = '1.7'
+        languageVersion = '1.7'
         allWarningsAsErrors = true
         // We need to enable this, but must watch for compiler warnings about
         // abstract methods in the base class not having an implementation!
