@@ -14,8 +14,8 @@
 package co.paralleluniverse.fibers;
 
 import co.paralleluniverse.common.monitoring.MonitorType;
+import co.paralleluniverse.common.util.ThreadFactoryBuilder;
 import co.paralleluniverse.strands.Strand;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;

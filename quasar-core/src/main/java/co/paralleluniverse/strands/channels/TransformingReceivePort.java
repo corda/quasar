@@ -18,8 +18,8 @@ import co.paralleluniverse.fibers.FiberFactory;
 import co.paralleluniverse.fibers.suspend.SuspendExecution;
 import co.paralleluniverse.strands.SuspendableAction1;
 import co.paralleluniverse.strands.SuspendableAction2;
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A {@link ReceivePort} with additional functional-transform operations, usually wrapping a plain {@link ReceivePort}.

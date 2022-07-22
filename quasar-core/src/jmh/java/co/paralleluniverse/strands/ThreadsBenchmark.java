@@ -13,7 +13,7 @@
  */
 package co.paralleluniverse.strands;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import co.paralleluniverse.common.util.ThreadFactoryBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;

@@ -47,12 +47,12 @@ import co.paralleluniverse.strands.queues.SingleConsumerLinkedArrayFloatQueue;
 import co.paralleluniverse.strands.queues.SingleConsumerLinkedArrayIntQueue;
 import co.paralleluniverse.strands.queues.SingleConsumerLinkedArrayLongQueue;
 import co.paralleluniverse.strands.queues.SingleConsumerLinkedArrayObjectQueue;
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A utility class for creating and manipulating channels.

@@ -13,18 +13,12 @@
  */
 package co.paralleluniverse.strands;
 
-import co.paralleluniverse.common.reflection.GetAccessDeclaredMethod;
 import co.paralleluniverse.fibers.Fiber;
 import co.paralleluniverse.fibers.FiberFactory;
 import co.paralleluniverse.fibers.FiberScheduler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.security.PrivilegedActionException;
+import java.util.Objects;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.security.AccessController.doPrivileged;
 
 /**
  * Easily creates {@code StrandFactory}s.
@@ -41,7 +35,7 @@ public class StrandFactoryBuilder {
      * Converts a {@link ThreadFactory} into a {@link StrandFactory}.
      */
     public static StrandFactory from(final ThreadFactory tf) {
-        checkNotNull(tf);
+        Objects.requireNonNull(tf);
         return new StrandFactory() {
             @Override
             public Strand newStrand(SuspendableCallable<?> target) {
@@ -54,7 +48,7 @@ public class StrandFactoryBuilder {
      * Converts a {@link FiberFactory} into a {@link StrandFactory}.
      */
     public static StrandFactory from(final FiberFactory ff) {
-        checkNotNull(ff);
+        Objects.requireNonNull(ff);
         return new StrandFactory() {
             @Override
             public Strand newStrand(SuspendableCallable<?> target) {
@@ -190,5 +184,11 @@ public class StrandFactoryBuilder {
                 return s;
             }
         };
+    }
+
+    private static void checkArgument(boolean condition, String fmt, Object... fmtArgs) {
+        if (!condition) {
+            throw new IllegalArgumentException(String.format(fmt, fmtArgs));
+        }
     }
 }

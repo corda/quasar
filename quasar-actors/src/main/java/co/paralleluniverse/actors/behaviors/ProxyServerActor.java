@@ -24,7 +24,6 @@ import co.paralleluniverse.fibers.Suspendable;
 import co.paralleluniverse.fibers.suspend.RuntimeSuspendExecution;
 import co.paralleluniverse.fibers.suspend.SuspendExecution;
 import co.paralleluniverse.strands.Strand;
-import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -280,7 +279,7 @@ public class ProxyServerActor extends ServerActor<ProxyServerActor.Invocation, O
     private static final ObjectProxyServerImpl handler2 = new ObjectProxyServerImpl(false);
 
     private static Class<? extends Server> getProxyClass(Class<?>[] interfaces, boolean callOnVoidMethods) {
-        final Pair<Set<Class<?>>, Boolean> key = new Pair(ImmutableSet.copyOf(interfaces), callOnVoidMethods);
+        final Pair<Set<Class<?>>, Boolean> key = new Pair(Set.of(interfaces), callOnVoidMethods);
         Class<? extends Server> clazz = classes.get(key);
         if (clazz == null) {
             clazz = new ByteBuddy() // http://bytebuddy.net/

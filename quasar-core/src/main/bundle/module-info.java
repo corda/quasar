@@ -3,7 +3,6 @@ module co.paralleluniverse.quasar.core.osgi {
     requires jdk.unsupported; // needed for ThreadAccess and ExtendedStackTraceHotSpot
 
     requires transitive co.paralleluniverse.quasar.core.agent;
-    requires com.google.common;
 
     // These are "automatic" module names, so keep them hidden!
     requires static kryo;

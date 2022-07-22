@@ -13,10 +13,10 @@
  */
 package co.paralleluniverse.strands.queues;
 
-import com.google.common.collect.Lists;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -25,9 +25,9 @@ import java.util.List;
  */
 abstract class SingleConsumerLinkedQueue<E> extends SingleConsumerQueue<E> {
     private static final boolean DUMMY_NODE_ALGORITHM = false;
-    volatile Node head;
+    volatile Node<E> head;
     volatile Object p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, p011, p012, p013, p014, p015;
-    volatile Node tail;
+    volatile Node<E> tail;
 
     @SuppressWarnings("OverridableMethodCallInConstructor")
     public SingleConsumerLinkedQueue() {
@@ -59,10 +59,10 @@ abstract class SingleConsumerLinkedQueue<E> extends SingleConsumerQueue<E> {
 
     abstract E value(Node<E> node);
 
-    abstract Node newNode();
+    abstract Node<E> newNode();
 
     boolean enq(final Node<E> node) {
-        Node t;
+        Node<E> t;
         do {
             t = tail;
             node.prev = t;
@@ -82,7 +82,7 @@ abstract class SingleConsumerLinkedQueue<E> extends SingleConsumerQueue<E> {
             orderedSetHead(node); // head = node;
             clearPrev(node);
         } else {
-            Node h = node.next;
+            Node<E> h = node.next;
             if (h == null) {
                 orderedSetHead(null); // head = null; // Based on John M. Mellor-Crummey, "Concurrent Queues: Practical Fetch-and-phi Algorithms", 1987
                 if (tail == node && compareAndSetTail(node, null)) { // a concurrent enq would either cause this to fail and wait for node.next, or have this succeed and then set tail and head
@@ -107,14 +107,14 @@ abstract class SingleConsumerLinkedQueue<E> extends SingleConsumerQueue<E> {
                 return null;
 
             for (;;) {
-                Node h;
+                Node<E> h;
                 if ((h = head) != null)
                     return h;
             }
         }
     }
 
-    boolean isHead(Node node) {
+    boolean isHead(Node<E> node) {
         if (DUMMY_NODE_ALGORITHM)
             return node.prev == head;
         else
@@ -128,7 +128,7 @@ abstract class SingleConsumerLinkedQueue<E> extends SingleConsumerQueue<E> {
         if (tail == node)
             return null; // an enq following this will test the lock again
 
-        Node succ;
+        Node<E> succ;
         while ((succ = node.next) == null); // wait for next
         return succ;
     }
@@ -142,9 +142,9 @@ abstract class SingleConsumerLinkedQueue<E> extends SingleConsumerQueue<E> {
 
         clearValue(node);
 
-        final Node prev = node.prev;
+        final Node<E> prev = node.prev;
         prev.next = null;
-        final Node t = tail;
+        final Node<E> t = tail;
         if (t != node || !compareAndSetTail(t, node.prev)) {
             // neither head nor tail
             while (node.next == null); // wait for next
@@ -165,7 +165,7 @@ abstract class SingleConsumerLinkedQueue<E> extends SingleConsumerQueue<E> {
     @Override
     public int size() {
         int n = 0;
-        for (Node p = tail; p != null; p = p.prev) {
+        for (Node<E> p = tail; p != null; p = p.prev) {
             if (DUMMY_NODE_ALGORITHM) {
                 if (p.prev == null)
                     break;
@@ -204,20 +204,20 @@ abstract class SingleConsumerLinkedQueue<E> extends SingleConsumerQueue<E> {
 
     @Override
     public List<E> snapshot() {
-        final ArrayList<E> list = new ArrayList<E>();
-        for (Node p = tail; p != null; p = p.prev) {
+        final LinkedList<E> list = new LinkedList<>();
+        for (Node<E> p = tail; p != null; p = p.prev) {
             if (DUMMY_NODE_ALGORITHM) {
                 if (p.prev == null)
                     break;
             }
-            list.add((E) value(p));
+            list.addFirst(value(p));
         }
-        return Lists.reverse(list);
+        return new ArrayList<>(list);
     }
 
     public static class Node<E> {
-        volatile Node next;
-        volatile Node prev;
+        volatile Node<E> next;
+        volatile Node<E> prev;
     }
 
     @Override
@@ -280,34 +280,34 @@ abstract class SingleConsumerLinkedQueue<E> extends SingleConsumerQueue<E> {
     /**
      * CAS head field. Used only by enq.
      */
-    boolean compareAndSetHead(Node update) {
+    boolean compareAndSetHead(Node<E> update) {
         return HEAD.compareAndSet(this, null, update);
     }
 
-    void orderedSetHead(Node value) {
+    void orderedSetHead(Node<E> value) {
         HEAD.setOpaque(this, value); // UNSAFE.putOrderedObject(this, headOffset, value);
     }
 
     /**
      * CAS tail field. Used only by enq.
      */
-    boolean compareAndSetTail(Node expect, Node update) {
+    boolean compareAndSetTail(Node<E> expect, Node<E> update) {
         return TAIL.compareAndSet(this, expect, update);
     }
 
-    static boolean compareAndSetNext(Node node, Node expect, Node update) {
+    static boolean compareAndSetNext(Node<?> node, Node<?> expect, Node<?> update) {
         return NEXT.compareAndSet(node, expect, update);
     }
 
-    private static void clearNext(Node node) {
+    private static void clearNext(Node<?> node) {
         NEXT.setOpaque(node, null);
     }
 
-    private static void clearPrev(Node node) {
+    private static void clearPrev(Node<?> node) {
         PREV.setOpaque(node, null);
     }
     
-    abstract void clearValue(Node node);
+    abstract void clearValue(Node<?> node);
         
 //    static final Unsafe UNSAFE = UtilUnsafe.getUnsafe();
 //    private static final long headOffset;

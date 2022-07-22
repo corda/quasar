@@ -16,6 +16,7 @@ module co.paralleluniverse.quasar.actors {
     requires jdk.unsupported; // needed for sun.reflect.ReflectionFactory in InstanceUpgrader
 
     requires transitive co.paralleluniverse.quasar.core;
+    requires com.google.common;
     requires org.slf4j;
     requires static net.bytebuddy;
 

@@ -17,7 +17,7 @@ import co.paralleluniverse.concurrent.util.MapUtil;
 import co.paralleluniverse.fibers.Suspendable;
 import co.paralleluniverse.fibers.suspend.SuspendExecution;
 import co.paralleluniverse.strands.concurrent.ReentrantLock;
-import com.google.common.base.Objects;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -46,7 +46,7 @@ class LocalActorRegistry extends co.paralleluniverse.actors.spi.ActorRegistry {
         lock.lock();
         try {
             final ActorRef<?> old = registeredActors.get(name);
-            if (old != null && Objects.equal(old, actorRef))
+            if (old != null && Objects.equals(old, actorRef))
                 return;
 
             if (old != null && LocalActor.isLocal(old) && !LocalActor.isDone(old))

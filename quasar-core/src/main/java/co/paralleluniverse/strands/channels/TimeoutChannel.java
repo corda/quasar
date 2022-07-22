@@ -13,8 +13,8 @@
  */
 package co.paralleluniverse.strands.channels;
 
+import co.paralleluniverse.common.util.ThreadFactoryBuilder;
 import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 

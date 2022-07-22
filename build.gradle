@@ -119,10 +119,6 @@ subprojects {
         implementation "io.dropwizard.metrics:metrics-core:$drpWizVer"
         implementation "io.dropwizard.metrics:metrics-jmx:$drpWizVer"
         provided "org.apache.ant:ant:1.10.5"
-        implementation ("com.google.guava:guava:$guavaVer") {
-            exclude group: 'com.google.errorprone', module: '*'
-            exclude group: 'org.checkerframework', module: 'checker-qual'
-        }
         timewarp 'co.paralleluniverse:timewarp:0.2.0-SNAPSHOT'
         testImplementation 'junit:junit:4.13.2'
         testImplementation "org.assertj:assertj-core:$assertjVersion"
@@ -135,8 +131,12 @@ subprojects {
             exclude group: "org.ow2.asm", module: '*'
             exclude group: "net.bytebuddy", module: '*'
         }
-        testRuntimeOnly "net.bytebuddy:byte-buddy:1.9.2" // for Mockito
         testImplementation "org.ow2.asm:asm:$asmVersion"
+        testRuntimeOnly "net.bytebuddy:byte-buddy:1.9.2" // for Mockito
+        testRuntimeOnly("com.google.guava:guava:$guavaVer") {
+            exclude group: 'com.google.errorprone', module: '*'
+            exclude group: 'org.checkerframework', module: 'checker-qual'
+        }
 
         jmhImplementation 'org.openjdk.jmh:jmh-core:1.21'
         jmhImplementation 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
@@ -732,6 +732,10 @@ project (':quasar-actors') {
         // compile 'org.mutabilitydetector:MutabilityDetector:0.9.2'
         implementation "org.slf4j:slf4j-api:$slf4jVer"
         implementation "net.bytebuddy:byte-buddy:1.9.2"
+        implementation ("com.google.guava:guava:$guavaVer") {
+            exclude group: 'com.google.errorprone', module: '*'
+            exclude group: 'org.checkerframework', module: 'checker-qual'
+        }
 
         testImplementation project(path: ':quasar-core', configuration: 'testArtifacts')
         testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:2.11.1"

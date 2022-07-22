@@ -14,7 +14,6 @@ package co.paralleluniverse.data.record;
 
 import co.paralleluniverse.actors.MutabilityTester;
 import co.paralleluniverse.concurrent.util.MapUtil;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
@@ -784,7 +783,7 @@ public class RecordType<R> implements SealedRecordType<R> {
     private void seal() {
         if (!sealed) {
             this.sealed = true;
-            this.fieldSet = (Set) ImmutableSet.copyOf(fields);
+            this.fieldSet = Set.copyOf(fields);
             this.offsets = new int[fields.size()];
             for (Field<?, ?> field : fields) {
                 final int offset;
@@ -881,7 +880,7 @@ public class RecordType<R> implements SealedRecordType<R> {
                     table[field.id()] = new Entry(f, getter, setter, getterHandle, setterHandle, offset, accessor, indexed);
                 }
 
-                this.fieldSet = (Set) ImmutableSet.copyOf(implementedFields);
+                this.fieldSet = Set.copyOf(implementedFields);
             } catch (RuntimeException e) {
                 throw e;
             } catch (Exception e) {
