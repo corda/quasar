@@ -100,9 +100,8 @@ public final class QuasarInstrumentor {
     }
 
     boolean shouldInstrument(ClassLoader loader) {
-        return loader != null
-            && !isExcludedClassLoader(loader.getClass().getName())
-            && !isExcludedClassLoader(loader);
+        return (loader == null) ||
+            (!isExcludedClassLoader(loader.getClass().getName()) && !isExcludedClassLoader(loader));
     }
 
     boolean shouldInstrument(String className) {
