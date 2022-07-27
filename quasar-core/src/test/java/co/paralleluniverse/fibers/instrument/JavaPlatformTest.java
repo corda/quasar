@@ -79,7 +79,6 @@ public class JavaPlatformTest {
     }
 
     private static boolean isJDKClass(String className) {
-        // The Azul JDK contains some extra "platform" modules, so allow these.
-        return MethodDatabase.isJDK(classToSlashed(className)) || className.startsWith("com.azul.");
+        return MethodDatabase.isJDK(classToSlashed(className));
     }
 }

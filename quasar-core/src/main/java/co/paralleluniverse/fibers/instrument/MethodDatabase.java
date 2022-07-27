@@ -62,6 +62,7 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 import static java.security.AccessController.doPrivileged;
@@ -95,6 +96,12 @@ public final class MethodDatabase {
         "jcp/xml/",
         "ietf/jgss/"
     );
+
+    private static final Predicate<String> isJDK;
+    static {
+        final String vendor = doPrivileged((PrivilegedAction<String>)() -> System.getProperty("java.vendor"));
+        isJDK = (vendor != null) && vendor.startsWith("Azul ") ? MethodDatabase::isAzulJDK : MethodDatabase::isBaseJDK;
+    }
 
     private final WeakReference<ClassLoader> clRef;
     private final SuspendableClassifier classifier;
@@ -537,6 +544,10 @@ public final class MethodDatabase {
     }
 
     public static boolean isJDK(String className) {
+        return isJDK.test(className);
+    }
+
+    private static boolean isBaseJDK(String className) {
         return className.startsWith("java/")
                || isJavaxInternal(className)
                || className.startsWith("sun/")
@@ -560,6 +571,10 @@ public final class MethodDatabase {
         }
         final String classSubName = className.substring("org/".length());
         return JDK_ORG_PACKAGES.stream().anyMatch(classSubName::startsWith);
+    }
+
+    private static boolean isAzulJDK(String className) {
+        return isBaseJDK(className) || className.startsWith("com/azul/");
     }
 
     public static boolean isProblematicClass(String className) {
