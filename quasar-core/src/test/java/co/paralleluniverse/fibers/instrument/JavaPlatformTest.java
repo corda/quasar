@@ -12,10 +12,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.stream.Collectors;
 
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToSlashed;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
@@ -33,7 +33,7 @@ public class JavaPlatformTest {
             .filter(p -> p.endsWith(".class"))
             .map(p -> p.substring(0, p.length() - ".class".length()))
             .filter(p -> !"module-info".equals(p))
-            .collect(Collectors.toUnmodifiableSet());
+            .collect(toUnmodifiableSet());
 
         // Check that we correctly identify these classes as belonging to the JDK.
         assertThat(classNames)

@@ -18,6 +18,11 @@ subprojects {
     java {
         toolchain {
             languageVersion = of(11)
+
+            // Configure Gradle to use IBM J9 JDK toolchain.
+            // (You will need to install J9 manually first.)
+            //vendor = JvmVendorSpec.IBM
+            //implementation = JvmImplementation.J9
         }
         withSourcesJar()
         withJavadocJar()

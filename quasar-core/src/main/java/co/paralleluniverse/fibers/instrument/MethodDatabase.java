@@ -49,9 +49,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.PrivilegedAction;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,12 +65,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.Predicate;
 
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 import static java.security.AccessController.doPrivileged;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 
 /**
  * <p>
@@ -89,7 +96,7 @@ public final class MethodDatabase {
         "sql/", "swing/",
         "tools/", "transaction/xa/",
         "xml/"
-   );
+    );
     private static final List<String> JDK_ORG_PACKAGES = List.of(
         "w3c/dom/",
         "xml/sax/",
@@ -97,10 +104,33 @@ public final class MethodDatabase {
         "ietf/jgss/"
     );
 
-    private static final Predicate<String> isJDK;
+    private static final String JRT_MODULES = "modules";
+    private static final String JRT_FS = "jrt:/";
+
+    private static final Set<String> JDK_CUSTOM_PACKAGES;
     static {
-        final String vendor = doPrivileged((PrivilegedAction<String>)() -> System.getProperty("java.vendor"));
-        isJDK = (vendor != null) && vendor.startsWith("Azul ") ? MethodDatabase::isAzulJDK : MethodDatabase::isBaseJDK;
+        final FileSystem jrt = FileSystems.getFileSystem(URI.create(JRT_FS));
+        try {
+            // We MUST initialise this BEFORE we install our ClassFileTransformer.
+            // Identify all modules belonging to the JDK installation itself.
+            // This is a subset of the modules inside ModuleLayer.boot().
+            JDK_CUSTOM_PACKAGES = Files.walk(jrt.getPath(JRT_MODULES))
+                .filter(p -> p.getNameCount() == 2)
+                .map(MethodDatabase::findModule)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .flatMap(m -> m.getPackages().stream())
+                .map(p -> p.replace('.', '/') + '/')
+                .filter(p -> !isBaseJDK(p))
+                .collect(toUnmodifiableSet());
+        } catch (IOException e) {
+            throw new InternalError(e.getMessage(), e);
+        }
+    }
+
+    private static Optional<Module> findModule(Path p) {
+        final String moduleName = p.getName(1).toString();
+        return ModuleLayer.boot().findModule(moduleName);
     }
 
     private final WeakReference<ClassLoader> clRef;
@@ -332,7 +362,7 @@ public final class MethodDatabase {
                     map.put(entry.getKey(), entry.getValue());
                 }
             }
-            return Collections.unmodifiableMap(map);
+            return unmodifiableMap(map);
         }
     }
 
@@ -544,7 +574,7 @@ public final class MethodDatabase {
     }
 
     public static boolean isJDK(String className) {
-        return isJDK.test(className);
+        return isBaseJDK(className) || (!JDK_CUSTOM_PACKAGES.isEmpty() && hasAnyPrefix(className, JDK_CUSTOM_PACKAGES));
     }
 
     private static boolean isBaseJDK(String className) {
@@ -562,7 +592,7 @@ public final class MethodDatabase {
             return false;
         }
         final String classSubName = className.substring("javax/".length());
-        return JDK_JAVAX_PACKAGES.stream().anyMatch(classSubName::startsWith);
+        return hasAnyPrefix(classSubName, JDK_JAVAX_PACKAGES);
     }
 
     private static boolean isOrgInternal(String className) {
@@ -570,11 +600,11 @@ public final class MethodDatabase {
             return false;
         }
         final String classSubName = className.substring("org/".length());
-        return JDK_ORG_PACKAGES.stream().anyMatch(classSubName::startsWith);
+        return hasAnyPrefix(classSubName, JDK_ORG_PACKAGES);
     }
 
-    private static boolean isAzulJDK(String className) {
-        return isBaseJDK(className) || className.startsWith("com/azul/");
+    private static boolean hasAnyPrefix(String className, Collection<String> prefixes) {
+        return prefixes.stream().anyMatch(className::startsWith);
     }
 
     public static boolean isProblematicClass(String className) {
