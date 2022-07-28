@@ -221,11 +221,11 @@ public class JavaAgent {
         // CORDA-3666: Access Classes now so we don't deadlock while
         // loading it later.
         //
-        // We are calling isYieldMethod for the side effect of the JVM
-        // running Classes.<clinit>. We expect this call to return
-        // true.
-        // Prints "Classes ready: true"
-        instrumentor.log(LogLevel.DEBUG, "Classes ready: %s", Classes.isYieldMethod(Classes.FIBER_CLASS_NAME, "park"));
+        // We are calling isJDK(THROWABLE_NAME) for the side effect of the JVM
+        // running both MethodDatabase.<clinit> and Classes.<clinit>. We expect
+        // this call to return true.
+        // Prints "MethodDatabase, Classes ready: true"
+        instrumentor.log(LogLevel.DEBUG, "MethodDatabase, Classes ready: %s", MethodDatabase.isJDK(Classes.THROWABLE_NAME));
 
         Retransform.instrumentation = instrumentation;
         Retransform.instrumentor = instrumentor;
