@@ -431,6 +431,7 @@ public class ActorTest {
         assertEquals(res[1], "hello");
         assertEquals(res[0], emr.get().watch);
         assertEquals(a.ref(), emr.get().actor);
+        assertThat(a.getDeathCause()).isExactlyInstanceOf(InterruptedException.class);
         assertThat(emr.get().cause).isExactlyInstanceOf(InterruptedException.class);
     }
 
