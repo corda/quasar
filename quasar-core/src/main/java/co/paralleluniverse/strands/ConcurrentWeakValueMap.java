@@ -70,8 +70,7 @@ final class ConcurrentWeakValueMap<K, V> implements ConcurrentMap<K, V> {
     @Override
     public V getOrDefault(Object key, V defaultValue) {
         requireNonNull(defaultValue, "defaultValue cannot be null");
-        final V value;
-        return ((value = get(key)) != null) ? value : defaultValue;
+        return ConcurrentMap.super.getOrDefault(key, defaultValue);
     }
 
     @Override
