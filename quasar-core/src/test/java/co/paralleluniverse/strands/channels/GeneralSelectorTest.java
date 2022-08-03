@@ -88,6 +88,7 @@ public class GeneralSelectorTest {
                     {-1, OverflowPolicy.THROW, true, false},
                     {5, OverflowPolicy.DISPLACE, true, false},
                     {5, OverflowPolicy.DROP, true, false},
+                    {-1, OverflowPolicy.BLOCK, true, false}, // This is Corda 4's use-case
                     {0, OverflowPolicy.BLOCK, false, false},});
     }
 
@@ -157,28 +158,28 @@ public class GeneralSelectorTest {
         return chan;
     }
 
-    @Test
+    @Test(timeout = 60_000)
     public void testFans1() throws Exception {
         int nchans = 3;
         int n = 200;
 
         final Channel<Integer> out = newChannel();
         final Channel<Integer> in = fanin(fanout(out, nchans));
-
-        for (int i = 0; i < n; i++) {
-            //System.out.println("send: " + i);
-            out.send(i);
-            //System.out.println("receiving");
-            Integer x = in.receive();
-            //System.out.println("receied " + x);
-            assertThat(x).isEqualTo(i);
+        try (out) {
+            for (int i = 0; i < n; i++) {
+                //System.out.println("send: " + i);
+                out.send(i);
+                //System.out.println("receiving");
+                Integer x = in.receive();
+                //System.out.println("received " + x);
+                assertThat(x).isEqualTo(i);
+            }
         }
-        out.close();
         assertThat(in.receive()).isNull();
         assertThat(in.isClosed()).isTrue();
     }
 
-    @Test
+    @Test(timeout = 60_000)
     public void testFans2() throws Exception {
         assumeThat(mailboxSize, is(1));
         int nchans = 10;
@@ -186,23 +187,21 @@ public class GeneralSelectorTest {
 
         final Channel<Integer> out = newChannel();
         final Channel<Integer> in = fanin(fanout(out, nchans));
+        try (out) {
+            for (int i = 0; i < n; i++) {
+                out.send(i);
+            }
 
-        for (int i = 0; i < n; i++) {
-            out.send(i);
+            Thread.sleep(500);
+
+            boolean[] ms = new boolean[n];
+            for (int i = 0; i < n; i++) {
+                Integer m = in.receive();
+                ms[m] = true;
+            }
+            for (int i = 0; i < n; i++)
+                assertThat(ms[i]).isTrue();
         }
-
-        Thread.sleep(500);
-
-        boolean[] ms = new boolean[n];
-        for (int i = 0; i < n; i++) {
-            Integer m = in.receive();
-            ms[m] = true;
-        }
-        for (int i = 0; i < n; i++)
-            assertThat(ms[i]).isTrue();
-
-
-        out.close();
         assertThat(in.receive()).isNull();
         assertThat(in.isClosed()).isTrue();
     }

@@ -47,12 +47,12 @@ import co.paralleluniverse.strands.queues.SingleConsumerLinkedArrayFloatQueue;
 import co.paralleluniverse.strands.queues.SingleConsumerLinkedArrayIntQueue;
 import co.paralleluniverse.strands.queues.SingleConsumerLinkedArrayLongQueue;
 import co.paralleluniverse.strands.queues.SingleConsumerLinkedArrayObjectQueue;
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A utility class for creating and manipulating channels.
@@ -135,7 +135,7 @@ public final class Channels {
         else
             queue = new ArrayQueue<>(bufferSize);
 
-        return new QueueObjectChannel(queue, policy, singleProducer, singleConsumer);
+        return new QueueObjectChannel<>(queue, policy, singleProducer, singleConsumer);
     }
 
     /**
@@ -148,7 +148,7 @@ public final class Channels {
      *                   {@code -1} for a channel with an unbounded (infinite) buffer.
      * @param policy     the {@link OverflowPolicy} specifying how the channel (if bounded) will behave if its internal buffer overflows.
      * @return The newly created channel
-     * @see #newChannel(int, co.paralleluniverse.strands.channels.Channels.OverflowPolicy, boolean, boolean)
+     * @see #newChannel(int, OverflowPolicy, boolean, boolean)
      */
     public static <Message> Channel<Message> newChannel(int bufferSize, OverflowPolicy policy) {
         return newChannel(bufferSize, policy, defaultSingleProducer, defaultSingleConsumer);
@@ -164,7 +164,7 @@ public final class Channels {
      *                   {@code 0} for a <i>transfer</i> channel, i.e. a channel with no internal buffer.
      *                   {@code -1} for a channel with an unbounded (infinite) buffer.
      * @return The newly created channel
-     * @see #newChannel(int, co.paralleluniverse.strands.channels.Channels.OverflowPolicy, boolean, boolean)
+     * @see #newChannel(int, OverflowPolicy, boolean, boolean)
      */
     public static <Message> Channel<Message> newChannel(int bufferSize) {
         return newChannel(bufferSize, bufferSize == 0 ? OverflowPolicy.BLOCK : defaultPolicy);
@@ -215,7 +215,7 @@ public final class Channels {
      *                   {@code -1} for a channel with an unbounded (infinite) buffer.
      * @param policy     the {@link OverflowPolicy} specifying how the channel (if bounded) will behave if its internal buffer overflows.
      * @return The newly created channel
-     * @see #newIntChannel(int, co.paralleluniverse.strands.channels.Channels.OverflowPolicy, boolean, boolean)
+     * @see #newIntChannel(int, OverflowPolicy, boolean, boolean)
      */
     public static IntChannel newIntChannel(int bufferSize, OverflowPolicy policy) {
         return newIntChannel(bufferSize, policy, defaultSingleProducer, defaultSingleConsumer);
@@ -230,7 +230,7 @@ public final class Channels {
      *                   {@code 0} for a <i>transfer</i> channel, i.e. a channel with no internal buffer.
      *                   {@code -1} for a channel with an unbounded (infinite) buffer.
      * @return The newly created channel
-     * @see #newIntChannel(int, co.paralleluniverse.strands.channels.Channels.OverflowPolicy, boolean, boolean)
+     * @see #newIntChannel(int, OverflowPolicy, boolean, boolean)
      */
     public static IntChannel newIntChannel(int bufferSize) {
         return newIntChannel(bufferSize, defaultPolicy);
@@ -282,7 +282,7 @@ public final class Channels {
      *                   {@code -1} for a channel with an unbounded (infinite) buffer.
      * @param policy     the {@link OverflowPolicy} specifying how the channel (if bounded) will behave if its internal buffer overflows.
      * @return The newly created channel
-     * @see #newLongChannel(int, co.paralleluniverse.strands.channels.Channels.OverflowPolicy, boolean, boolean)
+     * @see #newLongChannel(int, OverflowPolicy, boolean, boolean)
      */
     public static LongChannel newLongChannel(int bufferSize, OverflowPolicy policy) {
         return newLongChannel(bufferSize, policy, defaultSingleProducer, defaultSingleConsumer);
@@ -297,7 +297,7 @@ public final class Channels {
      *                   {@code 0} for a <i>transfer</i> channel, i.e. a channel with no internal buffer.
      *                   {@code -1} for a channel with an unbounded (infinite) buffer.
      * @return The newly created channel
-     * @see #newLongChannel(int, co.paralleluniverse.strands.channels.Channels.OverflowPolicy, boolean, boolean)
+     * @see #newLongChannel(int, OverflowPolicy, boolean, boolean)
      */
     public static LongChannel newLongChannel(int bufferSize) {
         return newLongChannel(bufferSize, defaultPolicy);
@@ -349,7 +349,7 @@ public final class Channels {
      *                   {@code -1} for a channel with an unbounded (infinite) buffer.
      * @param policy     the {@link OverflowPolicy} specifying how the channel (if bounded) will behave if its internal buffer overflows.
      * @return The newly created channel
-     * @see #newFloatChannel(int, co.paralleluniverse.strands.channels.Channels.OverflowPolicy, boolean, boolean)
+     * @see #newFloatChannel(int, OverflowPolicy, boolean, boolean)
      */
     public static FloatChannel newFloatChannel(int bufferSize, OverflowPolicy policy) {
         return newFloatChannel(bufferSize, policy, defaultSingleProducer, defaultSingleConsumer);
@@ -364,7 +364,7 @@ public final class Channels {
      *                   {@code 0} for a <i>transfer</i> channel, i.e. a channel with no internal buffer.
      *                   {@code -1} for a channel with an unbounded (infinite) buffer.
      * @return The newly created channel
-     * @see #newFloatChannel(int, co.paralleluniverse.strands.channels.Channels.OverflowPolicy, boolean, boolean)
+     * @see #newFloatChannel(int, OverflowPolicy, boolean, boolean)
      */
     public static FloatChannel newFloatChannel(int bufferSize) {
         return newFloatChannel(bufferSize, defaultPolicy);
@@ -416,7 +416,7 @@ public final class Channels {
      *                   {@code -1} for a channel with an unbounded (infinite) buffer.
      * @param policy     the {@link OverflowPolicy} specifying how the channel (if bounded) will behave if its internal buffer overflows.
      * @return The newly created channel
-     * @see #newDoubleChannel(int, co.paralleluniverse.strands.channels.Channels.OverflowPolicy, boolean, boolean)
+     * @see #newDoubleChannel(int, OverflowPolicy, boolean, boolean)
      */
     public static DoubleChannel newDoubleChannel(int bufferSize, OverflowPolicy policy) {
         return newDoubleChannel(bufferSize, policy, defaultSingleProducer, defaultSingleConsumer);
@@ -431,7 +431,7 @@ public final class Channels {
      *                   {@code 0} for a <i>transfer</i> channel, i.e. a channel with no internal buffer.
      *                   {@code -1} for a channel with an unbounded (infinite) buffer.
      * @return The newly created channel
-     * @see #newDoubleChannel(int, co.paralleluniverse.strands.channels.Channels.OverflowPolicy, boolean, boolean)
+     * @see #newDoubleChannel(int, OverflowPolicy, boolean, boolean)
      */
     public static DoubleChannel newDoubleChannel(int bufferSize) {
         return newDoubleChannel(bufferSize, defaultPolicy);
@@ -447,7 +447,7 @@ public final class Channels {
      */
     public static boolean isTickerChannel(ReceivePort<?> channel) {
         return channel instanceof QueueChannel 
-                && ((QueueChannel)channel).overflowPolicy == OverflowPolicy.DISPLACE && ((QueueChannel)channel).capacity() > 0;
+                && ((QueueChannel<?>)channel).overflowPolicy == OverflowPolicy.DISPLACE && ((QueueChannel<?>)channel).capacity() > 0;
     }
     /**
      * Creates a {@link ReceivePort} that can be used to receive messages from a a <i>ticker channel</i>:
@@ -568,6 +568,7 @@ public final class Channels {
      * @param channels the receive ports
      * @return a {@link ReceivePort} that receives messages from {@code channels}.
      */
+    @SafeVarargs
     public static <M> ReceivePort<M> group(ReceivePort<? super M>... channels) {
         return new ReceivePortGroup<>(channels);
     }
@@ -592,6 +593,7 @@ public final class Channels {
      * @param channels the receive ports
      * @return a {@link ReceivePort} that receives messages from {@code channels}.
      */
+    @SafeVarargs
     public static <M> Mix<? super M> mix(final ReceivePort<? super M>... channels) {
         return new ReceivePortGroup<>(channels);
     }
@@ -1056,7 +1058,7 @@ public final class Channels {
     private Channels() {
     }
 
-    private static final ReceivePort EMPTY_RECEIVE_PORT = new ReceivePort() {
+    private static final ReceivePort<?> EMPTY_RECEIVE_PORT = new ReceivePort<>() {
 
         @Override
         public Object receive() {

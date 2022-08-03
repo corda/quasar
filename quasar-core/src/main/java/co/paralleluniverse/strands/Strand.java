@@ -32,12 +32,7 @@ import java.util.concurrent.locks.LockSupport;
  */
 public abstract class Strand {
     public static Strand of(Object owner) {
-        if (owner instanceof Strand)
-            return (Strand) owner;
-//        if (owner instanceof Fiber)
-//            return (Fiber) owner;
-        else
-            return of((Thread) owner);
+        return (owner instanceof Strand) ? (Strand) owner : of((Thread) owner);
     }
 
     /**
@@ -49,7 +44,7 @@ public abstract class Strand {
 
     /**
      * Returns a strand representing the given fiber.
-     * The current implementation simply returns the fiber itself as {@code Fiber} extends {@code Fiber}.
+     * The current implementation simply returns the fiber itself as {@code Fiber} extends {@code Strand}.
      */
     public static Strand of(Fiber fiber) {
         return fiber;
@@ -73,7 +68,7 @@ public abstract class Strand {
     /**
      * A strand's running state
      */
-    public static enum State {
+    public enum State {
         /**
          * Strand created but not started
          */
@@ -970,10 +965,10 @@ public abstract class Strand {
         void uncaughtException(Strand f, Throwable e);
     }
 
-    protected static ThreadLocal<Strand> currentStrand = new ThreadLocal<Strand>();
+    protected static ThreadLocal<Strand> currentStrand = new ThreadLocal<>();
 
     private static final class ThreadStrand extends Strand {
-        private static final ConcurrentMap<Long, Strand> threadStrands = new com.google.common.collect.MapMaker().weakValues().makeMap();
+        private static final ConcurrentMap<Long, Strand> threadStrands = new ConcurrentWeakValueMap<>();
 
         static Strand get(Thread t) {
             Strand s = threadStrands.get(t.getId());
@@ -997,7 +992,7 @@ public abstract class Strand {
 
         private final Thread thread;
 
-        public ThreadStrand(Thread owner) {
+        ThreadStrand(Thread owner) {
             this.thread = owner;
         }
 
@@ -1160,18 +1155,17 @@ public abstract class Strand {
 
         @Override
         public boolean equals(Object obj) {
-            if (obj == null)
+            if (!(obj instanceof ThreadStrand)) {
                 return false;
-            if (!(obj instanceof ThreadStrand))
-                return false;
-            return this.thread.equals(((ThreadStrand) obj).thread);
+            }
+            return thread.equals(((ThreadStrand) obj).thread);
         }
     }
 
     private static class FiberStrand extends Strand {
-        private final Fiber fiber;
+        private final Fiber<?> fiber;
 
-        public FiberStrand(Fiber owner) {
+        FiberStrand(Fiber<?> owner) {
             this.fiber = owner;
         }
 
@@ -1181,7 +1175,7 @@ public abstract class Strand {
         }
 
         @Override
-        public Fiber getUnderlying() {
+        public Fiber<?> getUnderlying() {
             return fiber;
         }
 
@@ -1314,11 +1308,10 @@ public abstract class Strand {
 
         @Override
         public boolean equals(Object obj) {
-            if (obj == null)
+            if (!(obj instanceof FiberStrand)) {
                 return false;
-            if (!(obj instanceof FiberStrand))
-                return false;
-            return this.fiber.equals(((FiberStrand) obj).fiber);
+            }
+            return fiber.equals(((FiberStrand) obj).fiber);
         }
     }
     private static final FibersMonitor NOOP_FIBERS_MONITOR = new NoopFibersMonitor();

@@ -15,6 +15,7 @@ package co.paralleluniverse.fibers;
 
 import co.paralleluniverse.common.test.TestUtil;
 import co.paralleluniverse.common.util.Exceptions;
+import co.paralleluniverse.common.util.ThreadFactoryBuilder;
 import co.paralleluniverse.fibers.suspend.SuspendExecution;
 import co.paralleluniverse.io.serialization.ByteArraySerializer;
 import co.paralleluniverse.strands.Condition;
@@ -23,7 +24,6 @@ import co.paralleluniverse.strands.SimpleConditionSynchronizer;
 import co.paralleluniverse.strands.Strand;
 import co.paralleluniverse.strands.SuspendableCallable;
 import co.paralleluniverse.strands.SuspendableRunnable;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.Serializable;
 
 import java.util.ArrayList;

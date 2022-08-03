@@ -14,8 +14,6 @@
 package co.paralleluniverse.actors;
 
 import co.paralleluniverse.common.util.Exceptions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -26,6 +24,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,6 +32,9 @@ import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.reflect.ReflectionFactory;
+
+import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableMap;
 
 /**
  * Copies fields from an instance of a previous version of a class to the current version
@@ -42,10 +44,10 @@ import sun.reflect.ReflectionFactory;
 class InstanceUpgrader<T> {
     private static final Logger LOG = LoggerFactory.getLogger(InstanceUpgrader.class);
     private static final Object reflFactory;
-    static final ClassValue<InstanceUpgrader<?>> instanceUpgrader = new ClassValue<InstanceUpgrader<?>>() {
+    static final ClassValue<InstanceUpgrader<?>> instanceUpgrader = new ClassValue<>() {
         @Override
         protected InstanceUpgrader<?> computeValue(Class<?> type) {
-            return new InstanceUpgrader(type);
+            return new InstanceUpgrader<>(type);
         }
     };
 
@@ -64,7 +66,7 @@ class InstanceUpgrader<T> {
     private final Class<T> toClass;
     private final Map<FieldDesc, FieldInfo> fields;
     private final Map<FieldDesc, Field> staticFields;
-    private final ConcurrentMap<Class, Copier> copiers;
+    private final ConcurrentMap<Class<?>, Copier<?>> copiers;
     private final Constructor<T> ctor;
     private final List<Method> onUpgradeInstance;
     private final List<Method> onUpgradeStatic;
@@ -72,13 +74,13 @@ class InstanceUpgrader<T> {
     public InstanceUpgrader(Class<T> toClass) {
         this.toClass = toClass;
         this.copiers = new MapMaker().weakKeys().makeMap();
-        Map<FieldDesc, Field> fs = getInstanceFields(toClass, new HashMap<FieldDesc, Field>());
-        ImmutableMap.Builder<FieldDesc, FieldInfo> builder = ImmutableMap.builder();
+        Map<FieldDesc, Field> fs = getInstanceFields(toClass, new HashMap<>());
+        Map<FieldDesc, FieldInfo> builder = new HashMap<>();
         for (Map.Entry<FieldDesc, Field> entry : fs.entrySet()) {
             Field f = entry.getValue();
             f.setAccessible(true);
 
-            Constructor innerClassCtor = null;
+            Constructor<?> innerClassCtor = null;
             if (Objects.equals(f.getType().getEnclosingClass(), toClass)) {
                 try {
                     innerClassCtor = f.getType().getDeclaredConstructor(toClass);
@@ -89,17 +91,17 @@ class InstanceUpgrader<T> {
             
             builder.put(entry.getKey(), new FieldInfo(f, innerClassCtor));
         }
-        this.fields = builder.build();
+        this.fields = unmodifiableMap(builder);
 
-        this.staticFields = ImmutableMap.copyOf(getStaticFields(toClass, new HashMap<FieldDesc, Field>()));
+        this.staticFields = Map.copyOf(getStaticFields(toClass, new HashMap<>()));
         for (Field sf : staticFields.values())
             sf.setAccessible(true);
 
         this.ctor = getNoArgConstructor(toClass);
 
         List<Method> upgradeMethods = getAnnotatedMethods(toClass, OnUpgrade.class, new ArrayList<Method>());
-        ImmutableList.Builder<Method> ouib = ImmutableList.builder();
-        ImmutableList.Builder<Method> ousb = ImmutableList.builder();
+        List<Method> ouib = new LinkedList<>();
+        List<Method> ousb = new LinkedList<>();
         for (Method m : upgradeMethods) {
             if (m.getParameterTypes().length > 0) {
                 LOG.warn("@OnUpgrade method {} takes arguments and will therefore not be invoked.", m);
@@ -111,8 +113,8 @@ class InstanceUpgrader<T> {
                     ouib.add(m);
             }
         }
-        onUpgradeInstance = ouib.build();
-        onUpgradeStatic = ousb.build();
+        onUpgradeInstance = unmodifiableList(ouib);
+        onUpgradeStatic = unmodifiableList(ousb);
     }
 
     private static <T> Constructor<T> getNoArgConstructor(Class<T> clazz) {
@@ -124,7 +126,7 @@ class InstanceUpgrader<T> {
 
     private static <T> Constructor<T> getNoArgConstructor1(Class<T> clazz) {
         try {
-            Constructor cons = clazz.getDeclaredConstructor();
+            Constructor<T> cons = clazz.getDeclaredConstructor();
             cons.setAccessible(true);
             return cons;
         } catch (NoSuchMethodException e) {
@@ -155,22 +157,22 @@ class InstanceUpgrader<T> {
 //    }
     public T copy(T from, T to) {
         assert toClass.isInstance(to);
-        return getCopier((Class<T>) from.getClass()).copy(from, to);
+        return getCopier(from.getClass()).copy(from, to);
     }
 
     public T copy(T from) {
-        return getCopier((Class<T>) from.getClass()).copy(from);
+        return getCopier(from.getClass()).copy(from);
     }
 
     private Copier<T> getCopier(Class<?> fromClass) {
-        Copier copier = copiers.get(fromClass);
+        Copier<?> copier = copiers.get(fromClass);
         if (copier == null) {
-            copier = new Copier(fromClass);
-            Copier temp = copiers.putIfAbsent(fromClass, copier);
+            copier = new Copier<>(fromClass);
+            Copier<?> temp = copiers.putIfAbsent(fromClass, copier);
             if (temp != null)
                 copier = temp;
         }
-        return copier;
+        return (Copier<T>) copier;
     }
 
     private class Copier<T> {
@@ -226,8 +228,8 @@ class InstanceUpgrader<T> {
 
             ArrayList<Field> ffs = new ArrayList<>();
             ArrayList<Field> tfs = new ArrayList<>();
-            ArrayList<Constructor> ics = new ArrayList<>();
-            ArrayList<Copier> fcs = new ArrayList<>();
+            ArrayList<Constructor<?>> ics = new ArrayList<>();
+            ArrayList<InstanceUpgrader<?>.Copier<?>> fcs = new ArrayList<>();
             for (Map.Entry<FieldDesc, Field> e : fs.entrySet()) {
                 Field ff = e.getValue();
                 FieldInfo tfi = fields.get(e.getKey());
@@ -235,8 +237,8 @@ class InstanceUpgrader<T> {
 
                 if (tf != null) {
                     boolean assignable = false;
-                    Constructor innerClassCtor = null;
-                    Copier fc = null;
+                    Constructor<?> innerClassCtor = null;
+                    InstanceUpgrader<?>.Copier<?> fc = null;
 
                     if ("this$0".equals(tf.getName()))
                         continue;
@@ -283,8 +285,8 @@ class InstanceUpgrader<T> {
                             Object tfv = null;
                             try {
                                 final Class<?> toFieldValueClass = toClass.getClassLoader().loadClass(fromFieldValueClass.getName());
-                                final Copier c = instanceUpgrader.get(toFieldValueClass).getCopier(fromFieldValueClass);
-                                final Constructor cstr = toFieldValueClass.getDeclaredConstructor(toClass);
+                                final Copier<Object> c = (Copier<? super Object>) instanceUpgrader.get(toFieldValueClass).getCopier(fromFieldValueClass);
+                                final Constructor<?> cstr = toFieldValueClass.getDeclaredConstructor(toClass);
                                 cstr.setAccessible(true);
                                 tfv = c.copy(fromFieldValue, cstr.newInstance(to));
                             } catch (ClassNotFoundException | NoSuchMethodException e) {

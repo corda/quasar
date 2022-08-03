@@ -23,7 +23,6 @@ import co.paralleluniverse.strands.SuspendableCallable;
 import co.paralleluniverse.strands.SuspendableRunnable;
 import co.paralleluniverse.strands.channels.Channels.OverflowPolicy;
 import co.paralleluniverse.strands.queues.QueueCapacityExceededException;
-import com.google.common.collect.ImmutableSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -35,6 +34,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static co.paralleluniverse.common.test.Matchers.*;
@@ -922,7 +922,7 @@ public class ChannelTest {
                 String m10 = group.receive();
                 while (m10 != null && m10.contains("leaks"))
                     m10 = group.receive();
-                assertThat(ImmutableSet.of(m8, m9, m10)).isEqualTo(ImmutableSet.of("1-paused-by-2-solo-waits", "3-paused-by-2-solo-waits", "1-normal"));
+                assertThat(Set.of(m8, m9, m10)).isEqualTo(Set.of("1-paused-by-2-solo-waits", "3-paused-by-2-solo-waits", "1-normal"));
 
                 sync.receive(); // 9
                 sync.receive(); // 10

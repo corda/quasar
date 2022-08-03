@@ -8,5 +8,5 @@ ext {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVer"
+    compileOnly 'org.osgi:osgi.annotation'
 }

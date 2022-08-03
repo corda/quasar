@@ -13,10 +13,10 @@
  */
 package co.paralleluniverse.strands.queues;
 
-import com.google.common.collect.Lists;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -175,16 +175,16 @@ abstract class SingleConsumerLinkedArrayQueue<E> extends SingleConsumerQueue<E> 
     @Override
     public List<E> snapshot() {
         final int blockSize = blockSize();
-        ArrayList<E> list = new ArrayList<E>();
+        LinkedList<E> list = new LinkedList<>();
         for (Node p = tail; p != null; p = p.prev) {
             for (int i = (p == head ? headIndex : 0); i < blockSize; i++) {
                 if (p == tail && !hasValue(p, i))
                     break;
                 if (hasValue(p, i) && !isDeleted(p, i))
-                    list.add(value(p, i));
+                    list.addFirst(value(p, i));
             }
         }
-        return Lists.reverse(list);
+        return new ArrayList<>(list);
     }
 
     public int nodeCount() {

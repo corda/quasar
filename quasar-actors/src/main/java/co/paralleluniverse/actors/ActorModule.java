@@ -18,7 +18,6 @@ import co.paralleluniverse.common.asm.AnnotationUtil;
 import co.paralleluniverse.common.resource.ClassLoaderUtil;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToResource;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.isClassFile;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +25,8 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import static java.util.Collections.unmodifiableSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -63,7 +64,7 @@ class ActorModule extends URLClassLoader {
         // determine upgrade classes
         try {
             JarFile jar = new JarFile(new File(jarUrl.toURI()));
-            final ImmutableSet.Builder<String> builder = ImmutableSet.builder();
+            final Set<String> builder = new LinkedHashSet<>();
 
             Manifest manifest = jar.getManifest();
             Attributes attributes = manifest.getMainAttributes();
@@ -110,7 +111,7 @@ class ActorModule extends URLClassLoader {
                 }
             });
 
-            this.upgradeClasses = builder.build();
+            this.upgradeClasses = unmodifiableSet(builder);
         } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }

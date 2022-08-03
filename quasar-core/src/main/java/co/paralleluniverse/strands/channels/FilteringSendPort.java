@@ -13,7 +13,7 @@
  */
 package co.paralleluniverse.strands.channels;
 
-import com.google.common.base.Predicate;
+import java.util.function.Predicate;
 
 /**
  *
@@ -38,7 +38,7 @@ class FilteringSendPort<M> extends SendPortTransformer<M, M> implements SendPort
 
     protected boolean filter(M m) {
         if (p != null)
-            return p.apply(m);
+            return p.test(m);
         throw new UnsupportedOperationException();
     }
 }

@@ -27,13 +27,13 @@ import co.paralleluniverse.strands.SuspendableCallable;
 import co.paralleluniverse.strands.SuspendableRunnable;
 import co.paralleluniverse.strands.Timeout;
 import co.paralleluniverse.strands.channels.Channels.OverflowPolicy;
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -118,7 +118,7 @@ public class TransformingChannelTest {
         final Channel<Integer> ch = newChannel();
         ReceivePort<Integer> ch1 = Channels.filter(ch, new Predicate<Integer>() {
             @Override
-            public boolean apply(Integer input) {
+            public boolean test(Integer input) {
                 return input % 2 == 0;
             }
         });
@@ -185,7 +185,7 @@ public class TransformingChannelTest {
         final Channel<Integer> ch = newChannel();
         SendPort<Integer> ch1 = Channels.filterSend(ch, new Predicate<Integer>() {
             @Override
-            public boolean apply(Integer input) {
+            public boolean test(Integer input) {
                 return input % 2 == 0;
             }
         });
@@ -247,7 +247,7 @@ public class TransformingChannelTest {
             public void run() throws SuspendExecution, InterruptedException {
                 ReceivePort<Integer> ch1 = Channels.filter(ch, new Predicate<Integer>() {
                     @Override
-                    public boolean apply(Integer input) {
+                    public boolean test(Integer input) {
                         return input % 2 == 0;
                     }
                 });
@@ -289,7 +289,7 @@ public class TransformingChannelTest {
             public void run() throws SuspendExecution, InterruptedException {
                 ReceivePort<Integer> ch1 = Channels.filter(ch, new Predicate<Integer>() {
                     @Override
-                    public boolean apply(Integer input) {
+                    public boolean test(Integer input) {
                         return input % 2 == 0;
                     }
                 });
@@ -338,7 +338,7 @@ public class TransformingChannelTest {
 
         ReceivePort<Integer> ch1 = Channels.filter(ch, new Predicate<Integer>() {
             @Override
-            public boolean apply(Integer input) {
+            public boolean test(Integer input) {
                 return input % 2 == 0;
             }
         });
@@ -365,7 +365,7 @@ public class TransformingChannelTest {
             public void run() throws SuspendExecution, InterruptedException {
                 final ReceivePort<Integer> ch1 = Channels.filter(ch, new Predicate<Integer>() {
                     @Override
-                    public boolean apply(Integer input) {
+                    public boolean test(Integer input) {
                         return input % 2 == 0;
                     }
                 });
@@ -423,7 +423,7 @@ public class TransformingChannelTest {
             public void run() throws SuspendExecution, InterruptedException {
                 SendPort<Integer> ch1 = Channels.filterSend(ch, new Predicate<Integer>() {
                     @Override
-                    public boolean apply(Integer input) {
+                    public boolean test(Integer input) {
                         return input % 2 == 0;
                     }
                 });
@@ -462,7 +462,7 @@ public class TransformingChannelTest {
 
         SendPort<Integer> ch1 = Channels.filterSend(ch, new Predicate<Integer>() {
             @Override
-            public boolean apply(Integer input) {
+            public boolean test(Integer input) {
                 return input % 2 == 0;
             }
         });
@@ -490,7 +490,7 @@ public class TransformingChannelTest {
 
                 SendPort<Integer> ch1 = Channels.filterSend(ch, new Predicate<Integer>() {
                     @Override
-                    public boolean apply(Integer input) {
+                    public boolean test(Integer input) {
                         return input % 2 == 0;
                     }
                 });
@@ -543,7 +543,7 @@ public class TransformingChannelTest {
 
         SendPort<Integer> ch1 = Channels.filterSend(ch, new Predicate<Integer>() {
             @Override
-            public boolean apply(Integer input) {
+            public boolean test(Integer input) {
                 return input % 2 == 0;
             }
         });

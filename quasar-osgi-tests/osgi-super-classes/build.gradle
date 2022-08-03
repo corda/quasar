@@ -8,7 +8,7 @@ ext {
 }
 
 dependencies {
-    compileOnly "org.osgi:osgi.annotation:$osgiVer"
+    compileOnly 'org.osgi:osgi.annotation'
     compileOnly project(path: ':quasar-core', configuration: 'bundleJar')
     api project(':quasar-osgi-tests:osgi-base')
 }

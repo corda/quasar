@@ -9,5 +9,5 @@ ext {
 
 dependencies {
     api project(':quasar-osgi-tests:osgi-base')
-    compileOnly "org.osgi:osgi.annotation:$osgiVer"
+    compileOnly 'org.osgi:osgi.annotation'
 }

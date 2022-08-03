@@ -35,10 +35,11 @@ import co.paralleluniverse.fibers.FiberFactory;
 import co.paralleluniverse.fibers.suspend.SuspendExecution;
 import co.paralleluniverse.strands.Strand;
 import co.paralleluniverse.strands.StrandFactory;
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import static java.util.Collections.unmodifiableList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
@@ -438,10 +439,10 @@ public class SupervisorActor extends BehaviorActor {
      */
     protected List<? extends ActorRef<?>> getChildren() {
         verifyInActor();
-        final ImmutableList.Builder builder = new ImmutableList.Builder();
+        final List<ActorRef<?>> builder = new LinkedList<>();
         for (final ChildEntry ce : children)
             builder.add(ce.actor);
-        return builder.build();
+        return unmodifiableList(builder);
     }
 
     /**

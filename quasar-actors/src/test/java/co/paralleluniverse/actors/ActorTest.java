@@ -28,18 +28,6 @@ import co.paralleluniverse.strands.channels.Channels;
 import co.paralleluniverse.strands.channels.SendPort;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -47,6 +35,22 @@ import org.junit.Test;
 import org.junit.After;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  *
@@ -63,7 +67,7 @@ public class ActorTest {
         Debug.dumpAfter(10000);
     }
     static final MailboxConfig mailboxConfig = new MailboxConfig(10, Channels.OverflowPolicy.THROW);
-    private FiberScheduler scheduler;
+    private final FiberScheduler scheduler;
 
     public ActorTest() {
         scheduler = new FiberForkJoinScheduler("test", 4, null, false);
@@ -74,8 +78,8 @@ public class ActorTest {
     	  scheduler.shutdown();
     }
 
-    private <Message, V> Actor<Message, V> spawnActor(Actor<Message, V> actor) {
-        Fiber fiber = new Fiber("actor", scheduler, actor);
+    private <M, V> Actor<M, V> spawnActor(Actor<M, V> actor) {
+        Fiber<?> fiber = new Fiber<>("actor", scheduler, actor);
         fiber.setUncaughtExceptionHandler(new Strand.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Strand s, Throwable e) {
@@ -89,7 +93,7 @@ public class ActorTest {
 
     @Test
     public void whenActorThrowsExceptionThenGetThrowsIt() throws Exception {
-        Actor<Message, Integer> actor = spawnActor(new BasicActor<Message, Integer>(mailboxConfig) {
+        Actor<Message, Integer> actor = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Integer doRun() throws SuspendExecution, InterruptedException {
                 throw new RuntimeException("foo");
@@ -100,14 +104,14 @@ public class ActorTest {
             actor.get();
             fail();
         } catch (ExecutionException e) {
-            assertThat(e.getCause(), instanceOf(RuntimeException.class));
-            assertThat(e.getCause().getMessage(), is("foo"));
+            assertThat(e).hasCauseInstanceOf(RuntimeException.class);
+            assertThat(e.getCause()).hasMessage("foo");
         }
     }
 
     @Test
     public void whenActorThrowsExceptionThenGetThrowsItThreadActor() throws Exception {
-        Actor<Message, Integer> actor = new BasicActor<Message, Integer>(mailboxConfig) {
+        Actor<Message, Integer> actor = new BasicActor<>(mailboxConfig) {
             @Override
             protected Integer doRun() throws SuspendExecution, InterruptedException {
                 throw new RuntimeException("foo");
@@ -120,26 +124,26 @@ public class ActorTest {
             actor.get();
             fail();
         } catch (ExecutionException e) {
-            assertThat(e.getCause(), instanceOf(RuntimeException.class));
-            assertThat(e.getCause().getMessage(), is("foo"));
+            assertThat(e).hasCauseInstanceOf(RuntimeException.class);
+            assertThat(e.getCause()).hasMessage("foo");
         }
     }
 
     @Test
     public void whenActorReturnsValueThenGetReturnsIt() throws Exception {
-        Actor<Message, Integer> actor = spawnActor(new BasicActor<Message, Integer>(mailboxConfig) {
+        Actor<Message, Integer> actor = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Integer doRun() throws SuspendExecution, InterruptedException {
                 return 42;
             }
         });
 
-        assertThat(actor.get(), is(42));
+        assertThat(actor.get()).isEqualTo(42);
     }
 
     @Test
     public void whenActorReturnsValueThenGetReturnsItThreadActor() throws Exception {
-        Actor<Message, Integer> actor = new BasicActor<Message, Integer>(mailboxConfig) {
+        Actor<Message, Integer> actor = new BasicActor<>(mailboxConfig) {
             @Override
             protected Integer doRun() throws SuspendExecution, InterruptedException {
                 return 42;
@@ -148,7 +152,7 @@ public class ActorTest {
 
         actor.spawnThread();
 
-        assertThat(actor.get(), is(42));
+        assertThat(actor.get()).isEqualTo(42);
     }
 
     @Test
@@ -163,7 +167,7 @@ public class ActorTest {
 
         actor.send(new Message(15));
 
-        assertThat(LocalActor.<Integer>get(actor), is(15));
+        assertThat(LocalActor.<Integer>get(actor)).isEqualTo(15);
     }
 
     @Test
@@ -178,7 +182,7 @@ public class ActorTest {
 
         actor.send(new Message(15));
 
-        assertThat(LocalActor.<Integer>get(actor), is(15));
+        assertThat(LocalActor.<Integer>get(actor)).isEqualTo(15);
     }
 
     @Test
@@ -196,7 +200,7 @@ public class ActorTest {
         Thread.sleep(200);
         actor.send(new Message(17));
 
-        assertThat(LocalActor.<Integer>get(actor), is(42));
+        assertThat(LocalActor.<Integer>get(actor)).isEqualTo(42);
     }
 
     @Test
@@ -214,18 +218,18 @@ public class ActorTest {
         Thread.sleep(200);
         actor.send(new Message(17));
 
-        assertThat(LocalActor.<Integer>get(actor), is(42));
+        assertThat(LocalActor.<Integer>get(actor)).isEqualTo(42);
     }
 
-    private class TypedReceiveA {
+    private static class TypedReceiveA {
     };
 
-    private class TypedReceiveB {
+    private static class TypedReceiveB {
     };
 
     @Test
     public void testTypedReceive() throws Exception {
-        Actor<Object, List<Object>> actor = spawnActor(new BasicActor<Object, List<Object>>(mailboxConfig) {
+        Actor<Object, List<Object>> actor = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected List<Object> doRun() throws InterruptedException, SuspendExecution {
                 List<Object> list = new ArrayList<>();
@@ -239,17 +243,17 @@ public class ActorTest {
         actor.ref().send(typedReceiveB);
         Thread.sleep(2);
         actor.ref().send(typedReceiveA);
-        assertThat(actor.get(500, TimeUnit.MILLISECONDS), equalTo(Arrays.asList(typedReceiveA, typedReceiveB)));
+        assertThat(actor.get(500, TimeUnit.MILLISECONDS)).containsExactly(typedReceiveA, typedReceiveB);
     }
 
     @Test
     public void testSelectiveReceive() throws Exception {
-        Actor<ComplexMessage, List<Integer>> actor = spawnActor(new BasicActor<ComplexMessage, List<Integer>>(mailboxConfig) {
+        Actor<ComplexMessage, List<Integer>> actor = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected List<Integer> doRun() throws SuspendExecution, InterruptedException {
                 final List<Integer> list = new ArrayList<>();
                 for (int i = 0; i < 2; i++) {
-                    receive(new MessageProcessor<ComplexMessage, ComplexMessage>() {
+                    receive(new MessageProcessor<>() {
                         public ComplexMessage process(ComplexMessage m) throws SuspendExecution, InterruptedException {
                             switch (m.type) {
                                 case FOO:
@@ -285,12 +289,12 @@ public class ActorTest {
         actor.ref().send(new ComplexMessage(ComplexMessage.Type.BAR, 2));
         actor.ref().send(new ComplexMessage(ComplexMessage.Type.BAZ, 3));
 
-        assertThat(actor.get(), equalTo(Arrays.asList(1, 3, 2)));
+        assertThat(actor.get()).containsExactly(1, 3, 2);
     }
 
     @Test
     public void testSelectiveReceiveMsgSelector() throws Exception {
-        Actor<Object, String> actor = spawnActor(new BasicActor<Object, String>(mailboxConfig) {
+        Actor<Object, String> actor = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected String doRun() throws SuspendExecution, InterruptedException {
                 return receive(MessageSelector.select().ofType(String.class));
@@ -300,12 +304,12 @@ public class ActorTest {
         actor.ref().send(1);
         actor.ref().send("hello");
 
-        assertThat(actor.get(), equalTo("hello"));
+        assertThat(actor.get()).isEqualTo("hello");
     }
 
     @Test
     public void testNestedSelectiveWithEqualMessage() throws Exception {
-        Actor<String, String> actor = spawnActor(new BasicActor<String, String>(mailboxConfig) {
+        Actor<String, String> actor = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected String doRun() throws SuspendExecution, InterruptedException {
                 // return receive(a -> a + receive(b -> b));
@@ -327,12 +331,12 @@ public class ActorTest {
         actor.ref().send(msg);
         actor.ref().send(msg);
 
-        assertThat(actor.get(), equalTo("aa"));
+        assertThat(actor.get()).isEqualTo("aa");
     }
 
     @Test
     public void whenLinkedActorDiesDuringSelectiveReceiveThenReceiverDies() throws Exception {
-        final Actor<Message, Void> a = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        final Actor<Message, Void> a = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Void doRun() throws SuspendExecution, InterruptedException {
                 //noinspection InfiniteLoopStatement
@@ -341,7 +345,7 @@ public class ActorTest {
             }
         });
 
-        final Actor<Object, Void> m = spawnActor(new BasicActor<Object, Void>(mailboxConfig) {
+        final Actor<Object, Void> m = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Void doRun() throws SuspendExecution, InterruptedException {
                 link(a.ref());
@@ -374,7 +378,7 @@ public class ActorTest {
 
     @Test
     public void whenWatchedActorDiesDuringSelectiveReceiveThenExitMessageDeferred() throws Exception {
-        final Actor<Message, Void> a = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        final Actor<Message, Void> a = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Void doRun() throws SuspendExecution, InterruptedException {
                 //noinspection InfiniteLoopStatement
@@ -384,7 +388,7 @@ public class ActorTest {
         });
 
         final AtomicReference<ExitMessage> emr = new AtomicReference<>();
-        final Actor<Object, Object[]> m = spawnActor(new BasicActor<Object, Object[]>(mailboxConfig) {
+        final Actor<Object, Object[]> m = spawnActor(new BasicActor<>(mailboxConfig) {
             private Object watch;
 
             @Override
@@ -408,39 +412,41 @@ public class ActorTest {
             }
         });
 
+        final Object[] res;
         try {
             a.getStrand().interrupt();
 
             m.ref().send(1);
             m.ref().send("hello");
 
-            final Object[] res = m.get();
-            assertNotNull(res[0]);
-            assertNotNull(res[1]);
-            assertNull(res[2]);
-            assertNotNull(emr.get());
-            assertEquals(res[1], "hello");
-            assertEquals(res[0], emr.get().watch);
-            assertEquals(a.ref(), emr.get().actor);
-            assertNotNull(emr.get().cause);
-            assertEquals(emr.get().cause.getClass(), InterruptedException.class);
+            res = m.get();
         } catch (final Throwable t) {
-            fail();
+            throw new AssertionError("Caught " + t.getClass().getName() + ": " + t.getMessage(), t);
         }
+
+        assertNotNull(res[0]);
+        assertNotNull(res[1]);
+        assertNull(res[2]);
+        assertNotNull(emr.get());
+        assertEquals(res[1], "hello");
+        assertEquals(res[0], emr.get().watch);
+        assertEquals(a.ref(), emr.get().actor);
+        assertThat(a.getDeathCause()).isExactlyInstanceOf(InterruptedException.class);
+        assertThat(emr.get().cause).isExactlyInstanceOf(InterruptedException.class);
     }
 
     @Test
     public void whenSimpleReceiveAndTimeoutThenReturnNull() throws Exception {
-        Actor<Message, Void> actor = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        Actor<Message, Void> actor = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Void doRun() throws SuspendExecution, InterruptedException {
                 Message m;
                 m = receive(100, TimeUnit.MILLISECONDS);
-                assertThat(m.num, is(1));
+                assertThat(m.num).isEqualTo(1);
                 m = receive(100, TimeUnit.MILLISECONDS);
-                assertThat(m.num, is(2));
+                assertThat(m.num).isEqualTo(2);
                 m = receive(100, TimeUnit.MILLISECONDS);
-                assertThat(m, is(nullValue()));
+                assertThat(m).isNull();
 
                 return null;
             }
@@ -456,7 +462,7 @@ public class ActorTest {
 
     @Test
     public void testTimeoutException() throws Exception {
-        Actor<Message, Void> actor = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        Actor<Message, Void> actor = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Void doRun() throws SuspendExecution, InterruptedException {
                 try {
@@ -480,21 +486,21 @@ public class ActorTest {
 
     @Test
     public void testSendSync() throws Exception {
-        final Actor<Message, Void> actor1 = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        final Actor<Message, Void> actor1 = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Void doRun() throws SuspendExecution, InterruptedException {
                 Message m;
                 m = receive();
-                assertThat(m.num, is(1));
+                assertThat(m.num).isEqualTo(1);
                 m = receive();
-                assertThat(m.num, is(2));
+                assertThat(m.num).isEqualTo(2);
                 m = receive();
-                assertThat(m.num, is(3));
+                assertThat(m.num).isEqualTo(3);
                 return null;
             }
         });
 
-        final Actor<Message, Void> actor2 = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        final Actor<Message, Void> actor2 = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Void doRun() throws SuspendExecution, InterruptedException {
                 Fiber.sleep(20);
@@ -512,7 +518,7 @@ public class ActorTest {
 
     @Test
     public void testLink() throws Exception {
-        Actor<Message, Void> actor1 = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        Actor<Message, Void> actor1 = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Void doRun() throws SuspendExecution, InterruptedException {
                 Fiber.sleep(100);
@@ -520,7 +526,7 @@ public class ActorTest {
             }
         });
 
-        Actor<Message, Void> actor2 = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        Actor<Message, Void> actor2 = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Void doRun() throws SuspendExecution, InterruptedException {
                 try {
@@ -546,7 +552,7 @@ public class ActorTest {
             sync2 = Channels.newChannel(1);
         final Object ping = new Object();
 
-        final Actor<Message, Void> actor1 = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        final Actor<Message, Void> actor1 = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected final Void doRun() throws SuspendExecution, InterruptedException {
                 sync1.receive();
@@ -554,7 +560,7 @@ public class ActorTest {
             }
         });
 
-        final Actor<Message, Void> actor2 = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        final Actor<Message, Void> actor2 = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected final Void doRun() throws SuspendExecution, InterruptedException {
                 try {
@@ -578,7 +584,7 @@ public class ActorTest {
 
     @Test
     public void testWatch() throws Exception {
-        Actor<Message, Void> actor1 = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        Actor<Message, Void> actor1 = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Void doRun() throws SuspendExecution, InterruptedException {
                 Fiber.sleep(100);
@@ -588,11 +594,11 @@ public class ActorTest {
 
         final AtomicBoolean handlerCalled = new AtomicBoolean(false);
 
-        Actor<Message, Void> actor2 = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        Actor<Message, Void> actor2 = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Void doRun() throws SuspendExecution, InterruptedException {
                 Message m = receive(200, TimeUnit.MILLISECONDS);
-                assertThat(m, is(nullValue()));
+                assertThat(m).isNull();
                 return null;
             }
 
@@ -609,7 +615,7 @@ public class ActorTest {
         actor1.join();
         actor2.join();
 
-        assertThat(handlerCalled.get(), is(true));
+        assertThat(handlerCalled.get()).isTrue();
     }
 
     @Test
@@ -619,9 +625,9 @@ public class ActorTest {
             sync2 = Channels.newChannel(1);
         final Object ping = new Object();
 
-        final Actor<Message, Void> actor1 = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        final Actor<Message, Void> actor1 = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
-            protected final Void doRun() throws SuspendExecution, InterruptedException {
+            protected Void doRun() throws SuspendExecution, InterruptedException {
                 sync1.receive();
                 return null;
             }
@@ -629,17 +635,17 @@ public class ActorTest {
 
         final AtomicBoolean handlerCalled = new AtomicBoolean(false);
 
-        final Actor<Message, Void> actor2 = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        final Actor<Message, Void> actor2 = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
-            protected final Void doRun() throws SuspendExecution, InterruptedException {
+            protected Void doRun() throws SuspendExecution, InterruptedException {
                 sync2.receive();
                 final Message m = receive(200, TimeUnit.MILLISECONDS);
-                assertThat(m, is(nullValue()));
+                assertThat(m).isNull();
                 return null;
             }
 
             @Override
-            protected final Message handleLifecycleMessage(LifecycleMessage m) {
+            protected Message handleLifecycleMessage(LifecycleMessage m) {
                 super.handleLifecycleMessage(m);
                 handlerCalled.set(true);
                 return null;
@@ -654,14 +660,14 @@ public class ActorTest {
         sync2.send(ping);                                   // Let actor 2 go ahead and check the mailbox
         actor2.join();                                      // Wait for actor 2 to terminate
 
-        assertThat(handlerCalled.get(), is(false));
+        assertThat(handlerCalled.get()).isFalse();
     }
 
     @Test
     public void testWatchGC() throws Exception {
         Assume.assumeFalse(Debug.isDebug());
 
-        final Actor<Message, Void> actor = spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        final Actor<Message, Void> actor = spawnActor(new BasicActor<>(mailboxConfig) {
             @Override
             protected Void doRun() throws SuspendExecution, InterruptedException {
                 Fiber.sleep(120000);
@@ -669,7 +675,7 @@ public class ActorTest {
             }
         });
         System.out.println("actor1 is " + actor);
-        WeakReference wrActor2 = new WeakReference(spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
+        WeakReference<?> wrActor2 = new WeakReference<>(spawnActor(new BasicActor<Message, Void>(mailboxConfig) {
             @Override
             protected Void doRun() throws SuspendExecution, InterruptedException {
                 Fiber.sleep(10);
@@ -685,7 +691,7 @@ public class ActorTest {
         }
         Thread.sleep(2000);
 
-        assertEquals(null, wrActor2.get());
+        assertNull(wrActor2.get());
     }
 
     @Test
@@ -710,17 +716,17 @@ public class ActorTest {
             }
         });
 
-        assertTrue(ch1.equals(actor));
-        assertTrue(actor.equals(ch1));
-        assertTrue(ch2.equals(actor));
-        assertTrue(actor.equals(ch2));
+        assertEquals(actor, ch1);
+        assertEquals(ch1, actor);
+        assertEquals(ch2, actor);
+        assertEquals(actor, ch2);
     }
 
     @Test
     public void testSpawnWithStrandFactory() throws Exception {
         final AtomicBoolean run = new AtomicBoolean(false);
 
-        Actor<Message, Integer> actor = new BasicActor<Message, Integer>(mailboxConfig) {
+        Actor<Message, Integer> actor = new BasicActor<>(mailboxConfig) {
             @Override
             protected Integer doRun() throws SuspendExecution, InterruptedException {
                 run.set(true);
@@ -728,15 +734,15 @@ public class ActorTest {
             }
         };
 
-        ActorRef a = actor.spawn(new StrandFactoryBuilder().setFiber(null).setNameFormat("my-fiber-%d").build());
+        ActorRef<?> a = actor.spawn(new StrandFactoryBuilder().setFiber(null).setNameFormat("my-fiber-%d").build());
         Strand s = LocalActor.getStrand(a);
         assertTrue(s.isFiber());
-        assertThat(s.getName(), equalTo("my-fiber-0"));
-        assertThat((Integer) LocalActor.get(a), equalTo(3));
-        assertThat(run.get(), is(true));
+        assertThat(s.getName()).isEqualTo("my-fiber-0");
+        assertThat((Integer) LocalActor.get(a)).isEqualTo(3);
+        assertThat(run.get()).isTrue();
         run.set(false);
 
-        actor = new BasicActor<Message, Integer>(mailboxConfig) {
+        actor = new BasicActor<>(mailboxConfig) {
             @Override
             protected Integer doRun() throws SuspendExecution, InterruptedException {
                 run.set(true);
@@ -747,12 +753,12 @@ public class ActorTest {
         a = actor.spawn(new StrandFactoryBuilder().setThread(false).setNameFormat("my-thread-%d").build());
         s = LocalActor.getStrand(a);
         assertTrue(!s.isFiber());
-        assertThat(s.getName(), equalTo("my-thread-0"));
+        assertThat(s.getName()).isEqualTo("my-thread-0");
         LocalActor.join(a);
-        assertThat(run.get(), is(true));
+        assertThat(run.get()).isTrue();
         run.set(false);
 
-        Actor<Message, Integer> actor2 = new BasicActor<Message, Integer>("coolactor", mailboxConfig) {
+        Actor<Message, Integer> actor2 = new BasicActor<>("coolactor", mailboxConfig) {
             @Override
             protected Integer doRun() throws SuspendExecution, InterruptedException {
                 run.set(true);
@@ -763,12 +769,12 @@ public class ActorTest {
         a = actor2.spawn(new StrandFactoryBuilder().setFiber(null).setNameFormat("my-fiber-%d").build());
         s = LocalActor.getStrand(a);
         assertTrue(s.isFiber());
-        assertThat(s.getName(), equalTo("coolactor"));
-        assertThat((Integer) LocalActor.get(a), equalTo(3));
-        assertThat(run.get(), is(true));
+        assertThat(s.getName()).isEqualTo("coolactor");
+        assertThat((Integer) LocalActor.get(a)).isEqualTo(3);
+        assertThat(run.get()).isTrue();
         run.set(false);
 
-        actor2 = new BasicActor<Message, Integer>("coolactor", mailboxConfig) {
+        actor2 = new BasicActor<>("coolactor", mailboxConfig) {
             @Override
             protected Integer doRun() throws SuspendExecution, InterruptedException {
                 run.set(true);
@@ -778,10 +784,10 @@ public class ActorTest {
 
         a = actor2.spawn(new StrandFactoryBuilder().setThread(false).setNameFormat("my-thread-%d").build());
         s = LocalActor.getStrand(a);
-        assertTrue(!s.isFiber());
-        assertThat(s.getName(), equalTo("coolactor"));
+        assertFalse(s.isFiber());
+        assertThat(s.getName()).isEqualTo("coolactor");
         LocalActor.join(a);
-        assertThat(run.get(), is(true));
+        assertThat(run.get()).isTrue();
         run.set(false);
     }
 

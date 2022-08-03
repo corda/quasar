@@ -44,6 +44,7 @@ configurations {
         canBeConsumed = false
         transitive = false
     }
+    osgiTestCompileOnly.extendsFrom compileOnly
 }
 
 dependencies {
@@ -54,7 +55,7 @@ dependencies {
     bundles project('osgi-cacheable-two')
     bundles project('osgi-super-classes')
 
-    osgiTestCompileOnly "org.osgi:osgi.core:$osgiVer"
+    osgiTestCompileOnly 'org.osgi:osgi.core'
     osgiTestCompileOnly project(path: ':quasar-core', configuration: 'agentJar')
     osgiTestImplementation project(path: ':quasar-core', configuration: 'bundleJar')
     osgiTestImplementation project('osgi-exception')

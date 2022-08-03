@@ -14,8 +14,8 @@
 package co.paralleluniverse.fibers.io;
 
 import co.paralleluniverse.common.util.CheckedCallable;
+import co.paralleluniverse.common.util.ThreadFactoryBuilder;
 import co.paralleluniverse.fibers.Suspendable;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;

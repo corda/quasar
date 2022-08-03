@@ -23,9 +23,9 @@ import co.paralleluniverse.strands.SuspendableRunnable;
 import co.paralleluniverse.strands.channels.Channel;
 import co.paralleluniverse.strands.channels.Channels;
 import co.paralleluniverse.strands.channels.Channels.OverflowPolicy;
-import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.junit.Rule;
 import org.junit.Test;
@@ -126,7 +126,7 @@ public class PipelineTest {
                 assertThat(m2).isNotNull();
                 assertThat(m3).isNotNull();
                 assertThat(m4).isNotNull();
-                assertThat(ImmutableSet.of(m1, m2, m3, m4)).isEqualTo(ImmutableSet.of(2, 3, 4, 5));
+                assertThat(Set.of(m1, m2, m3, m4)).isEqualTo(Set.of(2, 3, 4, 5));
                 try {
                     pf.join();
                 } catch (ExecutionException ex) {

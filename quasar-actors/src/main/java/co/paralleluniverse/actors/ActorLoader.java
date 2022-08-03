@@ -17,8 +17,6 @@ import static co.paralleluniverse.common.resource.ClassLoaderUtil.isClassFile;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.resourceToClass;
 import co.paralleluniverse.common.util.Exceptions;
 import co.paralleluniverse.concurrent.util.MapUtil;
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
@@ -29,9 +27,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import static java.nio.file.StandardWatchEventKinds.*;
+import static java.util.stream.Collectors.toUnmodifiableList;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -210,12 +211,7 @@ public class ActorLoader extends ClassLoader implements ActorLoaderMXBean, Notif
 
     @Override
     public List<String> getLoadedModules() {
-        return Lists.transform(modules, new Function<ActorModule, String>() {
-            @Override
-            public String apply(ActorModule module) {
-                return module.getURL().toString();
-            }
-        });
+        return modules.stream().map(module -> module.getURL().toString()).collect(toUnmodifiableList());
     }
 
     @Override
@@ -307,7 +303,9 @@ public class ActorLoader extends ClassLoader implements ActorLoaderMXBean, Notif
         for (String className : module.getUpgradeClasses()) {
             if (classModule.get(className) == module) {
                 ActorModule newModule = null;
-                for (ActorModule m : Lists.reverse(modules)) {
+                List<ActorModule> reversed = new ArrayList<>(modules);
+                Collections.reverse(reversed);
+                for (ActorModule m : reversed) {
                     if (m.getUpgradeClasses().contains(className)) {
                         newModule = m;
                         break;
@@ -319,7 +317,7 @@ public class ActorLoader extends ClassLoader implements ActorLoaderMXBean, Notif
                 else
                     classModule.remove(className);
 
-                Class oldClass = module.findLoadedClassInModule(className);
+                Class<?> oldClass = module.findLoadedClassInModule(className);
                 if (oldClass != null)
                     oldClasses.add(oldClass);
             }

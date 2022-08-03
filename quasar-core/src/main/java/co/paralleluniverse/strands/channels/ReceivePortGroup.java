@@ -17,8 +17,6 @@ import co.paralleluniverse.common.util.Pair;
 import co.paralleluniverse.concurrent.util.EnhancedAtomicReference;
 import co.paralleluniverse.fibers.suspend.SuspendExecution;
 import co.paralleluniverse.strands.Timeout;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,6 +26,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 
 /**
  *
@@ -54,26 +55,26 @@ public class ReceivePortGroup<M> implements Mix<M> {
         this.alwaysOpen = alwaysOpen;
         soloEffect.set(soloEffectDefault);
         final Map<ReceivePort<? super M>, State> newStates = new HashMap<>();
-        for (final ReceivePort<? super M> port : ImmutableList.copyOf(ports)) {
+        for (final ReceivePort<? super M> port : List.copyOf(ports)) {
             newStates.put(port, new State(modeDefault, soloDefault));
         }
-        states.set(ImmutableMap.copyOf(newStates)); // RO
+        states.set(Map.copyOf(newStates)); // RO
     }
 
     public ReceivePortGroup(final Collection<? extends ReceivePort<? super M>> ports) {
-        this(ImmutableList.copyOf(ports), alwaysOpenDefault);
+        this(List.copyOf(ports), alwaysOpenDefault);
     }
 
     public ReceivePortGroup(final ReceivePort<? super M>... ports) {
-        this(ImmutableList.copyOf(ports), alwaysOpenDefault);
+        this(List.of(ports), alwaysOpenDefault);
     }
 
     public ReceivePortGroup(final boolean alwaysOpen) {
-        this(ImmutableList.of(), alwaysOpen);
+        this(emptyList(), alwaysOpen);
     }
 
     public ReceivePortGroup() {
-        this(ImmutableList.of(), alwaysOpenDefault);
+        this(emptyList(), alwaysOpenDefault);
     }
 
     @Override
@@ -237,14 +238,14 @@ public class ReceivePortGroup<M> implements Mix<M> {
     @Override
     public <T extends ReceivePort<? super M>> void add(final T... items) throws SuspendExecution, InterruptedException {
         if (items != null && items.length > 0) {
-            final List<T> itemsCopy = ImmutableList.copyOf(items); // Freeze for this call
+            final List<T> itemsCopy = List.of(items); // Freeze for this call
             states.swap(new Function<Map<? extends ReceivePort<? super M>, State>, Map<? extends ReceivePort<? super M>, State>>() {
                 @Override
                 public Map<? extends ReceivePort<? super M>, State> apply(final Map<? extends ReceivePort<? super M>, State> currStates) {
                     final Map<ReceivePort<? super M>, State> newStates = new HashMap<>(currStates);
                     for (final ReceivePort<? super M> port : itemsCopy)
                         newStates.put(port, new State(Mode.NORMAL, false));
-                    return ImmutableMap.copyOf(newStates); // RO
+                    return Map.copyOf(newStates); // RO
                 }
             });
             changedCh.send(ping);
@@ -254,16 +255,16 @@ public class ReceivePortGroup<M> implements Mix<M> {
     @Override
     public <T extends ReceivePort<? super M>> void remove(final T... items) throws SuspendExecution, InterruptedException {
         if (items == null || items.length == 0)
-            states.set(ImmutableMap.of()); // Reset
+            states.set(emptyMap()); // Reset
         else {
-            final List<T> itemsCopy = ImmutableList.copyOf(items); // Freeze for this call
+            final List<T> itemsCopy = List.of(items); // Freeze for this call
             states.swap(new Function<Map<? extends ReceivePort<? super M>, State>, Map<? extends ReceivePort<? super M>, State>>() {
                 @Override
                 public Map<? extends ReceivePort<? super M>, State> apply(final Map<? extends ReceivePort<? super M>, State> currStates) {
                     final Map<ReceivePort<? super M>, State> newStates = new HashMap<>(currStates);
                     for (final T port : itemsCopy)
                         newStates.remove(port);
-                    return ImmutableMap.copyOf(newStates); // RO
+                    return Map.copyOf(newStates); // RO
                 }
             });
             changedCh.send(ping);
@@ -279,7 +280,7 @@ public class ReceivePortGroup<M> implements Mix<M> {
                     if (port.isClosed())
                         newStates.remove(port);
                 }
-                return ImmutableMap.copyOf(newStates); // RO
+                return Map.copyOf(newStates); // RO
             }
         });
     }
@@ -287,9 +288,9 @@ public class ReceivePortGroup<M> implements Mix<M> {
     @Override
     public <T extends ReceivePort<? super M>> Map<T, State> getState(final T... items) {
         if (items == null || items.length == 0)
-            return (Map<T, State>) ImmutableMap.copyOf(states.get());
+            return (Map<T, State>) Map.copyOf(states.get());
 
-        List<T> itemsCopy = ImmutableList.copyOf(items); // Freeze for this call
+        List<T> itemsCopy = List.of(items); // Freeze for this call
         final Map<? extends ReceivePort<? super M>, State> currStates = states.get();
         final Map<T, State> ret = new HashMap<>(itemsCopy.size());
         for (final T p : itemsCopy)
@@ -299,12 +300,12 @@ public class ReceivePortGroup<M> implements Mix<M> {
 
     @Override
     public <T extends ReceivePort<? super M>> void setState(final State state, final T... items) throws SuspendExecution, InterruptedException {
-        final ImmutableList<T> itemsCopy = ImmutableList.copyOf(items);
+        final List<T> itemsCopy = List.of(items);
         states.swap(new Function<Map<? extends ReceivePort<? super M>, State>, Map<? extends ReceivePort<? super M>, State>>() {
             @Override
             public Map<? extends ReceivePort<? super M>, State> apply(final Map<? extends ReceivePort<? super M>, State> currStates) {
                 final Map<ReceivePort<? super M>, State> newStates = new HashMap<>(currStates);
-                for (final ReceivePort<? super M> port : (items != null && items.length > 0) ? itemsCopy : ImmutableList.copyOf(currStates.keySet()))
+                for (final ReceivePort<? super M> port : (items != null && items.length > 0) ? itemsCopy : List.copyOf(currStates.keySet()))
                     if (newStates.containsKey(port))
                         newStates.put (
                             port,
@@ -313,7 +314,7 @@ public class ReceivePortGroup<M> implements Mix<M> {
                                 state.solo != null ? state.solo : currStates.get(port).solo
                             )
                         );
-                return ImmutableMap.copyOf(newStates); // RO
+                return Map.copyOf(newStates); // RO
             }
         });
         changedCh.send(ping);
@@ -322,7 +323,7 @@ public class ReceivePortGroup<M> implements Mix<M> {
     @Override
     public <T extends ReceivePort<? super M>> void setState(final Map<T, State> newStates) throws SuspendExecution, InterruptedException {
         if (newStates != null) {
-            final Map<T, State> newStatesSnapshot = ImmutableMap.copyOf(newStates); // Freeze
+            final Map<T, State> newStatesSnapshot = Map.copyOf(newStates); // Freeze
             states.swap(new Function<Map<? extends ReceivePort<? super M>, State>, Map<? extends ReceivePort<? super M>, State>>() {
                 @Override
                 public Map<? extends ReceivePort<? super M>, State> apply(final Map<? extends ReceivePort<? super M>, State> currStates) {
@@ -341,7 +342,7 @@ public class ReceivePortGroup<M> implements Mix<M> {
                                     new State(modeDefault, soloDefault)
                             );
                     }
-                    return ImmutableMap.copyOf(updatedStates); // RO
+                    return Map.copyOf(updatedStates); // RO
                 }
             });
             changedCh.send(ping);
