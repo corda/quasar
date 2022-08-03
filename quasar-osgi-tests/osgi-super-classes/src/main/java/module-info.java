@@ -1,4 +1,6 @@
-module quasar.osgi.supers {
+module org.testing.osgi.supers {
     requires static osgi.annotation;
-    requires quasar.osgi.base;
+    requires org.testing.osgi.base;
+
+    exports org.testing.osgi.supers;
 }

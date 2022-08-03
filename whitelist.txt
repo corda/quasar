@@ -1,1 +1,2 @@
 quasar-core-osgi
+quasar-osgi-annotations

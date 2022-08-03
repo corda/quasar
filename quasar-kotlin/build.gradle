@@ -47,8 +47,10 @@ def annotationTest = tasks.register('annotationTest', Test) {
     classpath = sourceSets.AnnotationTest.runtimeClasspath
     shouldRunAfter tasks.named('test')
 
-    jvmArgs = jvmArgs.findAll {!it.contains("javaagent")}
-    jvmArgs "-javaagent:${quasarJar}=a(SUSPENDABLE=co.paralleluniverse.kotlin.fibers.MySuspendable,co.paralleluniverse.kotlin.fibers.DennisSuspendable)"
+    doFirst {
+        jvmArgs = jvmArgs.findAll {!it.contains("javaagent")}
+        jvmArgs "-javaagent:${quasarJar}=a(SUSPENDABLE=co.paralleluniverse.kotlin.fibers.MySuspendable,co.paralleluniverse.kotlin.fibers.DennisSuspendable)"
+    }
 }
 
 tasks.named('check') {

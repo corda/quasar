@@ -3,10 +3,6 @@ plugins {
     id 'java-library'
 }
 
-ext {
-    moduleName = 'quasar.osgi.unprivileged'
-}
-
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 }

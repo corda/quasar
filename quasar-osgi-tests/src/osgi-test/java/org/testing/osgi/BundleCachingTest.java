@@ -1,6 +1,5 @@
 package org.testing.osgi;
 
-import co.paralleluniverse.fibers.suspend.Instrumented;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -14,27 +13,24 @@ import org.osgi.test.junit5.service.ServiceExtension;
 import org.testing.osgi.security.SecurityConfig;
 import org.testing.osgi.unprivileged.Unprivileged;
 
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.PrintStream;
-import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.testing.osgi.Helpers.CALL_METHOD_NAME;
+import static org.testing.osgi.Helpers.QUASAR_LOG_TAG;
+import static org.testing.osgi.Helpers.assertCallable;
+import static org.testing.osgi.Helpers.assertInstrumented;
+import static org.testing.osgi.Helpers.captureStdErr;
+import static org.testing.osgi.Helpers.getJar;
+import static org.testing.osgi.Helpers.loadCallableFrom;
 import static org.testing.osgi.security.SecurityConfig.ADMIN_PERMISSIONS;
 import static org.testing.osgi.security.SecurityConfig.ALL_PERMISSIONS;
 
 @ExtendWith({ BundleContextExtension.class, ServiceExtension.class })
 @TestInstance(PER_CLASS)
 class BundleCachingTest {
-    private static final String QUASAR_LOG_TAG = "[quasar]";
-    private static final String CALL_METHOD_NAME = "call";
-
     private static final String SUSPENDABLE_CLASS_NAME = "org.testing.osgi.suspendable.ExampleCallable";
     private static final String INTERNAL_SUSPENDABLE_NAME = SUSPENDABLE_CLASS_NAME.replace('.', '/');
 
@@ -70,99 +66,62 @@ class BundleCachingTest {
 
     @Test
     void testByteCodeIsCached() throws Exception {
-        // The class is instrumented the first time, and then cached.
-        assertForBundle("CACHED/osgi-suspendable-A", getJar(SUSPENDABLE_RESOURCE_NAME), bundle -> {
-            String[] lines = captureStdErr(() -> {
+        final String[] lines1 = captureStdErr(() ->
+            // The class is instrumented the first time, and then cached.
+            assertForBundle("CACHED/osgi-suspendable-A", getJar(SUSPENDABLE_RESOURCE_NAME), bundle -> {
                 Class<? extends Callable<?>> callable = Unprivileged.doUnprivileged(() -> loadCallableFrom(bundle, SUSPENDABLE_CLASS_NAME));
                 assertInstrumented(callable.getMethod(CALL_METHOD_NAME));
                 assertCallable(callable, SUSPENDABLE_MESSAGE);
-            });
-            assertThat(lines)
-                .anyMatch(line -> line.startsWith(QUASAR_LOG_TAG) && line.endsWith("TRANSFORM: " + INTERNAL_SUSPENDABLE_NAME));
-        });
+            })
+        );
+        assertThat(lines1)
+            .anyMatch(line -> line.startsWith(QUASAR_LOG_TAG) && line.endsWith("TRANSFORM: " + INTERNAL_SUSPENDABLE_NAME));
 
-        // Next time, we just use the instrumented byte-code from the cache.
-        assertForBundle("CACHED/osgi-suspendable-B", getJar(SUSPENDABLE_RESOURCE_NAME), bundle -> {
-            String[] lines = captureStdErr(() -> {
+        final String[] lines2 = captureStdErr(() ->
+                // Next time, we just use the instrumented byte-code from the cache.
+            assertForBundle("CACHED/osgi-suspendable-B", getJar(SUSPENDABLE_RESOURCE_NAME), bundle -> {
                 Class<? extends Callable<?>> callable = Unprivileged.doUnprivileged(() -> loadCallableFrom(bundle, SUSPENDABLE_CLASS_NAME));
                 assertInstrumented(callable.getMethod(CALL_METHOD_NAME));
                 assertCallable(callable, SUSPENDABLE_MESSAGE);
-            });
-            assertThat(lines)
-                .noneMatch(line -> line.startsWith(QUASAR_LOG_TAG) && line.endsWith("TRANSFORM: " + INTERNAL_SUSPENDABLE_NAME));
-        });
+            })
+        );
+        assertThat(lines2)
+            .noneMatch(line -> line.startsWith(QUASAR_LOG_TAG) && line.endsWith("TRANSFORM: " + INTERNAL_SUSPENDABLE_NAME));
     }
 
     @Test
     void testClassesWithSameNameAreDistinct() throws Exception {
-        // The class is instrumented the first time, and then cached.
-        assertForBundle("CACHED/osgi-cacheable-one", getJar(CACHEABLE_ONE_RESOURCE_NAME), bundle -> {
-            String[] lines = captureStdErr(() -> {
+        final String[] lines1 = captureStdErr(() ->
+            // The class is instrumented the first time, and then cached.
+            assertForBundle("CACHED/osgi-cacheable-one", getJar(CACHEABLE_ONE_RESOURCE_NAME), bundle -> {
                 Class<? extends Callable<?>> callable = Unprivileged.doUnprivileged(() -> loadCallableFrom(bundle, CACHEABLE_CLASS_NAME));
                 assertInstrumented(callable.getMethod(CALL_METHOD_NAME));
                 assertCallable(callable, CACHEABLE_ONE_MESSAGE);
-            });
-            assertThat(lines)
-                .anyMatch(line -> line.startsWith(QUASAR_LOG_TAG) && line.endsWith("TRANSFORM: " + INTERNAL_CACHEABLE_NAME));
-        });
+            })
+        );
+        assertThat(lines1)
+            .anyMatch(line -> line.startsWith(QUASAR_LOG_TAG) && line.endsWith("TRANSFORM: " + INTERNAL_CACHEABLE_NAME));
 
-        // This is a different class with the same name as the first; it cannot yet exist in the cache.
-        assertForBundle("CACHED/osgi-cacheable-two", getJar(CACHEABLE_TWO_RESOURCE_NAME), bundle -> {
-            String[] lines = captureStdErr(() -> {
+        final String[] lines2 = captureStdErr(() ->
+            // This is a different class with the same name as the first; it cannot yet exist in the cache.
+            assertForBundle("CACHED/osgi-cacheable-two", getJar(CACHEABLE_TWO_RESOURCE_NAME), bundle -> {
                 Class<? extends Callable<?>> callable = Unprivileged.doUnprivileged(() -> loadCallableFrom(bundle, CACHEABLE_CLASS_NAME));
                 assertInstrumented(callable.getMethod(CALL_METHOD_NAME));
                 assertCallable(callable, CACHEABLE_TWO_MESSAGE);
-            });
-            assertThat(lines)
-                .anyMatch(line -> line.startsWith(QUASAR_LOG_TAG) && line.endsWith("TRANSFORM: " + INTERNAL_CACHEABLE_NAME));
-        });
+            })
+        );
+        assertThat(lines2)
+            .anyMatch(line -> line.startsWith(QUASAR_LOG_TAG) && line.endsWith("TRANSFORM: " + INTERNAL_CACHEABLE_NAME));
     }
 
     private void assertForBundle(String location, InputStream bundleData, ThrowingConsumer<Bundle> assertion) throws Exception {
-        Bundle bundle = bundleContext.installBundle(location, bundleData);
+        final Bundle bundle = bundleContext.installBundle(location, bundleData);
         try {
             // Bundle has no BundleContext until we start it.
             bundle.start();
-            assertion.accept(bundle);
+            assertion.throwingAccept(bundle);
         } finally {
             bundle.uninstall();
         }
-    }
-
-    private void assertCallable(Class<? extends Callable<?>> callable, String message) throws Exception {
-        assertEquals(message, callable.getConstructor().newInstance().call());
-    }
-
-    private void assertInstrumented(Method method) {
-        assertTrue(method.isAnnotationPresent(Instrumented.class), method + " is not instrumented");
-    }
-
-    private InputStream getJar(String resourceName) {
-        InputStream input = getClass().getClassLoader().getResourceAsStream(resourceName);
-        assertNotNull(input, "Bundle resource '" + resourceName + "' not found?!");
-        return input;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Class<? extends Callable<?>> loadCallableFrom(Bundle bundle, String className) throws ClassNotFoundException {
-        // Loading a class requires OSGi AdminPermission("class").
-        Class<?> callable = bundle.loadClass(className);
-        assertTrue(Callable.class.isAssignableFrom(callable));
-        return (Class<? extends Callable<?>>) callable;
-    }
-
-    private static String[] captureStdErr(ThrowingRunnable runnable) throws Exception {
-        ByteArrayOutputStream errors = new ByteArrayOutputStream();
-        PrintStream oldStderr = System.err;
-        try (PrintStream stderr = new PrintStream(errors, true, UTF_8)) {
-            System.setErr(stderr);
-            runnable.run();
-        } finally {
-            System.setErr(oldStderr);
-
-            // Copy the output back to stderr for people to see.
-            System.err.write(errors.toByteArray());
-        }
-        return errors.toString(UTF_8).split(System.lineSeparator());
     }
 }

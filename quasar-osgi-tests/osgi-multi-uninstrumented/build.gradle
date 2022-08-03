@@ -1,0 +1,10 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+    id 'java-library'
+}
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly project(':quasar-osgi-annotations')
+    compileOnly project(path: ':quasar-core', configuration: 'core')
+}

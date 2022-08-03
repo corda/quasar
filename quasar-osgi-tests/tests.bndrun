@@ -5,22 +5,18 @@
 -runtrace: true
 
 -runvm: \
-    "-javaagent:${project.configurations.quasarAgent.singleFile}${project.quasarOptions}",\
-    -Dco.paralleluniverse.quasar.cacheDirectory=${task.cacheDirectory},\
     -Dco.paralleluniverse.fibers.verifyInstrumentation,\
     -Djava.security.policy=all.policy,\
+    -Djava.util.logging.config.file=${.}/logging.properties,\
     --add-opens, 'java.base/java.net=ALL-UNNAMED'
--runpath: \
-    com.esotericsoftware.reflectasm;version=${project.reflectAsmVersion},\
-    org.objectweb.asm;version=${project.asmVersion}
--runsystempackages: \
-    co.paralleluniverse.fibers.instrument;version=${project.quasarOsgiVersion},\
-    co.paralleluniverse.fibers.suspend;version=${project.quasarOsgiVersion},\
-    co.paralleluniverse.common.resource;version=${project.quasarOsgiVersion},\
-    co.paralleluniverse.common.asm;${project.quasarOsgiVersion}
 
 -runproperties: \
-    org.osgi.framework.bootdelegation=co.paralleluniverse.fibers.suspend,com.esotericsoftware.reflectasm,\
+    co.paralleluniverse.quasar.cacheDirectory='${task.cacheDirectory}',\
+    co.paralleluniverse.quasar.cacheLocations='CACHED/*',\
+    co.paralleluniverse.quasar.excludeLocations='IGNORE/*,VERIFY/*',\
+    co.paralleluniverse.quasar.excludePackages='aQute.**,org.osgi.**,org.apache.felix.**,org.junit.**,org.assertj.**,org.opentest4j**',\
+    co.paralleluniverse.quasar.service,\
+    co.paralleluniverse.quasar.verbose,\
     org.osgi.framework.bundle.parent=framework,\
     org.osgi.framework.security=osgi
 

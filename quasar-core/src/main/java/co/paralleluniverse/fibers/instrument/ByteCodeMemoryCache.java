@@ -19,7 +19,13 @@ final class ByteCodeMemoryCache implements ByteCodeCache {
             return null;
         }
 
+        // ConcurrentHashMap.computeIfAbsent() uses locking,
+        // even if it already contains a value for our key.
         final CacheKey cacheKey = keyFactory.createKey(className, byteCode);
-        return cache.computeIfAbsent(cacheKey, key -> computer.get());
+        byte[] cachedByteCode;
+        if ((cachedByteCode = cache.get(cacheKey)) == null) {
+            cachedByteCode = cache.computeIfAbsent(cacheKey, key -> computer.get());
+        }
+        return cachedByteCode;
     }
 }

@@ -10,12 +10,10 @@ import org.testing.osgi.exception.second.SecondException;
 import org.testing.osgi.security.SecurityConfig;
 import org.testing.osgi.unprivileged.Unprivileged;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.testing.osgi.Helpers.QUASAR_LOG_TAG;
+import static org.testing.osgi.Helpers.captureStdErr;
 import static org.testing.osgi.security.SecurityConfig.ALL_PERMISSIONS;
 import static org.testing.osgi.unprivileged.Unprivileged.doUnprivileged;
 
@@ -40,23 +38,14 @@ class QuasarInstrumentationTest {
 
     @Test
     void testSuperClasses() throws Exception {
-        ByteArrayOutputStream errors = new ByteArrayOutputStream();
-        PrintStream oldStderr = System.err;
-        try (PrintStream stderr = new PrintStream(errors, true, UTF_8)) {
-            System.setErr(stderr);
+        final String[] lines = captureStdErr(() ->
             assertThat(doUnprivileged(() -> ExceptionSuperClasses.throwException(MESSAGE)))
                 .isInstanceOf(SecondException.class)
-                .hasMessage(MESSAGE);
-        } finally {
-            System.setErr(oldStderr);
-
-            // Copy the output back to stderr for people to see.
-            System.err.write(errors.toByteArray());
-        }
-
-        String[] lines = errors.toString(UTF_8).split(System.lineSeparator());
+                .hasMessage(MESSAGE)
+        );
         assertThat(lines)
             .contains("Caught: " + MESSAGE)
-            .noneMatch(line -> line.startsWith("[quasar]") && line.contains("Can't determine super class of "));
+            .anyMatch(line -> line.startsWith(QUASAR_LOG_TAG))
+            .noneMatch(line -> line.startsWith(QUASAR_LOG_TAG) && line.contains("Can't determine super class of "));
     }
 }
