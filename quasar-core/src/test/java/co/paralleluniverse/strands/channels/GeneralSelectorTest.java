@@ -88,6 +88,7 @@ public class GeneralSelectorTest {
                     {-1, OverflowPolicy.THROW, true, false},
                     {5, OverflowPolicy.DISPLACE, true, false},
                     {5, OverflowPolicy.DROP, true, false},
+                    {-1, OverflowPolicy.BLOCK, true, false}, // This is Corda 4's use-case
                     {0, OverflowPolicy.BLOCK, false, false},});
     }
 
