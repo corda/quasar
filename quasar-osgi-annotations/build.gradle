@@ -1,0 +1,12 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+    id 'java-library'
+}
+
+ext {
+    moduleName = 'co.paralleluniverse.quasar.osgi.annotations'
+}
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+}

@@ -3,10 +3,6 @@ plugins {
     id 'java-library'
 }
 
-ext {
-    moduleName = 'quasar.osgi.security.config'
-}
-
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'

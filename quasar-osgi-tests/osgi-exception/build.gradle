@@ -3,10 +3,6 @@ plugins {
     id 'java-library'
 }
 
-ext {
-    moduleName = 'quasar.osgi.exception'
-}
-
 dependencies {
     api project(':quasar-osgi-tests:osgi-base')
     compileOnly 'org.osgi:osgi.annotation'

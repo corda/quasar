@@ -1,4 +1,5 @@
 import aQute.bnd.gradle.Bundle
+import aQute.bnd.header.OSGiHeader
 import java.util.jar.JarFile
 import java.util.jar.Manifest
 import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
@@ -51,7 +52,7 @@ subprojects {
     ext.distDir         = "$buildDir/dist"
     ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
     ext.baselib         = "${rootProject.projectDir}/baselib"
-    ext.quasarJar = "${rootProject.projectDir}/quasar-core/build/libs/quasar-core-${version}.jar" // project(':quasar-core').jar.archivePath
+    ext.quasarJar = "${rootDir}/quasar-core/build/libs/quasar-core-${version}.jar" // project(':quasar-core').jar.archivePath
 
     ext.drpWizVer = '4.1.0'
     ext.guavaVer  = '30.1.1-jre'
@@ -79,16 +80,12 @@ subprojects {
     configurations.all {
         resolutionStrategy {
             dependencySubstitution {
-                // The substitution is needed to get ASM 7.0 whilst Kryo still depends on 5.0.4
-                substitute module("org.ow2.asm:asm") with module("org.ow2.asm:asm:$asmVersion")
-
                 // Kryo demands Objenesis 2.5.1, but Mockito wants Objenesis 2.6
-                substitute module("org.objenesis:objenesis") with module("org.objenesis:objenesis:2.5.1")
+                substitute module('org.objenesis:objenesis') with module("org.objenesis:objenesis:2.5.1")
 
                 // Avoid problem when DropWizard and Log4J ask for different versions of SLF4J.
-                substitute module("org.slf4j:slf4j-api") with module("org.slf4j:slf4j-api:$slf4jVer")
+                substitute module('org.slf4j:slf4j-api') with module("org.slf4j:slf4j-api:$slf4jVer")
             }
-            failOnVersionConflict()
         }
     }
 
@@ -134,8 +131,6 @@ subprojects {
             }
         }
 
-        implementation "io.dropwizard.metrics:metrics-core:$drpWizVer"
-        implementation "io.dropwizard.metrics:metrics-jmx:$drpWizVer"
         provided "org.apache.ant:ant:1.10.5"
         timewarp 'co.paralleluniverse:timewarp:0.2.0-SNAPSHOT'
         testImplementation 'junit:junit:4.13.2'
@@ -149,7 +144,6 @@ subprojects {
             exclude group: "org.ow2.asm", module: '*'
             exclude group: "net.bytebuddy", module: '*'
         }
-        testImplementation "org.ow2.asm:asm:$asmVersion"
         testRuntimeOnly "net.bytebuddy:byte-buddy:1.9.2" // for Mockito
         testRuntimeOnly("com.google.guava:guava:$guavaVer") {
             exclude group: 'com.google.errorprone', module: '*'
@@ -363,22 +357,27 @@ def scanAndInstrument(SourceSet sset, configs) {
     }
 }
 
-boolean containsOnly(String values, List<String> expected) {
+static boolean containsOnly(String values, Iterable<String> expected) {
     expected.containsAll(parsePackages(values))
 }
 
-List<String> parsePackages(String values) {
-    values.split(',').findAll { !it.startsWith('java.') }
+static Collection<String> removeOSGiFramework(Iterable<String> packages) {
+    def osgiFramework = 'org.osgi.framework'
+    packages.findAll { !it.startsWith(osgiFramework) || (it.length() > osgiFramework.length() && it[osgiFramework.length()] != '.') }
 }
 
-String fetchManifestAttributeFrom(File archive, String attributeName) {
-    return new JarFile(archive).with { jar ->
+static Set<String> parsePackages(String values) {
+    OSGiHeader.parseHeader(values).keySet().findAll { !it.startsWith('java.') }
+}
+
+static String fetchManifestAttributeFrom(File archive, String attributeName) {
+    return new JarFile(archive).withCloseable { jar ->
         Manifest manifest = jar.manifest
         manifest.mainAttributes.getValue(attributeName)
     }
 }
 
-String fetchManifestAttributeFrom(TaskProvider<? extends Jar> task, String attributeName) {
+static String fetchManifestAttributeFrom(TaskProvider<? extends Jar> task, String attributeName) {
     return fetchManifestAttributeFrom(task.flatMap { it.archiveFile }.get().asFile, attributeName)
 }
 
@@ -393,6 +392,7 @@ project (':quasar-core') {
      */
 
     apply plugin: 'com.github.johnrengelman.shadow'
+    apply plugin: 'osgi-publish'
 
     ext.moduleName = 'co.paralleluniverse.quasar.core'
 
@@ -408,9 +408,15 @@ project (':quasar-core') {
             }
             compileClasspath += main.compileClasspath
         }
-        bundle {
+        core {
             java {
-                srcDir 'src/main/bundle'
+                srcDir 'src/main/core'
+            }
+            compileClasspath += main.compileClasspath
+        }
+        frameworkExtension {
+            java {
+                srcDir 'src/main/frameworkExtension'
             }
             compileClasspath += main.compileClasspath
         }
@@ -445,20 +451,26 @@ project (':quasar-core') {
             extendsFrom runtimeClasspath
             canBeResolved = false
         }
-        bundleJar {
-            extendsFrom runtimeClasspath
+        agent {
             canBeResolved = false
         }
-        agentJar {
+        frameworkExtension {
+            canBeResolved = false
+        }
+        core {
+            extendsFrom runtimeClasspath
             canBeResolved = false
         }
 
         agentCompileOnly {
             extendsFrom provided
         }
-        bundleImplementation {
+        frameworkExtensionCompileOnly {
+            extendsFrom provided
+        }
+        coreImplementation {
             extendsFrom implementation
-            extendsFrom agentImplementation
+            extendsFrom frameworkExtensionImplementation
         }
 
         testArtifacts {
@@ -468,6 +480,8 @@ project (':quasar-core') {
     }
 
     dependencies {
+        implementation "io.dropwizard.metrics:metrics-core:$drpWizVer"
+        implementation "io.dropwizard.metrics:metrics-jmx:$drpWizVer"
         implementation "org.hdrhistogram:HdrHistogram:2.1.10"
         implementation("org.latencyutils:LatencyUtils:2.0.3") {
             exclude group: "org.hdrhistogram", module: '*'
@@ -486,25 +500,42 @@ project (':quasar-core') {
         agentImplementation files(sourceSets.main.output) {
             builtBy tasks.named('compileJava', JavaCompile)
         }
-        bundleImplementation files(sourceSets.agent.output) {
-            builtBy tasks.named('compileAgentJava', JavaCompile)
+        coreImplementation files(sourceSets.frameworkExtension.output) {
+            builtBy tasks.named('compileFrameworkExtensionJava', JavaCompile)
+        }
+        frameworkExtensionImplementation files(sourceSets.main.output) {
+            builtBy tasks.named('compileJava', JavaCompile)
         }
     }
 
     tasks.named('compileAgentJava', JavaCompile) {
-        options.compilerArgs += [
-            '--patch-module', "${project.moduleName}.agent=${sourceSets.main.output.asPath}",
-            '--module-path', configurations.agentCompileClasspath.asPath,
-            '--module-version', project.version
-        ]
+        doFirst {
+            options.compilerArgs += [
+                '--patch-module', "${project.moduleName}.agent=${sourceSets.main.output.asPath}",
+                '--module-path', configurations.agentCompileClasspath.asPath,
+                '--module-version', project.version
+            ]
+        }
     }
 
-    tasks.named('compileBundleJava', JavaCompile) {
-        options.compilerArgs += [
-            '--patch-module', "${project.moduleName}.osgi=${sourceSets.main.output.asPath}",
-            '--module-path', configurations.bundleCompileClasspath.asPath,
-            '--module-version', project.version
-        ]
+    tasks.named('compileFrameworkExtensionJava', JavaCompile) {
+        doFirst {
+            options.compilerArgs += [
+                '--patch-module', "${project.moduleName}.framework.extension=${sourceSets.main.output.asPath}",
+                '--module-path', configurations.frameworkExtensionCompileClasspath.asPath,
+                '--module-version', project.version
+            ]
+        }
+    }
+
+    tasks.named('compileCoreJava', JavaCompile) {
+        doFirst {
+            options.compilerArgs += [
+                '--patch-module', "${project.moduleName}.osgi=${sourceSets.main.output.asPath}",
+                '--module-path', configurations.coreCompileClasspath.asPath,
+                '--module-version', project.version
+            ]
+        }
     }
 
     // this happens after we've filtered the dependency on ASM from core's module-info
@@ -555,6 +586,10 @@ project (':quasar-core') {
         archiveClassifier = ''
         from(shadowFiles) {
             exclude 'co/paralleluniverse/fibers/osgi/**'
+            exclude 'co/paralleluniverse/fibers/instrument/QuasarActivator*'
+            exclude 'co/paralleluniverse/fibers/instrument/QuasarBundleTracker*'
+            exclude 'co/paralleluniverse/fibers/instrument/QuasarPermission*'
+            exclude 'co/paralleluniverse/fibers/instrument/QuasarWeavingHook*'
         }
 
         manifest {
@@ -581,7 +616,7 @@ project (':quasar-core') {
         }
     }
 
-    def bundle = tasks.register('bundle', Bundle) {
+    def coreBundle = tasks.register('coreBundle', Bundle) {
         dependsOn classicJar
         from(zipTree(classicJar.flatMap { it.archiveFile })) {
             exclude 'META-INF/suspendable*'
@@ -592,23 +627,19 @@ project (':quasar-core') {
             exclude 'co/paralleluniverse/fibers/suspend/**'
             exclude 'module-info.class'
         }
-        from(sourceSets.bundle.output)
+        from(sourceSets.core.output)
         archiveAppendix = 'osgi'
 
-        manifest {
-            attributes(
-                "Built-By"                  :   System.getProperty("user.name"),
-                "Implementation-Title"      :   project.name,
-                "Implementation-Version"    :   archiveVersion.get(),
-                "Implementation-Vendor"     :   vendor,
-            )
-        }
-
         bundle {
+            bnd archiveVersion.map { "Implementation-Version: $it" }
+
             bnd """\
+Built-By: ${System.getProperty("user.name")}
 Bundle-SymbolicName: co.paralleluniverse.quasar-core
 Bundle-Name: Quasar Fibers
 Bundle-Version: \${project.version}
+Implementation-Title: \${project.name}
+Implementation-Vendor: \${project.vendor}
 Import-Package: \
  org.LatencyUtils.*;resolution:=optional,\
  org.HdrHistogram.*;resolution:=optional,\
@@ -617,18 +648,18 @@ Import-Package: \
         }
     }
 
-    def validateBundle = tasks.register("validateBundle") {
-        dependsOn bundle
+    def validateCoreBundle = tasks.register("validateCoreBundle") {
+        dependsOn coreBundle
         doLast {
-            String importPackages = fetchManifestAttributeFrom(bundle, 'Import-Package')
+            String importPackages = fetchManifestAttributeFrom(coreBundle, 'Import-Package')
             if (importPackages && !parsePackages(importPackages).disjoint(['co.paralleluniverse.asm'])) {
                 throw new InvalidUserCodeException("OSGi bundle should not import shaded ASM package: " + importPackages)
             }
         }
     }
 
-    bundle.configure {
-        it.finalizedBy validateBundle
+    coreBundle.configure {
+        it.finalizedBy validateCoreBundle
     }
 
     def agentBundle = tasks.register('agentBundle', Bundle) {
@@ -644,6 +675,10 @@ Import-Package: \
             exclude 'co/paralleluniverse/fibers/instrument/ModuleFilterTask*'
             exclude 'co/paralleluniverse/fibers/instrument/OldSuspendablesScanner*'
             exclude 'co/paralleluniverse/fibers/instrument/SuspendablesScanner*'
+            exclude 'co/paralleluniverse/fibers/instrument/QuasarActivator*'
+            exclude 'co/paralleluniverse/fibers/instrument/QuasarBundleTracker*'
+            exclude 'co/paralleluniverse/fibers/instrument/QuasarPermission*'
+            exclude 'co/paralleluniverse/fibers/instrument/QuasarWeavingHook*'
             include 'co/paralleluniverse/fibers/suspend/**'
         }
         from(shadowFiles) {
@@ -654,19 +689,21 @@ Import-Package: \
         archiveAppendix = 'osgi'
         archiveClassifier = 'agent'
 
-        bnd classicJar.flatMap { jar ->
-            jar.archiveFile.map { file ->
-                "-include: jar:${file.asFile.toURI()}!/META-INF/MANIFEST.MF"
+        bundle {
+            bnd classicJar.flatMap { jar ->
+                jar.archiveFile.map { file ->
+                    "-include: jar:${file.asFile.toURI()}!/META-INF/MANIFEST.MF"
+                }
             }
-        }
 
-        bnd """\
+            bnd """\
 -fixupmessages "Classes found in the wrong directory"; restrict:=error; is:=warning
 Bundle-SymbolicName: co.paralleluniverse.quasar-core.agent
 Bundle-Name: Quasar Agent
 Bundle-Version: \${project.version}
 Import-Package: !org.osgi.framework.*,*
 """
+        }
     }
 
     def validateAgentBundle = tasks.register("validateAgentBundle") {
@@ -683,12 +720,66 @@ Import-Package: !org.osgi.framework.*,*
         it.finalizedBy validateAgentBundle
     }
 
-    test {
-        dependsOn = [classicJar, bundle, agentBundle, compileClassloadertestJava]
-        testClassesDirs = project.sourceSets.test.output.classesDirs
-        classpath = project.sourceSets.test.runtimeClasspath
+    def frameworkExtensionBundle = tasks.register('frameworkExtensionBundle', Bundle) {
+        dependsOn shadowJar
+        from(shadowFiles) {
+            include 'META-INF/suspendable*'
+            include 'co/paralleluniverse/asm/**'
+            include 'co/paralleluniverse/common/asm/**'
+            include 'co/paralleluniverse/common/resource/**'
+            include 'co/paralleluniverse/fibers/instrument/**'
+            exclude 'co/paralleluniverse/fibers/instrument/JavaAgent*'
+            exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTask*'
+            exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTKB*'
+            exclude 'co/paralleluniverse/fibers/instrument/ModuleFilterTask*'
+            exclude 'co/paralleluniverse/fibers/instrument/OldSuspendablesScanner*'
+            exclude 'co/paralleluniverse/fibers/instrument/SuspendablesScanner*'
+            include 'co/paralleluniverse/fibers/suspend/**'
+        }
+        from(shadowFiles) {
+            include 'co/paralleluniverse/fibers/osgi/**'
+            into 'META-INF'
+        }
+        from(sourceSets.frameworkExtension.output)
+        archiveAppendix = 'osgi'
+        archiveClassifier = 'framework-extension'
 
-        project.afterEvaluate {
+        bundle {
+            bnd archiveVersion.map { "Implementation-Version: $it" }
+
+            bnd """\
+-fixupmessages "Classes found in the wrong directory"; restrict:=error; is:=warning
+Built-By: ${System.getProperty("user.name")}
+Bundle-SymbolicName: co.paralleluniverse.quasar-core.framework.extension
+Bundle-Name: Quasar Framework Extension
+Bundle-Version: \${project.version}
+Implementation-Title: \${project.name}
+Implementation-Vendor: \${project.vendor}
+"""
+        }
+    }
+
+    def validateFrameworkExtensionBundle = tasks.register('validateFrameworkExtensionBundle') {
+        dependsOn frameworkExtensionBundle
+        doLast {
+            def importPackagesAttr = fetchManifestAttributeFrom(frameworkExtensionBundle, 'Import-Package')
+            def importPackages = removeOSGiFramework(parsePackages(importPackagesAttr))
+            if (importPackages && !['co.paralleluniverse.common.resource', 'co.paralleluniverse.fibers.suspend', 'org.osgi.util.tracker'].containsAll(importPackages)) {
+                throw new InvalidUserDataException("OSGi bundle for OSGi framework extension should only import from Java, OSGi framework or itself: " + importPackages)
+            }
+        }
+    }
+
+    frameworkExtensionBundle.configure {
+        it.finalizedBy validateFrameworkExtensionBundle
+    }
+
+    tasks.named('test', Test) {
+        dependsOn = [classicJar, coreBundle, agentBundle, frameworkExtensionBundle, compileClassloadertestJava]
+        testClassesDirs = sourceSets.test.output.classesDirs
+        classpath = sourceSets.test.runtimeClasspath
+
+        doFirst {
             jvmArgs "-javaagent:${classicJar.flatMap { it.archiveFile }.get()}" // =vdc
         }
     }
@@ -696,10 +787,12 @@ Import-Package: !org.osgi.framework.*,*
     artifacts {
         classic classicJar
         archives classicJar
-        bundleJar bundle
-        archives bundle
-        agentJar agentBundle
+        core coreBundle
+        archives coreBundle
+        agent agentBundle
         archives agentBundle
+        frameworkExtension frameworkExtensionBundle
+        archives frameworkExtensionBundle
         testArtifacts testJar
     }
 
@@ -715,34 +808,20 @@ Import-Package: !org.osgi.framework.*,*
         source = sourceSets.main.allJava
     }
 
-    ext {
-        osgiArtifacts = {
-            it.artifact bundle.flatMap { it.archiveFile }
-            it.artifact source: agentBundle.flatMap { it.archiveFile }, classifier: agentBundle.flatMap { it.archiveClassifier }.get()
-
-            it.pom { pom->
-                pom.withXml { xml ->
-                    def dependenciesNode = xml.asNode().appendNode('dependencies')
-                    project.configurations.runtimeClasspath.allDependencies.each {
-                        if (! (it instanceof SelfResolvingDependency)) {
-                            def dependencyNode = dependenciesNode.appendNode('dependency')
-                            dependencyNode.appendNode('groupId', it.group)
-                            dependencyNode.appendNode('artifactId', it.name)
-                            dependencyNode.appendNode('version', it.version)
-                            dependencyNode.appendNode('scope', 'runtime')
-                        }
-                    }
-                }
-            }
+    components.named('osgi') {
+        addVariantsFromConfiguration(configurations.core) {
+            mapToMavenScope('runtime')
+        }
+        addVariantsFromConfiguration(configurations.agent) {
+            mapToMavenScope('runtime')
+        }
+        addVariantsFromConfiguration(configurations.frameworkExtension) {
+            mapToMavenScope('runtime')
         }
     }
 }
 
 project (':quasar-actors') {
-    //project.evaluationDependsOn(':quasar-core')
-    
-    apply plugin: 'org.javamodularity.moduleplugin'
-
     ext.moduleName = 'co.paralleluniverse.quasar.actors'
     
     dependencies {
@@ -764,9 +843,6 @@ project (':quasar-actors') {
 }
 
 project (':quasar-reactive-streams') {
-    //project.evaluationDependsOn(':quasar-core')
-    
-    apply plugin: 'org.javamodularity.moduleplugin'
     ext.moduleName = 'co.paralleluniverse.quasar.reactivestreams'
     
     dependencies {
@@ -776,21 +852,18 @@ project (':quasar-reactive-streams') {
             exclude group: "junit", module: "*"
             exclude group: "org.testng", module: "testng"
         }
-        testImplementation('org.testng:testng:7.0.0-beta1') {
+        testImplementation("org.testng:testng:$testngVersion") {
             exclude group: "com.google.guava", module: "*"
             exclude group: "junit", module: "*"
         }
     }
 
-    test {
+    tasks.named('test', Test) {
         useTestNG()
     }
 }
 
 project (':quasar-disruptor') {
-    //project.evaluationDependsOn(':quasar-core')
-     
-    apply plugin: 'org.javamodularity.moduleplugin'
     ext.moduleName = 'co.paralleluniverse.quasar.disruptor'
 
     dependencies {
@@ -916,10 +989,10 @@ configure(publishedProjects) { subproject ->
                 }
             }
 
-            if (subproject.hasProperty('osgiArtifacts')) {
+            pluginManager.withPlugin('osgi-publish') {
                 create(subproject.name + '-osgi', MavenPublication) {
                     artifactId subproject.name + '-osgi'
-                    subproject.osgiArtifacts.call(it)
+                    from components.osgi
                     alias true
 
                     pluginManager.withPlugin('java') {

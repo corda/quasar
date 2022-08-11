@@ -77,27 +77,14 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
-import co.paralleluniverse.common.resource.ClassLoaderUtil;
 
-import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.PosixFilePermission;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
-import java.util.Arrays;
-import java.util.Set;
 
 import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
-import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static java.security.AccessController.doPrivileged;
 
 /*
@@ -109,7 +96,6 @@ public class JavaAgent {
     private static final String USAGE = "Usage: vdmcb0x(exclusion;...)l(exclusion;...)o(exclusion;...)C(cached;...)"
         + "(verbose, debug, allow monitors, check class, allow blocking, disable OSGi support)";
     private static final String CACHE_DIRECTORY_PROPERTY_NAME = "co.paralleluniverse.quasar.cacheDirectory";
-    private static final String BYTE_CODE_HASH_ALGORITHM = "SHA-256";
     private static volatile boolean ACTIVE;
 
     public static void premain(String agentArguments, Instrumentation instrumentation) {
@@ -130,7 +116,7 @@ public class JavaAgent {
             }
         };
 
-        final QuasarInstrumentor instrumentor = new QuasarInstrumentor(createByteCodeCache(log), log);
+        final QuasarInstrumentor instrumentor = new QuasarInstrumentorBuilder(System.getProperty(CACHE_DIRECTORY_PROPERTY_NAME), log).build();
         ACTIVE = true;
         SuspendableHelper.javaAgent = true;
 
@@ -144,7 +130,7 @@ public class JavaAgent {
                             final String[] attr = s.split("=");
                             if (attr.length > 1) {
                                 final String[] names = attr[1].split(",");
-                                instrumentor.addTypeDesc(attr[0], toTypeDescriptors(names));
+                                instrumentor.addTypeNames(attr[0], names);
                             }
                         }
                         break;
@@ -218,52 +204,10 @@ public class JavaAgent {
             }
         }
 
-        // CORDA-3666: Access Classes now so we don't deadlock while
-        // loading it later.
-        //
-        // We are calling isJDK(THROWABLE_NAME) for the side effect of the JVM
-        // running both MethodDatabase.<clinit> and Classes.<clinit>. We expect
-        // this call to return true.
-        // Prints "MethodDatabase, Classes ready: true"
-        instrumentor.log(LogLevel.DEBUG, "MethodDatabase, Classes ready: %s", MethodDatabase.isJDK(Classes.THROWABLE_NAME));
-
         Retransform.instrumentation = instrumentation;
         Retransform.instrumentor = instrumentor;
 
         instrumentation.addTransformer(new Transformer(instrumentor), true);
-    }
-
-    private static ByteCodeCache createByteCodeCache(Log log) {
-        final ByteCodeCache.CacheKeyFactory keyFactory;
-        try {
-            keyFactory = ByteCodeCache.createKeyFactory(BYTE_CODE_HASH_ALGORITHM);
-        } catch(NoSuchAlgorithmException e) {
-            throw new InternalError(e.getMessage(), e);
-        }
-
-        final Path cacheDirectory = getCacheDirectory(log);
-        return (cacheDirectory != null)
-            ? new ByteCodeFileCache(keyFactory, cacheDirectory, log)
-            : new ByteCodeMemoryCache(keyFactory);
-    }
-
-    private static Path getCacheDirectory(Log log) {
-        final String cacheDirectoryName = System.getProperty(CACHE_DIRECTORY_PROPERTY_NAME);
-        if (cacheDirectoryName != null) {
-            final Path cacheDirectory = Paths.get(cacheDirectoryName).toAbsolutePath();
-            try {
-                final Set<PosixFilePermission> requiredPermissions = Set.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE);
-                if (Files.isDirectory(cacheDirectory) && Files.getPosixFilePermissions(cacheDirectory).containsAll(requiredPermissions)) {
-                    log.log(LogLevel.INFO, "Cache directory: %s", cacheDirectory.toAbsolutePath());
-                    return cacheDirectory;
-                } else {
-                    log.log(LogLevel.WARNING, "Invalid cache directory '%s'", cacheDirectoryName);
-                }
-            } catch(IOException e) {
-                log.error("Cannot determine permissions for " + cacheDirectoryName, e);
-            }
-        }
-        return null;
     }
 
     public static void agentmain(String agentArguments, Instrumentation instrumentation) {
@@ -272,10 +216,6 @@ public class JavaAgent {
 
     public static boolean isActive() {
         return ACTIVE;
-    }
-
-    private static String[] toTypeDescriptors(String[] names) {
-        return Arrays.stream(names).map((s) -> Type.getObjectType(ClassLoaderUtil.classToSlashed(s)).getDescriptor()).toArray(String[]::new);
     }
 
     private static class Transformer implements ClassFileTransformer {

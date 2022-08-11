@@ -2,7 +2,6 @@ package org.testing.osgi;
 
 import co.paralleluniverse.fibers.instrument.MethodDatabase;
 import co.paralleluniverse.fibers.instrument.QuasarInstrumentor;
-import co.paralleluniverse.fibers.instrument.Retransform;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -11,6 +10,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleException;
 import org.osgi.test.common.annotation.InjectBundleContext;
 import org.osgi.test.common.annotation.InjectService;
 import org.osgi.test.junit5.context.BundleContextExtension;
@@ -40,12 +40,16 @@ import static org.testing.osgi.security.SecurityConfig.ALL_PERMISSIONS;
 @TestInstance(PER_CLASS)
 class BundleLocatorTest {
     private static final String SUPER_CLASS_ACTION_CLASS_NAME = "org.testing.osgi.supers.SuperClassAction";
-    private final QuasarInstrumentor instrumentor = Retransform.getInstrumentor();
+
+    private QuasarInstrumentor instrumentor;
 
     @BeforeAll
     void setup(
         @InjectService(timeout = 1000)
-        SecurityConfig securityConfig
+        SecurityConfig securityConfig,
+
+        @InjectService(timeout = 1000)
+        QuasarInstrumentor instrumentor
     ) {
         securityConfig.setSecurityPolicy(
             // Any call-stack containing Unprivileged has only these permissions.
@@ -55,10 +59,12 @@ class BundleLocatorTest {
             // Everyone else has all permissions.
             securityConfig.allow("*", ALL_PERMISSIONS)
         );
+        this.instrumentor = instrumentor;
     }
 
     @ParameterizedTest
     @ValueSource(classes = {
+        BundleException.class,
         SecondException.class,
         FirstException.class,
         OsgiException.class,
@@ -107,7 +113,9 @@ class BundleLocatorTest {
 
         assertAll("Superclass mapping allocations",
             () -> assertSuperClassesForClassLoader(getClassLoaderFor(testClass)),
-            () -> assertSuperClassesForClassLoader(ClassLoader.getSystemClassLoader()),
+            // Locating classes inside the framework classloader requires:
+            //     org.osgi.framework.bundle.parent=framework
+            () -> assertSuperClassesForClassLoader(getClassLoaderFor(Bundle.class)),
             () -> assertSuperClassesForClassLoader(ClassLoader.getPlatformClassLoader())
         );
     }

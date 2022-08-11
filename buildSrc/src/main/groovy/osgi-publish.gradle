@@ -1,0 +1,22 @@
+import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
+import javax.inject.Inject
+
+pluginManager.apply(OsgiPublishPlugin)
+
+@CompileStatic
+@PackageScope
+final class OsgiPublishPlugin implements Plugin<Project> {
+    private final SoftwareComponentFactory factory
+
+    @Inject
+    OsgiPublishPlugin(SoftwareComponentFactory factory) {
+        this.factory = factory
+    }
+
+    @Override
+    void apply(Project project) {
+        project.components.add(factory.adhoc('osgi'))
+    }
+}
+

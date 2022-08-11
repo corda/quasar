@@ -3,11 +3,7 @@ plugins {
     id 'java-library'
 }
 
-ext {
-    moduleName = 'quasar.osgi.suspendable.one'
-}
-
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly project(path: ':quasar-core', configuration: 'bundleJar')
+    compileOnly project(path: ':quasar-core', configuration: 'core')
 }

@@ -1,7 +1,6 @@
 import aQute.bnd.gradle.Bundle
 import aQute.bnd.gradle.Resolve
 import aQute.bnd.gradle.TestOSGi
-import aQute.bnd.version.MavenVersion
 import java.nio.file.Files
 
 import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
@@ -9,17 +8,6 @@ import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
 plugins {
     id 'biz.aQute.bnd.builder' apply false
     id 'java-library'
-}
-
-ext {
-    moduleName = 'quasar.osgi'
-    quasarOsgiVersion = provider {
-        MavenVersion.parseMavenString(quasarVersion).getOSGiVersion().toString()
-    }
-    quasarOptions = provider {
-        '=vx(aQute.**;org.osgi.**;org.apache.felix.**;org.junit.**;org.assertj.**)o(IGNORE/*;VERIFY/*)C(CACHED/*)'
-    }
-    reflectAsmVersion = '1.11.3'
 }
 
 sourceSets {
@@ -34,12 +22,6 @@ sourceSets {
 }
 
 configurations {
-    quasarAgent {
-        canBeConsumed = false
-    }
-    systemClasspath {
-        canBeConsumed = false
-    }
     bundles {
         canBeConsumed = false
         transitive = false
@@ -48,16 +30,16 @@ configurations {
 }
 
 dependencies {
-    quasarAgent project(path: ':quasar-core', configuration: 'agentJar')
-    systemClasspath "com.esotericsoftware:reflectasm:$reflectAsmVersion"
     bundles project('osgi-suspendable')
     bundles project('osgi-cacheable-one')
     bundles project('osgi-cacheable-two')
+    bundles project('osgi-multi-uninstrumented')
     bundles project('osgi-super-classes')
+    bundles project('osgi-uninstrumented')
 
     osgiTestCompileOnly 'org.osgi:osgi.core'
-    osgiTestCompileOnly project(path: ':quasar-core', configuration: 'agentJar')
-    osgiTestImplementation project(path: ':quasar-core', configuration: 'bundleJar')
+    osgiTestImplementation project(path: ':quasar-core', configuration: 'frameworkExtension')
+    osgiTestImplementation project(path: ':quasar-core', configuration: 'core')
     osgiTestImplementation project('osgi-exception')
     osgiTestImplementation project('osgi-security-config')
     osgiTestImplementation project('osgi-unprivileged')
@@ -71,6 +53,7 @@ dependencies {
     osgiTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     osgiTestRuntimeOnly "org.apache.felix:org.apache.felix.log:$felixLogVersion"
     osgiTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
+    osgiTestRuntimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     osgiTestRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     osgiTestRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     osgiTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
@@ -83,16 +66,17 @@ def testingBundle = tasks.register('testingBundle', Bundle) {
     archiveBaseName = 'quasar-osgi-tests'
     from sourceSets.osgiTest.output
     sourceSet = sourceSets.osgiTest
-    bnd """\
+    bundle {
+        bnd """\
 Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
 """
+    }
 }
 
 def resolve = tasks.register('resolve', Resolve) {
     dependsOn testingBundle
     bundles = files(
         sourceSets.osgiTest.runtimeClasspath,
-        configurations.systemClasspath,
         testingBundle
     )
     bndrun = file('tests.bndrun')
@@ -114,11 +98,10 @@ def testOSGi = tasks.register('testOSGi', TestOSGi) { task ->
     javaLauncher = javaToolchains.launcherFor {
         languageVersion = of(11)
     }
-    dependsOn configurations.quasarAgent.buildDependencies, osgiTestResources
+    dependsOn osgiTestResources
     resultsDirectory = file("$testResultsDir/test")
     bundles = files(
         sourceSets.osgiTest.runtimeClasspath,
-        configurations.systemClasspath,
         testingBundle
     )
     bndrun = resolve.flatMap { it.outputBndrun }

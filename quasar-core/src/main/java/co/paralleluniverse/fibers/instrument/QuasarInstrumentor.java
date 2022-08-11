@@ -16,6 +16,7 @@ package co.paralleluniverse.fibers.instrument;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
@@ -29,14 +30,21 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToSlashed;
+import static co.paralleluniverse.fibers.instrument.LogLevel.DEBUG;
+import static co.paralleluniverse.fibers.instrument.LogLevel.INFO;
+import static co.paralleluniverse.fibers.instrument.LogLevel.WARNING;
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toUnmodifiableList;
 
 /**
  * @author pron
@@ -71,7 +79,7 @@ public final class QuasarInstrumentor {
     private boolean check;
     private boolean allowMonitors;
     private boolean allowBlocking;
-    private final Collection<Pattern> exclusions = new ArrayList<>();
+    private final Collection<Pattern> exclusions = ConcurrentHashMap.newKeySet();
     private final Collection<Pattern> excludedClassLoaders = new ArrayList<>();
     private final Collection<Pattern> excludedBundleLocations = new ArrayList<>();
     private final Collection<Pattern> cachedBundleLocations = new ArrayList<>();
@@ -81,7 +89,7 @@ public final class QuasarInstrumentor {
     private boolean debug;
     private int logLevelMask;
 
-    private static boolean isEmptyOrTrue(String value) {
+    static boolean isEmptyOrTrue(String value) {
         return (value != null) && (value.isEmpty() || Boolean.parseBoolean(value));
     }
 
@@ -143,12 +151,12 @@ public final class QuasarInstrumentor {
 
         if (internalClassName != null) {
             final MethodDatabase.ClassEntry classEntry = db.getClassEntry(internalClassName);
-            log(LogLevel.INFO, "TRANSFORM: %s%s", className,
+            log(INFO, "TRANSFORM: %s%s", className,
                 (classEntry != null && classEntry.requiresInstrumentation()) ? " request" : "");
 
             examine(internalClassName, "quasar-1-preinstr", cb);
         } else {
-            log(LogLevel.INFO, "TRANSFORM: null className");
+            log(INFO, "TRANSFORM: null className");
         }
 
         // Phase 1, add a label before any suspendable calls, event API is enough
@@ -174,7 +182,7 @@ public final class QuasarInstrumentor {
                 throw e;
             } else {
                 if (!MethodDatabase.isProblematicClass(internalClassName)) {
-                    log(LogLevel.DEBUG, "Unable to instrument class " + className);
+                    log(DEBUG, "Unable to instrument class %s", className);
                 }
                 return null;
             }
@@ -243,7 +251,6 @@ public final class QuasarInstrumentor {
         return allowMonitors;
     }
 
-    @SuppressWarnings("WeakerAccess")
     public synchronized QuasarInstrumentor setAllowMonitors(boolean allowMonitors) {
         this.allowMonitors = allowMonitors;
         return this;
@@ -254,7 +261,6 @@ public final class QuasarInstrumentor {
         return allowBlocking;
     }
 
-    @SuppressWarnings("WeakerAccess")
     public synchronized QuasarInstrumentor setAllowBlocking(boolean allowBlocking) {
         this.allowBlocking = allowBlocking;
         return this;
@@ -269,7 +275,6 @@ public final class QuasarInstrumentor {
         return verbose;
     }
 
-    @SuppressWarnings("WeakerAccess")
     public synchronized void setVerbose(boolean verbose) {
         this.verbose = verbose;
         setLogLevelMask();
@@ -283,20 +288,29 @@ public final class QuasarInstrumentor {
         this.debug = debug;
         setLogLevelMask();
     }
-    
-    public synchronized void addExcludedPackage(String packageGlob) {
-        exclusions.add(packagePattern(packageGlob));
+
+    public void addExcludedPackage(String packageGlob) {
+        if (exclusions.add(packagePattern(packageGlob))) {
+            log(INFO, "Ignoring packages: %s", packageGlob);
+        }
     }
-    
-    public synchronized boolean isExcluded(String className) {
+
+    // For use from OSGi, since it assumes comma-separated.
+    void addExcludedPackages(String packagesGlobs) {
+        for (String packageGlob : parseOSGiGlobs(packagesGlobs)) {
+            addExcludedPackage(packageGlob);
+        }
+    }
+
+    public boolean isExcluded(String className) {
         if (className != null) {
             className = className.replace('.', '/');
-            
+
             final int i = className.lastIndexOf('/');
             if (i < 0)
                 return false;
             final String packageName = className.substring(0, i);
-            
+
             for (Pattern p : exclusions) {
                 if (p.matcher(packageName).matches())
                     return true;
@@ -306,7 +320,7 @@ public final class QuasarInstrumentor {
     }
 
     boolean isExcludedClassLoader(String classLoaderName) {
-        synchronized(this) {
+        synchronized(excludedClassLoaders) {
             for (Pattern pattern : excludedClassLoaders) {
                 if (pattern.matcher(classLoaderName).matches()) {
                     return true;
@@ -316,8 +330,10 @@ public final class QuasarInstrumentor {
         return classLoaderName.startsWith(THIS_PACKAGE_NAME);
     }
 
-    synchronized void addExcludedClassLoader(String glob) {
-        excludedClassLoaders.add(classLoaderPattern(glob));
+    void addExcludedClassLoader(String glob) {
+        synchronized(excludedClassLoaders) {
+            excludedClassLoaders.add(classLoaderPattern(glob));
+        }
     }
 
     boolean isExcludedClassLoader(ClassLoader loader) {
@@ -328,8 +344,26 @@ public final class QuasarInstrumentor {
         return bundleMatcher.test(loader, excludedBundleLocations);
     }
 
-    synchronized void addExcludedBundleLocation(String glob) {
+    boolean isExcludedBundleLocation(String bundleLocation) {
+        if (!excludedBundleLocations.isEmpty()) {
+            for (Pattern location : excludedBundleLocations) {
+                if (location.matcher(bundleLocation).matches()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    void addExcludedBundleLocation(String glob) {
         excludedBundleLocations.add(bundleLocationPattern(glob));
+    }
+
+    // For use from OSGi, since it assumes comma-separated.
+    void addExcludedBundleLocations(String locationGlobs) {
+        for (String locationGlob: parseOSGiGlobs(locationGlobs)) {
+            addExcludedBundleLocation(locationGlob);
+        }
     }
 
     boolean isCachedClassLoader(ClassLoader loader) {
@@ -340,8 +374,21 @@ public final class QuasarInstrumentor {
         return bundleMatcher.test(loader, cachedBundleLocations);
     }
 
-    synchronized void addCachedBundleLocation(String glob) {
+    void addCachedBundleLocation(String glob) {
         cachedBundleLocations.add(bundleLocationPattern(glob));
+    }
+
+    // For use from OSGi, since it assumes comma-separated.
+    void addCachedBundleLocations(String locationGlobs) {
+        for (String locationGlob: parseOSGiGlobs(locationGlobs)) {
+            addCachedBundleLocation(locationGlob);
+        }
+    }
+
+    private static List<String> parseOSGiGlobs(String value) {
+        return (value != null)
+            ? Arrays.stream(value.split(",", 0)).map(String::trim).collect(toUnmodifiableList())
+            : emptyList();
     }
 
     private static Pattern classLoaderPattern(String glob) {
@@ -415,11 +462,11 @@ public final class QuasarInstrumentor {
     }
 
     private synchronized void setLogLevelMask() {
-        logLevelMask = (1 << LogLevel.WARNING.ordinal());
+        logLevelMask = (1 << WARNING.ordinal());
         if (verbose || debug)
-            logLevelMask |= (1 << LogLevel.INFO.ordinal());
+            logLevelMask |= (1 << INFO.ordinal());
         if (debug)
-            logLevelMask |= (1 << LogLevel.DEBUG.ordinal());
+            logLevelMask |= (1 << DEBUG.ordinal());
     }
 
     public void log(LogLevel level, String msg, Object... args) {
@@ -475,13 +522,23 @@ public final class QuasarInstrumentor {
         return Pattern.compile(out.toString());
     }
 
-    public synchronized void addTypeDesc(String id, String[] types) {
-        for (String s : types) {
+    public synchronized void addTypeDesc(String id, Iterable<String> descriptors) {
+        for (String s : descriptors) {
             if (!Classes.getTypeDescs().add(id, s)) {
-                log(LogLevel.WARNING, "Failed to add type desc '%s' = '%s'", id, s);
+                log(WARNING, "Failed to add type desc '%s' = '%s'", id, s);
             } else {
-                log(LogLevel.INFO, "Added type desc '%s' = '%s'", id, s);
+                log(INFO, "Added type desc '%s' = '%s'", id, s);
             }
         }
+    }
+
+    void addTypeNames(String id, String[] names) {
+        addTypeDesc(id, toTypeDescriptors(names));
+    }
+
+    private static Iterable<String> toTypeDescriptors(String[] names) {
+        return Arrays.stream(names).map(s ->
+            Type.getObjectType(classToSlashed(s)).getDescriptor()
+        ).collect(toUnmodifiableList());
     }
 }

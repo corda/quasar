@@ -1,7 +1,6 @@
 package org.testing.osgi.cacheable;
 
 import co.paralleluniverse.fibers.Suspendable;
-
 import java.util.concurrent.Callable;
 
 @SuppressWarnings("unused")
