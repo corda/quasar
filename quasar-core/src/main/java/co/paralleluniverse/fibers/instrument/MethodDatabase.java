@@ -515,7 +515,7 @@ public final class MethodDatabase {
         }
         if (superClass == null) {
             try (final InputStream is = privilegedOpenInputStream(resource)) {
-                superClass = ExtractSuperClass.extractFrom(is);
+                superClass = new ClassReader(is).getSuperName();
                 if (superClass != null) {
                     final String oldSuperClass;
                     synchronized(superClasses) {
