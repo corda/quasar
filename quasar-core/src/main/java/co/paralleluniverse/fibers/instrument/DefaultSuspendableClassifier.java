@@ -16,6 +16,7 @@ package co.paralleluniverse.fibers.instrument;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
 
 import static co.paralleluniverse.fibers.instrument.Classes.KOTLIN_LAMBDA_SUFFIX;
@@ -28,6 +29,7 @@ import static java.util.stream.Collectors.toUnmodifiableList;
  * @author pron
  */
 public class DefaultSuspendableClassifier implements SuspendableClassifier {
+    private static final Pattern KOTLIN_LAMBDA = Pattern.compile(KOTLIN_LAMBDA_SUFFIX);
     private final List<SuspendableClassifier> classifiers;
     private final SuspendableClassifier simpleClassifier;
 
@@ -59,7 +61,7 @@ public class DefaultSuspendableClassifier implements SuspendableClassifier {
                 return SuspendableType.SUSPENDABLE;
 
             // lambda$ or $lambda-x
-            if (methodName.startsWith(LAMBDA_METHOD_PREFIX) || methodName.contains(KOTLIN_LAMBDA_SUFFIX)) {
+            if (methodName.startsWith(LAMBDA_METHOD_PREFIX) || KOTLIN_LAMBDA.matcher(methodName).find()) {
                 return SuspendableType.SUSPENDABLE;
             }
         } catch (Exception e) {
