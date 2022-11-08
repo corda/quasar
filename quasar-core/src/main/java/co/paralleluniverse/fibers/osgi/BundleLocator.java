@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.getBestClassLoader;
+import static org.osgi.framework.wiring.BundleRevision.PACKAGE_NAMESPACE;
 
 /**
  * This class is not used directly because {@link ClassLoader#getSystemClassLoader()}
@@ -45,8 +46,6 @@ public final class BundleLocator {
     }
 
     private static final class WiringView {
-        private static final String PACKAGE_WIRING = "osgi.wiring.package";
-
         private final String resourceName;
         private final URL resource;
 
@@ -79,12 +78,12 @@ public final class BundleLocator {
         }
 
         private static BundleWiring fetchBundleWiringFor(BundleWiring bundleWiring, String packageName) {
-            final List<BundleWire> requiredWires = bundleWiring.getRequiredWires(PACKAGE_WIRING);
+            final List<BundleWire> requiredWires = bundleWiring.getRequiredWires(PACKAGE_NAMESPACE);
             for (BundleWire requiredWire : requiredWires) {
                 final BundleCapability capability = requiredWire.getCapability();
                 if (capability != null) {
                     final Map<String, Object> attributes = capability.getAttributes();
-                    final Object wirePackage = attributes.get(PACKAGE_WIRING);
+                    final Object wirePackage = attributes.get(PACKAGE_NAMESPACE);
                     if (packageName.equals(wirePackage)) {
                         return requiredWire.getProviderWiring();
                     }
