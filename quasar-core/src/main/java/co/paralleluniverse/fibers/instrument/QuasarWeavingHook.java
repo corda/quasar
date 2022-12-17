@@ -45,6 +45,6 @@ final class QuasarWeavingHook implements WeavingHook {
 
     private boolean isInstrumented(ClassLoader classLoader, String className) {
         final ClassEntry entry = instrumentor.getMethodDatabase(classLoader).getClassEntry(className);
-        return (entry != null) && entry.isInstrumented();
+        return (entry == null) || entry.isInstrumented();
     }
 }
