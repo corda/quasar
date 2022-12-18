@@ -1,5 +1,5 @@
 module org.testing.osgi.cacheable.one {
     requires static osgi.annotation;
-    requires static co.paralleluniverse.quasar.core.osgi;
+    requires static org.testing.osgi.annotation;
     exports org.testing.osgi.cacheable;
 }

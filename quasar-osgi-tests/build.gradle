@@ -40,6 +40,7 @@ dependencies {
     osgiTestCompileOnly 'org.osgi:osgi.core'
     osgiTestImplementation project(path: ':quasar-core', configuration: 'frameworkExtension')
     osgiTestImplementation project(path: ':quasar-core', configuration: 'core')
+    osgiTestImplementation project('osgi-annotation')
     osgiTestImplementation project('osgi-exception')
     osgiTestImplementation project('osgi-security-config')
     osgiTestImplementation project('osgi-unprivileged')

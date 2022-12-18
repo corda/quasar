@@ -11,6 +11,7 @@
     --add-opens, 'java.base/java.net=ALL-UNNAMED'
 
 -runproperties: \
+    co.paralleluniverse.quasar.suspendableAnnotation='org.testing.osgi.annotation.Suspendable',\
     co.paralleluniverse.quasar.cacheDirectory='${task.cacheDirectory}',\
     co.paralleluniverse.quasar.cacheLocations='CACHED/*',\
     co.paralleluniverse.quasar.excludeLocations='IGNORE/*,VERIFY/*',\

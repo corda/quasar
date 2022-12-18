@@ -1,6 +1,5 @@
 package org.testing.osgi;
 
-import co.paralleluniverse.fibers.Suspendable;
 import co.paralleluniverse.fibers.suspend.Instrumented;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -14,6 +13,7 @@ import org.osgi.test.common.annotation.InjectBundleContext;
 import org.osgi.test.common.annotation.InjectService;
 import org.osgi.test.junit5.context.BundleContextExtension;
 import org.osgi.test.junit5.service.ServiceExtension;
+import org.testing.osgi.annotation.Suspendable;
 import org.testing.osgi.security.SecurityConfig;
 import org.testing.osgi.unprivileged.Unprivileged;
 

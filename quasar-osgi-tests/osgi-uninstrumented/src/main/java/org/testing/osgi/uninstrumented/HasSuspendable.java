@@ -1,6 +1,6 @@
 package org.testing.osgi.uninstrumented;
 
-import co.paralleluniverse.fibers.Suspendable;
+import org.testing.osgi.annotation.Suspendable;
 import java.util.concurrent.Callable;
 
 @SuppressWarnings("unused")

@@ -1,6 +1,6 @@
 package org.testing.multi;
 
-import co.paralleluniverse.fibers.Suspendable;
+import org.testing.osgi.annotation.Suspendable;
 import org.testing.multi.uninstrumented.UninstrumentableType;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
