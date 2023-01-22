@@ -33,7 +33,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
@@ -79,8 +81,8 @@ public final class QuasarInstrumentor {
     private boolean check;
     private boolean allowMonitors;
     private boolean allowBlocking;
-    private final Collection<Pattern> exclusions = ConcurrentHashMap.newKeySet();
-    private final Collection<Pattern> excludedClassLoaders = new ArrayList<>();
+    private final Set<QuasarPattern> exclusions = ConcurrentHashMap.newKeySet();
+    private final Set<QuasarPattern> excludedClassLoaders = new LinkedHashSet<>();
     private final Collection<Pattern> excludedBundleLocations = new ArrayList<>();
     private final Collection<Pattern> cachedBundleLocations = new ArrayList<>();
     private final ByteCodeCache byteCodeCache;
@@ -311,9 +313,10 @@ public final class QuasarInstrumentor {
                 return false;
             final String packageName = className.substring(0, i);
 
-            for (Pattern p : exclusions) {
-                if (p.matcher(packageName).matches())
+            for (QuasarPattern p : exclusions) {
+                if (p.matcher(packageName).matches()) {
                     return true;
+                }
             }
         }
         return false;
@@ -321,7 +324,7 @@ public final class QuasarInstrumentor {
 
     boolean isExcludedClassLoader(String classLoaderName) {
         synchronized(excludedClassLoaders) {
-            for (Pattern pattern : excludedClassLoaders) {
+            for (QuasarPattern pattern : excludedClassLoaders) {
                 if (pattern.matcher(classLoaderName).matches()) {
                     return true;
                 }
@@ -332,7 +335,9 @@ public final class QuasarInstrumentor {
 
     void addExcludedClassLoader(String glob) {
         synchronized(excludedClassLoaders) {
-            excludedClassLoaders.add(classLoaderPattern(glob));
+            if (excludedClassLoaders.add(classLoaderPattern(glob))) {
+                log(INFO, "Ignoring classloaders: %s", glob);
+            }
         }
     }
 
@@ -391,7 +396,7 @@ public final class QuasarInstrumentor {
             : emptyList();
     }
 
-    private static Pattern classLoaderPattern(String glob) {
+    private static QuasarPattern classLoaderPattern(String glob) {
         final StringBuilder out = new StringBuilder(glob.length() + 5).append('^');
         int i = 0;
         while (i < glob.length()) {
@@ -424,7 +429,7 @@ public final class QuasarInstrumentor {
             ++i;
         }
         out.append('$');
-        return Pattern.compile(out.toString());
+        return QuasarPattern.compile(out.toString());
     }
 
     private static Pattern bundleLocationPattern(String glob) {
@@ -491,7 +496,7 @@ public final class QuasarInstrumentor {
         }
     }
 
-    private static Pattern packagePattern(String packageGlob) {
+    private static QuasarPattern packagePattern(String packageGlob) {
         final String glob = packageGlob.replace('.', '/');
         
         final StringBuilder out = new StringBuilder(glob.length() + 5).append('^');
@@ -519,7 +524,7 @@ public final class QuasarInstrumentor {
         
         out.append('$');
         
-        return Pattern.compile(out.toString());
+        return QuasarPattern.compile(out.toString());
     }
 
     public synchronized void addTypeDesc(String id, Iterable<String> descriptors) {
