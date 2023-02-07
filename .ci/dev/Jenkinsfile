@@ -8,10 +8,15 @@ boolean isRelease = (env.TAG_NAME =~ /^release-.*/)
 
 pipeline {
   agent {
-    dockerfile {
-      label 'standard'
-      additionalBuildArgs "--build-arg USER=\$(id -un) --build-arg UID=\$(id -u) --build-arg GID=\$(id -g)"
-      filename '.ci/dev/Dockerfile'
+    docker {
+        // Our custom docker image
+        image "build-zulu-openjdk:11"
+        label "standard"
+        registryUrl 'https://engineering-docker.software.r3.com/'
+        registryCredentialsId 'artifactory-credentials'
+        // Used to mount storage from the host as a volume to persist the cache between builds
+        args '-v /tmp:/host_tmp'
+        alwaysPull true
     }
   }
 
@@ -29,9 +34,17 @@ pipeline {
     CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
     CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
     CORDA_ARTIFACTORY_REPOKEY = "${isRelease ? 'corda-dependencies' : 'corda-dependencies-dev'}"
+    GRADLE_USER_HOME = "/host_tmp/gradle"
   }
 
   stages {
+    stage('Prep') {
+        steps {
+            // Ensure the dir exists in the mount from the host
+            sh 'mkdir -p ${GRADLE_USER_HOME}'
+        }
+    }
+
     stage('Compile') {
       steps {
         sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true clean assemble"
