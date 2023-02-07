@@ -6,8 +6,6 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
 
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static co.paralleluniverse.fibers.instrument.LogLevel.WARNING;
 import static co.paralleluniverse.fibers.instrument.QuasarPermission.CONFIGURATION;
@@ -16,16 +14,20 @@ final class QuasarBundleTracker implements BundleTrackerCustomizer<Object> {
     private static final QuasarPermission QUASAR_CONFIG = new QuasarPermission(CONFIGURATION);
 
     private final QuasarInstrumentor instrumentor;
-    private final Set<Bundle> bundles;
 
     QuasarBundleTracker(QuasarInstrumentor instrumentor) {
         this.instrumentor = instrumentor;
-        this.bundles = ConcurrentHashMap.newKeySet();
+    }
+
+    // We are only concerned when the bundle is actually installed, and not
+    // when the bundle returns to the "INSTALLED" state once it has stopped.
+    private static boolean isInstalled(BundleEvent bundleEvent) {
+        return bundleEvent == null || bundleEvent.getType() == BundleEvent.INSTALLED;
     }
 
     @Override
     public Object addingBundle(Bundle bundle, BundleEvent bundleEvent) {
-        if (bundles.add(bundle) && !instrumentor.isExcludedBundleLocation(bundle.getLocation())) {
+        if (isInstalled(bundleEvent) && !instrumentor.isExcludedBundleLocation(bundle.getLocation())) {
             final String ignoredPackages = bundle.getHeaders().get("Quasar-Ignore-Package");
             if (ignoredPackages != null) {
                 try {
@@ -46,12 +48,9 @@ final class QuasarBundleTracker implements BundleTrackerCustomizer<Object> {
 
     @Override
     public void modifiedBundle(Bundle bundle, BundleEvent bundleEvent, Object obj) {
-        removedBundle(bundle, bundleEvent, obj);
-        addingBundle(bundle, bundleEvent);
     }
 
     @Override
     public void removedBundle(Bundle bundle, BundleEvent bundleEvent, Object obj) {
-        bundles.remove(bundle);
     }
 }
