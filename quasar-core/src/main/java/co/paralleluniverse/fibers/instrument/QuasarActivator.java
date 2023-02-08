@@ -2,7 +2,6 @@ package co.paralleluniverse.fibers.instrument;
 
 import org.osgi.annotation.bundle.Capability;
 import org.osgi.annotation.bundle.Header;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -18,10 +17,7 @@ import java.util.logging.Logger;
 import static co.paralleluniverse.fibers.instrument.QuasarInstrumentor.isEmptyOrTrue;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.logging.Level.SEVERE;
-import static org.osgi.framework.Bundle.ACTIVE;
 import static org.osgi.framework.Bundle.INSTALLED;
-import static org.osgi.framework.Bundle.RESOLVED;
-import static org.osgi.framework.Bundle.STARTING;
 import static org.osgi.framework.Constants.EFFECTIVE_ACTIVE;
 import static org.osgi.framework.Constants.EXTENSION_BUNDLE_ACTIVATOR;
 import static org.osgi.framework.Constants.EXTENSION_DIRECTIVE;
@@ -107,13 +103,8 @@ public final class QuasarActivator implements BundleActivator {
         weaver = context.registerService(WeavingHook.class, weavingHook, serviceProperties);
 
         final QuasarBundleTracker quasarTracker = new QuasarBundleTracker(instrumentor);
-        bundleTracker = new BundleTracker<>(context, INSTALLED | RESOLVED | STARTING | ACTIVE, quasarTracker);
+        bundleTracker = new BundleTracker<>(context, INSTALLED, quasarTracker);
         bundleTracker.open();
-
-        // Register the bundles that have already been added to the framework.
-        for (Bundle bundle: context.getBundles()) {
-            quasarTracker.addingBundle(bundle, null);
-        }
 
         if (isEmptyOrTrue(context.getProperty(SERVICE_PROPERTY_NAME))) {
             // Available for testing.
