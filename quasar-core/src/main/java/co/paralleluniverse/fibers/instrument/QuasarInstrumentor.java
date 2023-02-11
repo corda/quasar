@@ -87,7 +87,7 @@ public final class QuasarInstrumentor {
 
     @SuppressWarnings("WeakerAccess")
     public boolean shouldInstrument(ClassLoader loader) {
-        return loader != null && !isExcludedClassLoader(loader.getClass().getName());
+        return loader == null || !isExcludedClassLoader(loader.getClass().getName());
     }
 
     @SuppressWarnings("WeakerAccess")
