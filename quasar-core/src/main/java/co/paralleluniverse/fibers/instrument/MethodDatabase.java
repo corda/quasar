@@ -68,6 +68,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 import static java.security.AccessController.doPrivileged;
@@ -110,12 +111,11 @@ public final class MethodDatabase {
     private static final Set<String> JDK_CUSTOM_PACKAGES;
     static {
         final FileSystem jrt = FileSystems.getFileSystem(URI.create(JRT_FS));
-        try {
+        try (final Stream<Path> jrtWalk = Files.walk(jrt.getPath(JRT_MODULES))) {
             // We MUST initialise this BEFORE we install our ClassFileTransformer.
             // Identify all modules belonging to the JDK installation itself.
             // This is a subset of the modules inside ModuleLayer.boot().
-            JDK_CUSTOM_PACKAGES = Files.walk(jrt.getPath(JRT_MODULES))
-                .filter(p -> p.getNameCount() == 2)
+            JDK_CUSTOM_PACKAGES = jrtWalk.filter(p -> p.getNameCount() == 2)
                 .map(MethodDatabase::findModule)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
