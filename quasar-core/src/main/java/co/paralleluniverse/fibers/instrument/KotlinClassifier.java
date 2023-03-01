@@ -11,27 +11,26 @@
  * under the terms of the GNU Lesser General Public License version 3.0
  * as published by the Free Software Foundation.
  */
-package co.paralleluniverse.kotlin;
-
-import co.paralleluniverse.fibers.instrument.LogLevel;
-import co.paralleluniverse.fibers.instrument.MethodDatabase;
-import co.paralleluniverse.fibers.instrument.SimpleSuspendableClassifier;
-import co.paralleluniverse.fibers.instrument.SuspendableClassifier;
+package co.paralleluniverse.fibers.instrument;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Quasar-Kotlin M14 integration.
  *
  * @author circlespainter
  */
-public class KotlinClassifier implements SuspendableClassifier {
+final class KotlinClassifier implements SuspendableClassifier {
+    private static final Pattern KOTLIN_LAMBDA_SUFFIX = Pattern.compile("\\$lambda[-$]");
+    private static final String ACCESS_METHOD_PREFIX = "access$";
     private static final String PKG_PREFIX = "kotlin";
     private static final String[][] supers;
     private static final String[] excludePrefixes;
 
     static {
-        final ArrayList<String[]> supersList = new ArrayList<>();
+        final List<String[]> supersList = new ArrayList<>();
 
         // Kotlin properties reflection support
         supersList.add(sa("kotlin/reflect/KCallable", "call", "callBy"));
@@ -63,14 +62,16 @@ public class KotlinClassifier implements SuspendableClassifier {
         supersList.add(sa("kotlin/Lazy", "getValue"));
 
         // Kotlin functions support
-        for (int i = 0; i <= 22; i++)
+        for (int i = 0; i <= 22; ++i) {
             supersList.add(sa("kotlin/jvm/functions/Function" + i, "invoke"));
+        }
+        supersList.add(sa("kotlin/jvm/functions/FunctionN", "invoke"));
 
         // Kotlin M14 doesn't seem to add `@Suspendable` to the generated `run` when passing a `@Suspendable` lambda
         supersList.add(sa("co/paralleluniverse/strands/SuspendableCallable", "run"));
         supersList.add(sa("co/paralleluniverse/strands/SuspendableRunnable", "run"));
 
-        supers = supersList.toArray(new String[0][0]);
+        supers = supersList.toArray(new String[0][]);
 
 
         // Class prefixes that are known not to suspend
@@ -98,7 +99,10 @@ public class KotlinClassifier implements SuspendableClassifier {
                 for (int i = 1; i < s.length; i++) {
                     if (methodName.matches(s[i])) {
                         if (db.isVerbose()) {
-                            db.getLog().log(LogLevel.INFO, KotlinClassifier.class.getName() + ": " + className + "." + methodName + " supersOrEqual " + s[0] + "." + s[i]);
+                            db.getLog().log(LogLevel.INFO,
+                                "%s: %s.%s supersOrEqual %s.%s",
+                                KotlinClassifier.class.getName(), className, methodName, s[0], s[i]
+                            );
                         }
                         return MethodDatabase.SuspendableType.SUSPENDABLE_SUPER;
                     }
@@ -121,17 +125,21 @@ public class KotlinClassifier implements SuspendableClassifier {
 
         for (final String[] s : supers) {
             if (SimpleSuspendableClassifier.extendsOrImplements(s[0], db, superClassName, interfaces))
-                for (int i = 1; i < s.length; i++) {
+                for (int i = 1; i < s.length; ++i) {
                     if (methodName.matches(s[i])) {
-                        if (db.isVerbose())
-                            db.getLog().log(LogLevel.INFO, KotlinClassifier.class.getName() + ": " + className + "." + methodName + " extends " + s[0] + "." + s[i]);
+                        if (db.isVerbose()) {
+                            db.getLog().log(LogLevel.INFO,
+                                "%s: %s.%s extends %s.%s",
+                                KotlinClassifier.class.getName(), className, methodName, s[0], s[i]
+                            );
+                        }
                         return MethodDatabase.SuspendableType.SUSPENDABLE;
                     }
                 }
         }
 
         // Java7 compilation scheme
-        if (methodName.startsWith("access$") || methodName.contains("$lambda-")) {
+        if (methodName.startsWith(ACCESS_METHOD_PREFIX) || KOTLIN_LAMBDA_SUFFIX.matcher(methodName).find()) {
             return MethodDatabase.SuspendableType.SUSPENDABLE;
         }
 

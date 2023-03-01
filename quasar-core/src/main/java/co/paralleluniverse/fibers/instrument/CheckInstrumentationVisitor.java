@@ -147,7 +147,7 @@ class CheckInstrumentationVisitor extends ClassVisitor {
 
         if (suspendable == null) {
             // look for @Suspendable annotation
-            return new MethodVisitor(ASMAPI) {
+            return new MethodVisitor(api) {
                 private boolean susp = false;
 
                 @Override

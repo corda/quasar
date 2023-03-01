@@ -49,7 +49,7 @@ class LabelSuspendableCallSitesClassVisitor extends ClassVisitor {
             // Analyze, fill and enqueue method ASTs
             final MethodVisitor outMV = super.visitMethod(access, name, desc, signature, exceptions);
 
-            return new MethodVisitor(ASMAPI, outMV) {
+            return new MethodVisitor(api, outMV) {
                 private int currLineNumber = -1;
 
                 @Override

@@ -64,7 +64,7 @@ class SuspOffsetsAfterInstrClassVisitor extends ClassVisitor {
             // Analyze, fill and enqueue method ASTs
             final MethodVisitor outMV = super.visitMethod(access, name, desc, signature, exceptions);
 
-            return new MethodVisitor(ASMAPI, outMV) {
+            return new MethodVisitor(api, outMV) {
                 private Label currLabel = null;
                 private int prevOffset = -1;
                 private boolean instrumented;
@@ -80,7 +80,7 @@ class SuspOffsetsAfterInstrClassVisitor extends ClassVisitor {
                     if (INSTRUMENTED_DESC.equals(adesc)) {
                         instrumented = true;
 
-                        return new AnnotationVisitor(ASMAPI) { // Only collect info
+                        return new AnnotationVisitor(api) { // Only collect info
                             @Override
                             public void visit(String attrib, Object value) {
                                 if (null != attrib)
@@ -109,7 +109,7 @@ class SuspOffsetsAfterInstrClassVisitor extends ClassVisitor {
                             public AnnotationVisitor visitArray(String attrib) {
                                 // String[] value not handled by visit
                                 if (Instrumented.FIELD_NAME_SUSPENDABLE_CALL_SITE_NAMES.equals(attrib))
-                                    return new AnnotationVisitor(ASMAPI) {
+                                    return new AnnotationVisitor(api) {
                                         final List<String> callSites = new ArrayList<>();
                                         
                                         @Override
