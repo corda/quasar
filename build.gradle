@@ -77,7 +77,7 @@ subprojects {
         }
     }
 
-    configurations.all {
+    configurations.configureEach {
         resolutionStrategy {
             dependencySubstitution {
                 // Kryo demands Objenesis 2.5.1, but Mockito wants Objenesis 2.6
@@ -319,17 +319,19 @@ logger.lifecycle("Building quasar version: {}", quasarVersion)
 def scanAndInstrument(SourceSet sset, configs) {
 
     def cp = sset.output.classesDirs.getAsPath() + ':' + sset.output.resourcesDir + ':' + configs*.asPath.join(':')
+    def suspendableSupersFile = "${sset.output.dirs.singleFile}/META-INF/suspendable-supers"
 
     // ENT-5598 quasar-kotlin has two output directories, java and kotlin.
     // So we have to cope with multiple directories in classesDirs.
 
+    ant.delete(file: suspendableSupersFile)
     ant.taskdef(
             name:'scanSuspendables',
             classname:'co.paralleluniverse.fibers.instrument.SuspendablesScanner',
             classpath: cp)
     ant.scanSuspendables(
             auto: false,
-            supersFile:"${sset.output.dirs.singleFile}/META-INF/suspendable-supers",
+            supersFile: suspendableSupersFile,
             append: true) {
         for (File f : sset.output.classesDirs) {
             fileset(dir: f)
@@ -340,10 +342,10 @@ def scanAndInstrument(SourceSet sset, configs) {
             name:'instrumentation',
             classname:'co.paralleluniverse.fibers.instrument.InstrumentationTask',
             classpath: cp)
-    ant.instrumentation(verbose:'true', check:'true', debug:'true') {
+    ant.instrumentation(verbose: true, check: true, debug: true) {
         for (File f : sset.output.classesDirs) {
             fileset(dir: f) {
-                exclude(name: 'co/paralleluniverse/fibers/instrument/*.class')
+                exclude(name: 'co/paralleluniverse/fibers/instrument/**/*.class')
             }
         }
     }
@@ -619,7 +621,6 @@ project (':quasar-core') {
     def coreBundle = tasks.register('coreBundle', Bundle) {
         dependsOn classicJar
         from(zipTree(classicJar.flatMap { it.archiveFile })) {
-            exclude 'META-INF/suspendable*'
             exclude 'co/paralleluniverse/asm/**'
             exclude 'co/paralleluniverse/common/asm/**'
             exclude 'co/paralleluniverse/common/resource/**'
@@ -665,7 +666,7 @@ Import-Package: \
     def agentBundle = tasks.register('agentBundle', Bundle) {
         dependsOn shadowJar
         from(shadowFiles) {
-            include 'META-INF/suspendable*'
+            exclude 'META-INF/suspendable*'
             include 'co/paralleluniverse/asm/**'
             include 'co/paralleluniverse/common/asm/**'
             include 'co/paralleluniverse/common/resource/**'
@@ -723,7 +724,7 @@ Import-Package: !org.osgi.framework.*,*
     def frameworkExtensionBundle = tasks.register('frameworkExtensionBundle', Bundle) {
         dependsOn shadowJar
         from(shadowFiles) {
-            include 'META-INF/suspendable*'
+            exclude 'META-INF/suspendable*'
             include 'co/paralleluniverse/asm/**'
             include 'co/paralleluniverse/common/asm/**'
             include 'co/paralleluniverse/common/resource/**'

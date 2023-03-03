@@ -14,27 +14,30 @@
 package co.paralleluniverse.fibers.instrument;
 
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.regex.Pattern;
-import java.util.stream.StreamSupport;
 
-import static co.paralleluniverse.fibers.instrument.Classes.KOTLIN_LAMBDA_SUFFIX;
 import static co.paralleluniverse.fibers.instrument.Classes.LAMBDA_METHOD_PREFIX;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPEND_EXECUTION_NAME;
-import static java.util.stream.Collectors.toUnmodifiableList;
+import static java.util.Collections.unmodifiableList;
 
 /**
  *
  * @author pron
  */
-public class DefaultSuspendableClassifier implements SuspendableClassifier {
-    private static final Pattern KOTLIN_LAMBDA = Pattern.compile(KOTLIN_LAMBDA_SUFFIX);
+public final class DefaultSuspendableClassifier implements SuspendableClassifier {
+    private static final SuspendableClassifier KOTLIN_CLASSIFIER = new KotlinClassifier();
     private final List<SuspendableClassifier> classifiers;
     private final SuspendableClassifier simpleClassifier;
 
     public DefaultSuspendableClassifier(ClassLoader classLoader) {
-        this.classifiers = StreamSupport.stream(ServiceLoader.load(SuspendableClassifier.class, classLoader).spliterator(), false).collect(toUnmodifiableList());
+        final List<SuspendableClassifier> localClassifiers = new ArrayList<>();
+        localClassifiers.add(KOTLIN_CLASSIFIER);
+        for (SuspendableClassifier classifier : ServiceLoader.load(SuspendableClassifier.class, classLoader)) {
+            localClassifiers.add(classifier);
+        }
+        this.classifiers = unmodifiableList(localClassifiers);
         this.simpleClassifier = new SimpleSuspendableClassifier(classLoader);
     }
 
@@ -47,21 +50,24 @@ public class DefaultSuspendableClassifier implements SuspendableClassifier {
             // classifier service
             for (SuspendableClassifier sc : classifiers) {
                 st = sc.isSuspendable(db, sourceName, sourceDebugInfo, isInterface, className, superClassName, interfaces, methodName, methodDesc, methodSignature, methodExceptions);
-                if (st != null)
+                if (st != null) {
                     return st;
+                }
             }
 
             // simple classifier (files in META-INF)
             st = simpleClassifier.isSuspendable(db, sourceName, sourceDebugInfo, isInterface, className, superClassName, interfaces, methodName, methodDesc, methodSignature, methodExceptions);
-            if (st != null)
+            if (st != null) {
                 return st;
+            }
 
             // throws SuspendExecution
-            if (checkExceptions(methodExceptions))
+            if (checkExceptions(methodExceptions)) {
                 return SuspendableType.SUSPENDABLE;
+            }
 
-            // lambda$ or $lambda-x
-            if (methodName.startsWith(LAMBDA_METHOD_PREFIX) || KOTLIN_LAMBDA.matcher(methodName).find()) {
+            // lambda$
+            if (methodName.startsWith(LAMBDA_METHOD_PREFIX)) {
                 return SuspendableType.SUSPENDABLE;
             }
         } catch (Exception e) {
@@ -74,8 +80,9 @@ public class DefaultSuspendableClassifier implements SuspendableClassifier {
     private static boolean checkExceptions(String[] exceptions) {
         if (exceptions != null) {
             for (String ex : exceptions) {
-                if (ex.equals(SUSPEND_EXECUTION_NAME))
+                if (ex.equals(SUSPEND_EXECUTION_NAME)) {
                     return true;
+                }
             }
         }
         return false;

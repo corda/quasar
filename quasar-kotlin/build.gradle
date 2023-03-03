@@ -11,11 +11,13 @@ ext {
     moduleName = 'co.paralleluniverse.quasar.kotlin'
 }
 
-configurations.all {
+configurations.configureEach {
     resolutionStrategy {
         dependencySubstitution {
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib') with module("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') with module("org.jetbrains.kotlin:kotlin-stdlib-common:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib') using module("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') using module("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') using module("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') using module("org.jetbrains.kotlin:kotlin-stdlib-common:$kotlinVersion")
         }
     }
 }
@@ -26,7 +28,7 @@ dependencies {
         exclude module: 'quasar-core'
     }
 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
 }
 

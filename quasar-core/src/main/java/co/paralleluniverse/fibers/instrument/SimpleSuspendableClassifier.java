@@ -18,7 +18,6 @@ import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -31,12 +30,13 @@ import java.util.Set;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.security.AccessController.doPrivileged;
+import static java.util.Collections.unmodifiableSet;
 
 /**
  *
  * @author pron
  */
-public class SimpleSuspendableClassifier implements SuspendableClassifier {
+final class SimpleSuspendableClassifier implements SuspendableClassifier {
     private static final String PREFIX = "META-INF/";
     private static final String SUSPENDABLES_FILE = "suspendables";
     private static final String SUSPENDABLE_SUPERS_FILE = "suspendable-supers";
@@ -46,17 +46,9 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
     private final Set<String> suspendableSupers = new HashSet<>();
     private final Set<String> suspendableSuperInterfaces = new HashSet<>();
 
-    public SimpleSuspendableClassifier(ClassLoader classLoader) {
+    SimpleSuspendableClassifier(ClassLoader classLoader) {
         readFiles(classLoader, SUSPENDABLES_FILE, suspendables, suspendableClasses);
         readFiles(classLoader, SUSPENDABLE_SUPERS_FILE, suspendableSupers, suspendableSuperInterfaces);
-    }
-
-    // Allows loading and querying custom 'suspendables' and 'suspendable-supers' resources
-    public SimpleSuspendableClassifier(final ClassLoader classLoader, final String[] suspendablesResources, final String[] suspendableSupersResources) {
-        for (final String sus : suspendablesResources)
-            readFiles(classLoader, sus, suspendables, suspendableClasses);
-        for (final String sus : suspendableSupersResources)
-            readFiles(classLoader, sus, suspendableSupers, suspendableSuperInterfaces);
     }
 
     SimpleSuspendableClassifier(String suspendablesFileName) {
@@ -64,11 +56,11 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
     }
 
     Set<String> getSuspendables() {
-        return suspendables;
+        return unmodifiableSet(suspendables);
     }
 
     Set<String> getSuspendableClasses() {
-        return suspendableClasses;
+        return unmodifiableSet(suspendableClasses);
     }
 
     private static Enumeration<URL> getFiles(ClassLoader classLoader, String fileName) {
@@ -99,16 +91,14 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
 
     private static void parse(URL file, Set<String> set, Set<String> classSet) {
         doPrivileged((PrivilegedAction<Void>)() -> {
-            try (InputStream is = file.openStream();
-                 BufferedReader reader = new BufferedReader(new InputStreamReader(is, UTF_8))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.openStream(), UTF_8))) {
                 String line;
 
                 for (int linenum = 1; (line = reader.readLine()) != null; linenum++) {
                     final String s = line.trim();
-                    if (s.isEmpty())
+                    if (s.isEmpty() || s.charAt(0) == '#') {
                         continue;
-                    if (s.charAt(0) == '#')
-                        continue;
+                    }
                     final int index = s.lastIndexOf('.');
                     if (index <= 0) {
                         System.err.println("Can't parse line " + linenum + " in " + file + ": " + line);
@@ -119,10 +109,12 @@ public class SimpleSuspendableClassifier implements SuspendableClassifier {
                     final String fullName = className + '.' + methodName;
 
                     if (methodName.equals("*")) {
-                        if (classSet != null)
+                        if (classSet != null) {
                             classSet.add(className);
-                    } else
+                        }
+                    } else {
                         set.add(fullName);
+                    }
                 }
             } catch (IOException e) {
                 // silently ignore
