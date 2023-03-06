@@ -96,6 +96,12 @@ class InstrumentMethod {
     private static final boolean optimizationDisabled = false; // SystemProperties.isEmptyOrTrue("co.paralleluniverse.fibers.disableInstrumentationOptimization");
     private static final boolean HANDLE_PROXY_INVOCATIONS = true;
 
+    // An invokedynamic instruction will always be instrumented, unless it's for one of these classes.
+    private static final Set<String> DYNAMIC_UNINSTRUMENTED_CLASSES = Set.of(
+        "java/lang/invoke/LambdaMetafactory",
+        "java/lang/invoke/StringConcatFactory"
+    );
+
     // private final boolean verifyInstrumentation; //
     // private static final int PREEMPTION_BACKBRANCH = 0;
     // private static final int PREEMPTION_CALL = 1;
@@ -229,14 +235,18 @@ class InstrumentMethod {
                 && !isInvocationHandlerInvocation(owner, name)) {
                 SuspendableType st = db.isMethodSuspendable(owner, name, desc, opcode);
 
-                if (st == SuspendableType.NON_SUSPENDABLE)
+                if (st == SuspendableType.NON_SUSPENDABLE) {
                     susp = false;
+                }
             }
         } else if (type == AbstractInsnNode.INVOKE_DYNAMIC_INSN) { // invoke dynamic
-            if (owner.equals("java/lang/invoke/LambdaMetafactory")) // lambda
+            if (DYNAMIC_UNINSTRUMENTED_CLASSES.contains(owner)) {
+                // lambda, or string concatenation
                 susp = false;
-        } else
+            }
+        } else {
             susp = false;
+        }
 
         return susp;
     }
@@ -284,12 +294,14 @@ class InstrumentMethod {
                     } else if (in.getType() == AbstractInsnNode.INVOKE_DYNAMIC_INSN) {
                         // invoke dynamic
                         final InvokeDynamicInsnNode idin = (InvokeDynamicInsnNode) in;
-                        if (idin.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory")) {
-                            // lambda
-                            db.log(LogLevel.DEBUG, "Lambda at instruction %d", i);
+                        final String owner = idin.bsm.getOwner();
+                        if (DYNAMIC_UNINSTRUMENTED_CLASSES.contains(owner)) {
+                            // lambda, or string concatenation
+                            db.log(LogLevel.DEBUG, "%s at instruction %d", owner, i);
                             susp = false;
-                        } else
+                        } else {
                             db.log(LogLevel.DEBUG, "InvokeDynamic Method call at instruction %d is assumed suspendable", i);
+                        }
                     }
 
                     if (susp) {

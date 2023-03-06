@@ -1,16 +1,24 @@
 package org.testing.osgi.supers;
 
+import org.testing.osgi.annotation.Suspendable;
+import java.lang.invoke.MethodHandle;
 import java.util.function.Function;
 
 @SuppressWarnings("unused")
-public class SuperClassAction implements Function<String, Exception> {
+public class SuperClassAction implements Function<MethodHandle, Throwable> {
+    @Suspendable
     @Override
-    public Exception apply(String message) {
+    public Throwable apply(MethodHandle message) {
         try {
-            throw new FourthException(message);
+            // Invoking a MethodHandle is always suspendable.
+            throw new FourthException((String) message.invoke());
         } catch (FourthException | RuntimeException e) {
             System.err.println("Caught: " + e.getMessage());
             return e;
+        } catch (Error e) {
+            throw e;
+        } catch (Throwable t) {
+            return t;
         }
     }
 }
