@@ -38,24 +38,23 @@ import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Interpreter;
-import org.objectweb.asm.tree.analysis.Value;
 
 /**
  *
  * @author matthias
  */
-class TypeAnalyzer extends Analyzer {
+class TypeAnalyzer extends Analyzer<BasicValue> {
     TypeAnalyzer(MethodDatabase db) {
         super(new TypeInterpreter(db));
     }
 
     @Override
-    protected Frame newFrame(int nLocals, int nStack) {
+    protected Frame<BasicValue> newFrame(int nLocals, int nStack) {
         return new TypeFrame(nLocals, nStack);
     }
 
     @Override
-    protected Frame newFrame(Frame src) {
+    protected Frame<BasicValue> newFrame(Frame<? extends BasicValue> src) {
         return new TypeFrame(src);
     }
 
@@ -80,17 +79,17 @@ class TypeAnalyzer extends Analyzer {
         }
     }
 
-    static class TypeFrame extends Frame {
+    static final class TypeFrame extends Frame<BasicValue> {
         TypeFrame(int nLocals, int nStack) {
             super(nLocals, nStack);
         }
 
-        TypeFrame(Frame src) {
+        TypeFrame(Frame<? extends BasicValue> src) {
             super(src);
         }
 
         @Override
-        public void execute(AbstractInsnNode insn, Interpreter interpreter) throws AnalyzerException {
+        public void execute(AbstractInsnNode insn, Interpreter<BasicValue> interpreter) throws AnalyzerException {
             switch (insn.getOpcode()) {
                 case Opcodes.INVOKEVIRTUAL:
                 case Opcodes.INVOKESPECIAL:
@@ -105,9 +104,10 @@ class TypeAnalyzer extends Analyzer {
                         if (insn.getOpcode() == Opcodes.INVOKESPECIAL && getStackSize() > 0) {
                             if ("<init>".equals(((MethodInsnNode) insn).name)) {
                                 // explanation in InstrumentMethod.emitNewAndDup
-                                Value value = pop();
-                                if (value instanceof NewValue)
-                                    value = new BasicValue(((NewValue) value).getType());
+                                BasicValue value = pop();
+                                if (value instanceof NewValue) {
+                                    value = new BasicValue(value.getType());
+                                }
 
                                 push(value);
                             }
