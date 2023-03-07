@@ -15,6 +15,8 @@ import org.osgi.test.common.annotation.InjectBundleContext;
 import org.osgi.test.common.annotation.InjectService;
 import org.osgi.test.junit5.context.BundleContextExtension;
 import org.osgi.test.junit5.service.ServiceExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testing.osgi.base.BaseException;
 import org.testing.osgi.base.OsgiException;
 import org.testing.osgi.exception.first.FirstException;
@@ -23,6 +25,7 @@ import org.testing.osgi.security.SecurityConfig;
 import org.testing.osgi.unprivileged.Unprivileged;
 
 import java.io.InputStream;
+import java.lang.invoke.MethodHandle;
 import java.util.Collection;
 import java.util.function.Function;
 
@@ -40,6 +43,7 @@ import static org.testing.osgi.security.SecurityConfig.ALL_PERMISSIONS;
 @TestInstance(PER_CLASS)
 class BundleLocatorTest {
     private static final String SUPER_CLASS_ACTION_CLASS_NAME = "org.testing.osgi.supers.SuperClassAction";
+    private static final Logger LOGGER = LoggerFactory.getLogger(BundleLocatorTest.class);
 
     private QuasarInstrumentor instrumentor;
 
@@ -107,8 +111,8 @@ class BundleLocatorTest {
 
     private void assertSuperClassesFor(final Bundle supers) throws Exception {
         @SuppressWarnings("unchecked")
-        final Class<? extends Function<String, Exception>> testClass = Unprivileged.doUnprivileged(() ->
-            (Class<? extends Function<String, Exception>>) supers.loadClass(SUPER_CLASS_ACTION_CLASS_NAME)
+        final Class<? extends Function<MethodHandle, Throwable>> testClass = Unprivileged.doUnprivileged(() ->
+            (Class<? extends Function<MethodHandle, Throwable>>) supers.loadClass(SUPER_CLASS_ACTION_CLASS_NAME)
         );
 
         assertAll("Superclass mapping allocations",
@@ -126,6 +130,7 @@ class BundleLocatorTest {
     }
 
     private void assertClassesBelongToClassLoader(Collection<String> classNames, ClassLoader actual) {
+        LOGGER.info("Checking classes {} for classloader {}", classNames, actual);
         assertFalse(classNames.isEmpty(), "MethodDatabase for " + actual + " should not be empty.");
         assertAll("Mapping for " + actual, classNames.stream().map(className -> {
             final String actualClassName = className.replace('/', '.');
