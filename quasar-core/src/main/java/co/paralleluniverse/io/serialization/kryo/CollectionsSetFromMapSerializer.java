@@ -20,23 +20,23 @@ import com.esotericsoftware.kryo.io.Output;
 import java.lang.reflect.Field;
 import java.security.PrivilegedActionException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import static java.security.AccessController.doPrivileged;
+import static java.util.Collections.emptyMap;
 
 /**
  *
  * @author pron
  */
-class CollectionsSetFromMapSerializer extends Serializer<Set> {
+class CollectionsSetFromMapSerializer extends Serializer<Set<?>> {
     private static final Field mf;
     private static final Field sf;
 
     static {
         try {
-            final Class<?> cl = Collections.newSetFromMap(new HashMap()).getClass();
+            final Class<?> cl = Collections.newSetFromMap(emptyMap()).getClass();
             mf = doPrivileged(new GetAccessDeclaredField(cl, "m"));
             sf = doPrivileged(new GetAccessDeclaredField(cl, "s"));
         } catch (PrivilegedActionException e) {
@@ -60,10 +60,10 @@ class CollectionsSetFromMapSerializer extends Serializer<Set> {
     }
 
     @Override
-    public Set read(Kryo kryo, Input input, Class<Set> type) {
+    public Set<?> read(Kryo kryo, Input input, Class<? extends Set<?>> type) {
         try {
-            final Map m = (Map) kryo.readClassAndObject(input);
-            final Set s = Collections.newSetFromMap(Collections.EMPTY_MAP); // must be created with an empty map
+            final Map<?,?> m = (Map<?,?>) kryo.readClassAndObject(input);
+            final Set<?> s = Collections.newSetFromMap(emptyMap()); // must be created with an empty map
             mf.set(s, m);
             sf.set(s, m.keySet());
             return s;

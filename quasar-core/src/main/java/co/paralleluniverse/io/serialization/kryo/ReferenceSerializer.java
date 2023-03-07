@@ -40,13 +40,13 @@ class ReferenceSerializer extends Serializer<Reference<?>> {
     }
 
     @Override
-    public Reference<?> read(Kryo kryo, Input input, Class<Reference<?>> type) {
+    public Reference<?> read(Kryo kryo, Input input, Class<? extends Reference<?>> type) {
         assert !PhantomReference.class.isAssignableFrom(type);
         final boolean strong = !(WeakReference.class.isAssignableFrom(type) || SoftReference.class.isAssignableFrom(type));
         final Object val = kryo.readClassAndObject(input);
         assert val == null || !strong;
         try {
-            return (Reference<?>) type.getConstructor(Object.class).newInstance(val);
+            return type.getConstructor(Object.class).newInstance(val);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

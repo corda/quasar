@@ -20,12 +20,14 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.security.PrivilegedActionException;
+import java.util.function.Consumer;
 
 import static java.security.AccessController.doPrivileged;
 
@@ -59,8 +61,6 @@ public class ReplaceableObjectKryo extends Kryo {
         Registration registration = super.writeClass(output, newObj.getClass());
         setAutoReset(true);
         super.writeObject(output, newObj, registration.getSerializer());
-//        System.out.println("wrote an object "+newObj+" id "+registration.getId());
-//        reset();
     }
 
     public ReplaceableObjectKryo(ClassResolver classResolver) {
@@ -71,9 +71,24 @@ public class ReplaceableObjectKryo extends Kryo {
     protected Serializer<?> newDefaultSerializer(Class type) {
         final Serializer<?> s = super.newDefaultSerializer(type);
         if (s instanceof FieldSerializer) {
-            ((FieldSerializer<?>) s).setIgnoreSyntheticFields(false);
+            final FieldSerializer<?> fs = (FieldSerializer<?>) s;
+            final FieldSerializerConfig config = fs.getFieldSerializerConfig();
+            // DO NOT USE SHORT-CIRCUIT EVALUATION HERE!
+            if (modifyFlag(config.getIgnoreSyntheticFields(), false, config::setIgnoreSyntheticFields)
+                    | modifyFlag(config.getExtendedFieldNames(), true, config::setExtendedFieldNames)) {
+                // Only reconfigure the serializer if one of its settings has changed.
+                fs.updateFields();
+            }
         }
         return s;
+    }
+
+    private static boolean modifyFlag(boolean oldValue, boolean newValue, Consumer<Boolean> setter) {
+        final boolean updated = oldValue != newValue;
+        if (updated) {
+            setter.accept(newValue);
+        }
+        return updated;
     }
 
     @Override
@@ -93,8 +108,6 @@ public class ReplaceableObjectKryo extends Kryo {
             serializer = reg.getSerializer();
         }
         super.writeObject(output, object, serializer);
-//        System.out.println("wrote2 an object "+object+" id "+getRegistration(object.getClass()).getId());
-
     }
 
     @Override
@@ -157,8 +170,9 @@ public class ReplaceableObjectKryo extends Kryo {
     }
 
     private static Method getMethodByReflection(Class<?> clazz, final String methodName, Class<?>... paramTypes) throws SecurityException {
-        if (!Serializable.class.isAssignableFrom(clazz))
+        if (!Serializable.class.isAssignableFrom(clazz)) {
             return null;
+        }
 
         Method m = null;
         try {
@@ -181,11 +195,11 @@ public class ReplaceableObjectKryo extends Kryo {
         return m;
     }
 
-    private static class SerializationMethods {
-        Method writeReplace;
-        Method readResolve;
+    private static final class SerializationMethods {
+        final Method writeReplace;
+        final Method readResolve;
 
-        public SerializationMethods(Method writeReplace, Method readResolve) {
+        SerializationMethods(Method writeReplace, Method readResolve) {
             this.writeReplace = writeReplace;
             this.readResolve = readResolve;
         }

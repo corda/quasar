@@ -1,0 +1,67 @@
+import static aQute.bnd.version.MavenVersion.parseMavenString
+
+plugins {
+    id 'biz.aQute.bnd.builder'
+    id 'java-library'
+}
+description 'Kryo Serializers for Corda Checkpoints'
+
+group = 'de.javakaffee'
+
+ext {
+    kryoCglibVersion = '3.1'
+    kryoDexxCollectionVersion = '0.6'
+    kryoJodaTimeVersion = '1.6.2'
+    kryoProtobufVersion = '3.6.1'
+    kryoWicketVersion = '1.4.17'
+    guavaOsgiVersion = provider {
+        parseMavenString(guavaVersion).getOSGiVersion()
+    }
+}
+
+configurations {
+    bundle {
+        canBeResolved = false
+    }
+    bundle.extendsFrom runtimeClasspath
+}
+
+dependencies {
+    // This information has been read from kryo-serializers' original POM.
+    compileOnly "de.javakaffee:kryo-serializers:$kryoSerializersVersion"
+    compileOnly "com.github.andrewoma.dexx:collection:$kryoDexxCollectionVersion"
+    compileOnly "com.google.protobuf:protobuf-java:$kryoProtobufVersion"
+    compileOnly "org.apache.wicket:wicket:$kryoWicketVersion"
+    compileOnly "joda-time:joda-time:$kryoJodaTimeVersion"
+    compileOnly "cglib:cglib:$kryoCglibVersion"
+    api "com.esotericsoftware:kryo:$kryoVersion"
+}
+
+def jar = tasks.named('jar', Jar) {
+    archiveBaseName = 'kryo-serializers'
+
+    bundle {
+        bnd """\
+Automatic-Module-Name: de.javakaffee.kryoserializers
+Bundle-Name: \${project.description}
+Bundle-SymbolicName: \${project.group}.kryo-serializers
+Bundle-Version: ${kryoSerializersVersion}
+Export-Package: \
+    de.javakaffee.kryoserializers.*
+Import-Package: \
+    com.google.common.collect;resolution:=optional;version='[17.0,\${versionmask;+;\${project.guavaOsgiVersion}})',\
+    com.google.protobuf.*;resolution:=optional,\
+    com.github.andrewoma.dexx.*;resolution:=optional,\
+    org.apache.wicket.*;resolution:=optional,\
+    org.joda.time.*;resolution:=optional,\
+    net.sf.cglib.*;resolution:=optional,\
+    sun.reflect;resolution:=optional,\
+    *
+-includeresource: @kryo-serializers-${kryoSerializersVersion}.jar
+"""
+    }
+}
+
+artifacts {
+    bundle jar
+}

@@ -371,7 +371,6 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
     /**
      * Sets the priority of this fiber.
      *
-     *
      * The fiber priority's semantics - or even if it is ignored completely -
      * is entirely up to the fiber's scheduler.
      * The default fiber scheduler completely ignores fiber priority.
@@ -647,19 +646,19 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         this(null, -1, (SuspendableCallable) null);
     }
 
-    public Fiber(Fiber fiber, SuspendableCallable<V> target) {
+    public Fiber(Fiber<?> fiber, SuspendableCallable<V> target) {
         this(fiber.name, fiber.scheduler, fiber.initialStackSize, target);
     }
 
-    public Fiber(Fiber fiber, SuspendableRunnable target) {
+    public Fiber(Fiber<?> fiber, SuspendableRunnable target) {
         this(fiber.name, fiber.scheduler, fiber.initialStackSize, target);
     }
 
-    public Fiber(Fiber fiber, FiberScheduler scheduler, SuspendableCallable<V> target) {
+    public Fiber(Fiber<?> fiber, FiberScheduler scheduler, SuspendableCallable<V> target) {
         this(fiber.name, scheduler, fiber.initialStackSize, target);
     }
 
-    public Fiber(Fiber fiber, FiberScheduler scheduler, SuspendableRunnable target) {
+    public Fiber(Fiber<?> fiber, FiberScheduler scheduler, SuspendableRunnable target) {
         this(fiber.name, scheduler, fiber.initialStackSize, target);
     }
     //</editor-fold>
@@ -1180,7 +1179,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      *
      * @return {@code this}
      */
-    public Fiber inheritThreadLocals() {
+    public Fiber<?> inheritThreadLocals() {
         if (state != State.NEW)
             throw new IllegalStateException("Method called on a started fiber");
         if (!noLocals)
@@ -1871,11 +1870,11 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
             stackTrace.append(" (optimized)");
     }
 
-    @SuppressWarnings("unchecked")
     private static boolean isInstrumented(Class<?> clazz) {
         boolean res = clazz.isAnnotationPresent(Instrumented.class);
-        if (!res)
+        if (!res) {
             res = doPrivileged(new CheckInstrumented(clazz)); // a second chance
+        }
         return res;
     }
 
@@ -2103,6 +2102,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      * @param scheduler The {@link FiberScheduler} to use for scheduling the fiber.
      * @return The deserialized, running fiber.
      */
+    @SuppressWarnings("unchecked")
     public static <V> Fiber<V> unparkSerialized(byte[] serFiber, FiberScheduler scheduler) {
         final Fiber<V> f = (Fiber<V>) getFiberSerializer().read(serFiber);
         return unparkDeserialized(f, scheduler);
@@ -2179,7 +2179,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         return s;
     }
 
-    private static class FiberSerializer extends Serializer<Fiber<?>> {
+    private static final class FiberSerializer extends Serializer<Fiber<?>> {
         private final boolean includeThreadLocals;
 
         public FiberSerializer(boolean includeThreadLocals) {
@@ -2238,7 +2238,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
 
         @Override
         @SuppressWarnings("CallToPrintStackTrace")
-        public Fiber<?> read(Kryo kryo, Input input, Class<Fiber<?>> type) {
+        public Fiber<?> read(Kryo kryo, Input input, Class<? extends Fiber<?>> type) {
             final Fiber<?> f;
             final Thread currentThread = Thread.currentThread();
             final Object tmpThreadLocals = ThreadAccess.getThreadLocals(currentThread);

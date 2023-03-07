@@ -31,7 +31,7 @@ class FiberWriterSerializer extends Serializer<FiberWriter> {
     }
 
     @Override
-    public FiberWriter read(Kryo kryo, Input input, Class<FiberWriter> type) {
+    public FiberWriter read(Kryo kryo, Input input, Class<? extends FiberWriter> type) {
         return null;
     }
 }

@@ -5,9 +5,9 @@ module co.paralleluniverse.quasar.core.osgi {
     requires co.paralleluniverse.quasar.core.framework.extension;
 
     // These are "automatic" module names, so keep them hidden!
-    requires static kryo;
-    requires static kryo.serializers;
-    requires static objenesis;
+    requires static com.esotericsoftware.kryo;
+    requires static de.javakaffee.kryoserializers;
+    requires static org.objenesis;
 
     exports co.paralleluniverse.fibers;
     exports co.paralleluniverse.fibers.futures;

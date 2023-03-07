@@ -23,5 +23,5 @@ import java.io.Serializable;
  */
 @FunctionalInterface
 public interface FiberWriter extends Serializable {
-    void write(Fiber fiber, ByteArraySerializer ser);
+    void write(Fiber<?> fiber, ByteArraySerializer ser);
 }

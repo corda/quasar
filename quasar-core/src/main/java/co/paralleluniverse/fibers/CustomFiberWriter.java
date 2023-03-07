@@ -9,5 +9,5 @@ import java.io.Serializable;
  */
 @FunctionalInterface
 public interface CustomFiberWriter extends Serializable {
-    void write(Fiber fiber);
+    void write(Fiber<?> fiber);
 }
