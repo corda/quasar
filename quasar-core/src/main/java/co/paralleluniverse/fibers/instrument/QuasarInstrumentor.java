@@ -215,7 +215,7 @@ public final class QuasarInstrumentor {
 
     private void examine(String className, String suffix, byte[] data) {
         if (EXAMINED_CLASS != null && className != null && className.contains(EXAMINED_CLASS)) {
-            final String filename = className.replace('/', '.') + "-" + new Date().getTime() + "-" + suffix + ".class";
+            final String filename = className.replace('/', '.') + '-' + new Date().getTime() + '-' + suffix + ".class";
             writeToFile(filename, data);
 //            return new TraceClassVisitor(cv, new PrintWriter(new File(filename)));
         }

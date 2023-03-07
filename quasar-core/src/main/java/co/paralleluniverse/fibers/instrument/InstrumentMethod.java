@@ -110,7 +110,7 @@ class InstrumentMethod {
     private final String className;
 
     private final MethodNode mn;
-    private final Frame<?>[] frames;
+    private final Frame<? extends BasicValue>[] frames;
 
     private final int lvarStack; // ref to Stack
     private final int lvarResumed; // boolean indicating if we've been resumed
@@ -143,7 +143,7 @@ class InstrumentMethod {
         this.mn = mn;
 
         try {
-            Analyzer<?> a = new TypeAnalyzer(db);
+            Analyzer<BasicValue> a = new TypeAnalyzer(db);
             this.frames = a.analyze(className, mn);
             this.lvarStack = mn.maxLocals;
             this.lvarResumed = mn.maxLocals + 1;
@@ -251,7 +251,7 @@ class InstrumentMethod {
 
         codeBlocks[0] = FrameInfo.FIRST;
         for (int i = 0; i < numIns; i++) {
-            final Frame<?> f = frames[i];
+            final Frame<? extends BasicValue> f = frames[i];
             if (f != null) { // reachable ?
                 final AbstractInsnNode in = mn.instructions.get(i);
                 if (in.getType() == AbstractInsnNode.METHOD_INSN || in.getType() == AbstractInsnNode.INVOKE_DYNAMIC_INSN) {
@@ -273,7 +273,6 @@ class InstrumentMethod {
                                 susp = false;
                             } else if (st == null) {
                                 db.log(LogLevel.WARNING, "Method not found in class - assuming suspendable: %s#%s%s (at %s:%s#%s)", min.owner, min.name, min.desc, sourceName, className, mn.name);
-                                susp = true;
                             } else if (st != SuspendableType.SUSPENDABLE_SUPER) {
                                 db.log(LogLevel.DEBUG, "Method call at instruction %d to %s#%s%s is suspendable", i, min.owner, min.name, min.desc);
                             }
@@ -290,7 +289,7 @@ class InstrumentMethod {
                             db.log(LogLevel.DEBUG, "Lambda at instruction %d", i);
                             susp = false;
                         } else
-                            db.log(LogLevel.DEBUG, "InvokeDynamic Method call at instruction %d to is assumed suspendable", i);
+                            db.log(LogLevel.DEBUG, "InvokeDynamic Method call at instruction %d is assumed suspendable", i);
                     }
 
                     if (susp) {
@@ -394,8 +393,7 @@ class InstrumentMethod {
         }
 
         // Output try-catch blocks
-        for (final Object o : mn.tryCatchBlocks) {
-            final TryCatchBlockNode tcb = (TryCatchBlockNode) o;
+        for (final TryCatchBlockNode tcb : mn.tryCatchBlocks) {
 
             if (SUSPEND_EXECUTION_NAME.equals(tcb.type) && !hasAnnotation && !mn.name.startsWith(LAMBDA_METHOD_PREFIX)) // we allow catch of SuspendExecution only in methods annotated with @Suspendable and in lambda-generated ones.
                 throw new UnableToInstrumentException("catch for SuspendExecution", className, mn.name, mn.desc);
@@ -415,8 +413,7 @@ class InstrumentMethod {
 
         // Output method annotations
         if (mn.visibleAnnotations != null) {
-            for (Object o : mn.visibleAnnotations) {
-                AnnotationNode an = (AnnotationNode) o;
+            for (AnnotationNode an : mn.visibleAnnotations) {
                 an.accept(mv.visitAnnotation(an.desc, true));
             }
         }
@@ -571,8 +568,9 @@ class InstrumentMethod {
         mv.visitInsn(Opcodes.ATHROW);   // rethrow shared between catchAll and catchSSE
 
         if (mn.localVariables != null) {
-            for (Object o : mn.localVariables)
-                ((LocalVariableNode) o).accept(mv);
+            for (LocalVariableNode o : mn.localVariables) {
+                o.accept(mv);
+            }
         }
         mv.visitMaxs(mn.maxStack + ADD_OPERANDS, mn.maxLocals + NUM_LOCALS + additionalLocals); // Needed by ASM analysis
         mv.visitEnd();
@@ -737,7 +735,7 @@ class InstrumentMethod {
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Thread", "dumpStack", "()V", false);
     }
      */
-    private FrameInfo addCodeBlock(Frame<?> f, int end) {
+    private FrameInfo addCodeBlock(Frame<? extends BasicValue> f, int end) {
         if (++numCodeBlocks == codeBlocks.length) {
             FrameInfo[] newArray = new FrameInfo[numCodeBlocks * 2];
             System.arraycopy(codeBlocks, 0, newArray, 0, codeBlocks.length);
@@ -835,7 +833,7 @@ class InstrumentMethod {
                     MethodInsnNode min = (MethodInsnNode) ins;
                     if ("<init>".equals(min.name)) {
                         int argSize = TypeAnalyzer.getNumArguments(min.desc);
-                        Frame<?> frame = frames[i];
+                        Frame<? extends BasicValue> frame = frames[i];
                         int stackIndex = frame.getStackSize() - argSize - 1;
                         Value thisValue = frame.getStack(stackIndex);
                         if (stackIndex >= 1
@@ -881,9 +879,9 @@ class InstrumentMethod {
         mv.visitLdcInsn(value);
     }
      */
-    private void emitNewAndDup(MethodVisitor mv, Frame<?> frame, int stackIndex, MethodInsnNode min) {
+    private void emitNewAndDup(MethodVisitor mv, Frame<? extends BasicValue> frame, int stackIndex, MethodInsnNode min) {
         /*
-         * This method, and the entire NewValue business has to do with dealing with the following case:
+         * This method (and the entire NewValue business) has to do with dealing with the following case:
          * 
          *   new Foo(suspendableCall())
          *
@@ -908,7 +906,7 @@ class InstrumentMethod {
         int arguments = frame.getStackSize() - stackIndex - 1;
         int neededLocals = 0;
         for (int i = arguments; i >= 1; i--) {
-            BasicValue v = (BasicValue) frame.getStack(stackIndex + i);
+            BasicValue v = frame.getStack(stackIndex + i);
             mv.visitVarInsn(v.getType().getOpcode(Opcodes.ISTORE), lvarStack + NUM_LOCALS + neededLocals);
             neededLocals += v.getSize();
         }
@@ -920,7 +918,7 @@ class InstrumentMethod {
         ((NewValue) frame.getStack(stackIndex)).insn.accept(mv);
 
         for (int i = 1; i <= arguments; i++) {
-            BasicValue v = (BasicValue) frame.getStack(stackIndex + i);
+            BasicValue v = frame.getStack(stackIndex + i);
             neededLocals -= v.getSize();
             mv.visitVarInsn(v.getType().getOpcode(Opcodes.ILOAD), lvarStack + NUM_LOCALS + neededLocals);
         }
@@ -948,7 +946,7 @@ class InstrumentMethod {
         if (fi.numSlots > Constants.STACK_MAX_SLOTS)
             throw new IllegalArgumentException("Number of slots required " + fi.numSlots + " greater than maximum of " + Constants.STACK_MAX_SLOTS + " in " + className + "." + mn.name + mn.desc);
 
-        Frame<?> f = frames[fi.endInstruction];
+        Frame<? extends BasicValue> f = frames[fi.endInstruction];
 
         if (fi.lBefore != null)
             fi.lBefore.accept(mv);
@@ -960,7 +958,7 @@ class InstrumentMethod {
 
         // store operand stack
         for (int i = f.getStackSize(); i-- > 0;) {
-            BasicValue v = (BasicValue) f.getStack(i);
+            BasicValue v = f.getStack(i);
             if (!isOmitted(v)) {
                 if (!isNullType(v)) {
                     int slotIdx = fi.stackSlotIndices[i];
@@ -975,7 +973,7 @@ class InstrumentMethod {
 
         // store local vars
         for (int i = firstLocal; i < f.getLocals(); i++) {
-            BasicValue v = (BasicValue) f.getLocal(i);
+            BasicValue v = f.getLocal(i);
             if (!isNullType(v)) {
                 mv.visitVarInsn(v.getType().getOpcode(Opcodes.ILOAD), i);
                 int slotIdx = fi.localSlotIndices[i];
@@ -986,7 +984,7 @@ class InstrumentMethod {
 
         // restore last numArgsToPreserve operands
         for (int i = f.getStackSize() - numArgsToPreserve; i < f.getStackSize(); i++) {
-            BasicValue v = (BasicValue) f.getStack(i);
+            BasicValue v = f.getStack(i);
             if (!isOmitted(v)) {
                 if (!isNullType(v)) {
                     int slotIdx = fi.stackSlotIndices[i];
@@ -999,11 +997,11 @@ class InstrumentMethod {
     }
 
     private void emitRestoreState(MethodVisitor mv, @SuppressWarnings("UnusedParameters") int idx, FrameInfo fi, int numArgsPreserved) {
-        Frame<?> f = frames[fi.endInstruction];
+        Frame<? extends BasicValue> f = frames[fi.endInstruction];
 
         // restore local vars
         for (int i = firstLocal; i < f.getLocals(); i++) {
-            BasicValue v = (BasicValue) f.getLocal(i);
+            BasicValue v = f.getLocal(i);
             if (!isNullType(v)) {
                 int slotIdx = fi.localSlotIndices[i];
                 assert slotIdx >= 0 && slotIdx < fi.numSlots;
@@ -1017,7 +1015,7 @@ class InstrumentMethod {
 
         // restore operand stack
         for (int i = 0; i < f.getStackSize() - numArgsPreserved; i++) {
-            BasicValue v = (BasicValue) f.getStack(i);
+            BasicValue v = f.getStack(i);
             if (!isOmitted(v)) {
                 if (!isNullType(v)) {
                     int slotIdx = fi.stackSlotIndices[i];
@@ -1193,7 +1191,7 @@ class InstrumentMethod {
         }
 
         @Override
-        public AbstractInsnNode clone(Map labels) {
+        public AbstractInsnNode clone(Map<LabelNode, LabelNode> labels) {
             return new OmittedInstruction(orgInsn.clone(labels));
         }
     }
@@ -1216,7 +1214,7 @@ class InstrumentMethod {
         BlockLabelNode lBefore;
         BlockLabelNode lAfter;
 
-        FrameInfo(Frame<?> f, int firstLocal, int endInstruction, InsnList insnList, MethodDatabase db) {
+        FrameInfo(Frame<? extends BasicValue> f, int firstLocal, int endInstruction, InsnList insnList, MethodDatabase db) {
             this.endInstruction = endInstruction;
 
             int idxObj = 0;
@@ -1225,7 +1223,7 @@ class InstrumentMethod {
             if (f != null) {
                 stackSlotIndices = new int[f.getStackSize()];
                 for (int i = 0; i < f.getStackSize(); i++) {
-                    BasicValue v = (BasicValue) f.getStack(i);
+                    BasicValue v = f.getStack(i);
                     if (v instanceof NewValue) {
                         // explanation in emitNewAndDup
                         NewValue newValue = (NewValue) v;
@@ -1250,7 +1248,7 @@ class InstrumentMethod {
 
                 localSlotIndices = new int[f.getLocals()];
                 for (int i = firstLocal; i < f.getLocals(); i++) {
-                    BasicValue v = (BasicValue) f.getLocal(i);
+                    BasicValue v = f.getLocal(i);
                     if (!isNullType(v)) {
                         if (v.isReference())
                             localSlotIndices[i] = idxObj++;
