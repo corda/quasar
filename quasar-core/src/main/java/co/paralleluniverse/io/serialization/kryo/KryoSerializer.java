@@ -14,11 +14,13 @@ package co.paralleluniverse.io.serialization.kryo;
 
 import co.paralleluniverse.io.serialization.ByteArraySerializer;
 import co.paralleluniverse.io.serialization.IOStreamSerializer;
+import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -37,7 +39,11 @@ public class KryoSerializer implements ByteArraySerializer, IOStreamSerializer {
     private Output output;
 
     public KryoSerializer() {
-        this.kryo = KryoUtil.newKryo();
+        this(new DefaultClassResolver());
+    }
+
+    public KryoSerializer(ClassResolver classResolver) {
+        this.kryo = KryoUtil.newKryo(classResolver);
 
         KryoUtil.registerCommonClasses(kryo);
 

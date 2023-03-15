@@ -38,12 +38,14 @@ import co.paralleluniverse.strands.SuspendableCallable;
 import co.paralleluniverse.strands.SuspendableRunnable;
 import co.paralleluniverse.strands.SuspendableUtils.VoidSuspendableCallable;
 import co.paralleluniverse.strands.dataflow.Val;
+import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
@@ -2135,7 +2137,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
     }
 
     /**
-     * Returns a {@link ByteArraySerializer} capable of serializing an object graph containing fibers.
+     * @return a {@link ByteArraySerializer} capable of serializing an object graph containing fibers.
      */
     public static ByteArraySerializer getFiberSerializer() {
         return getFiberSerializer(true);
@@ -2151,15 +2153,30 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      */
     public static ByteArraySerializer getFiberSerializer(boolean includeThreadLocals) {
         final KryoSerializer s = new KryoSerializer();
-        s.getKryo().addDefaultSerializer(Fiber.class, new FiberSerializer(includeThreadLocals));
-        s.getKryo().addDefaultSerializer(ThreadLocal.class, new ThreadLocalSerializer());
-        s.getKryo().addDefaultSerializer(FiberWriter.class, new FiberWriterSerializer());
-        s.getKryo().addDefaultSerializer(CustomFiberWriter.class, new CustomFiberWriterSerializer());
-        s.getKryo().register(Fiber.class);
-        s.getKryo().register(ThreadLocal.class);
-        s.getKryo().register(InheritableThreadLocal.class);
-        s.getKryo().register(ThreadLocalSerializer.DEFAULT.class);
-        s.getKryo().register(FiberWriter.class);
+        return getFiberSerializer(new DefaultClassResolver(), includeThreadLocals);
+    }
+
+    /**
+     * Returns a {@link ByteArraySerializer} capable of serializing an object graph containing fibers.
+     *
+     * @param classResolver A custom {@link ClassResolver} for Kryo to use. Cannot be {@code null}.
+     * @param includeThreadLocals if true, thread/fiber local storage slots will also be serialised.
+     *                            You may want to set this to false if you are using frameworks that put
+     *                            things that cannot be properly serialised into TLS slots, or if the feature
+     *                            causes other issues.
+     */
+    public static ByteArraySerializer getFiberSerializer(ClassResolver classResolver, boolean includeThreadLocals) {
+        final KryoSerializer s = new KryoSerializer(classResolver);
+        final Kryo kryo = s.getKryo();
+        kryo.addDefaultSerializer(Fiber.class, new FiberSerializer(includeThreadLocals));
+        kryo.addDefaultSerializer(ThreadLocal.class, new ThreadLocalSerializer());
+        kryo.addDefaultSerializer(FiberWriter.class, new FiberWriterSerializer());
+        kryo.addDefaultSerializer(CustomFiberWriter.class, new CustomFiberWriterSerializer());
+        kryo.register(Fiber.class);
+        kryo.register(ThreadLocal.class);
+        kryo.register(InheritableThreadLocal.class);
+        kryo.register(ThreadLocalSerializer.DEFAULT.class);
+        kryo.register(FiberWriter.class);
         return s;
     }
 
