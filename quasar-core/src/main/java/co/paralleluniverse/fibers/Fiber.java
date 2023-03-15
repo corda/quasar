@@ -2152,7 +2152,6 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      *                            causes other issues.
      */
     public static ByteArraySerializer getFiberSerializer(boolean includeThreadLocals) {
-        final KryoSerializer s = new KryoSerializer();
         return getFiberSerializer(new DefaultClassResolver(), includeThreadLocals);
     }
 
