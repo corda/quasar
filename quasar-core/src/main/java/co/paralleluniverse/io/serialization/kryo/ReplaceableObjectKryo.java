@@ -13,12 +13,14 @@
 package co.paralleluniverse.io.serialization.kryo;
 
 import co.paralleluniverse.common.reflection.GetAccessDeclaredMethod;
+import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -45,8 +47,9 @@ public class ReplaceableObjectKryo extends Kryo {
 
     @Override
     public void writeClassAndObject(Output output, Object object) {
-        if (output == null)
+        if (output == null) {
             throw new IllegalArgumentException("output cannot be null.");
+        }
         if (object == null) {
             super.writeClass(output, null);
             return;
@@ -60,21 +63,24 @@ public class ReplaceableObjectKryo extends Kryo {
 //        reset();
     }
 
-    public ReplaceableObjectKryo() {
+    public ReplaceableObjectKryo(ClassResolver classResolver) {
+        super(classResolver, new MapReferenceResolver());
     }
 
     @Override
     protected Serializer<?> newDefaultSerializer(Class type) {
         final Serializer<?> s = super.newDefaultSerializer(type);
-        if (s instanceof FieldSerializer)
+        if (s instanceof FieldSerializer) {
             ((FieldSerializer<?>) s).setIgnoreSyntheticFields(false);
+        }
         return s;
     }
 
     @Override
     public Registration writeClass(Output output, Class type) {
-        if (type == null || getMethods(type).writeReplace == null)
+        if (type == null || getMethods(type).writeReplace == null) {
             return super.writeClass(output, type);
+        }
         return super.getRegistration(type); // do nothing. write object will write the class too
     }
 
@@ -116,15 +122,15 @@ public class ReplaceableObjectKryo extends Kryo {
         return readReplace(super.readClassAndObject(input));
     }
 
+    @SuppressWarnings("unchecked")
     private <T> T readReplace(Object obj) {
-        if (obj == null)
-            return null;
-        return (T) getReplacement(getMethods(obj.getClass()).readResolve, obj);
+        return obj == null ? null : (T) getReplacement(getMethods(obj.getClass()).readResolve, obj);
     }
 
     private static Object getReplacement(Method m, Object object) {
-        if (m == null)
+        if (m == null) {
             return object;
+        }
         try {
             return m.invoke(object);
         } catch (IllegalAccessException e) {

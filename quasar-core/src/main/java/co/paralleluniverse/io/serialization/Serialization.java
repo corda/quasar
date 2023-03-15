@@ -37,17 +37,11 @@ public final class Serialization {
     private final IOStreamSerializer ioss;
 
     public static Serialization getInstance() {
-        if (instance != null)
-            return instance;
-        else
-            return tlInstance.get();
+        return (instance != null) ? instance : tlInstance.get();
     }
 
     public static Serialization newInstance() {
-        if (instance != null)
-            return instance;
-        else
-            return new Serialization(new KryoSerializer());
+        return (instance != null) ? instance : new Serialization(new KryoSerializer());
     }
 
     public static Kryo getKryo() {

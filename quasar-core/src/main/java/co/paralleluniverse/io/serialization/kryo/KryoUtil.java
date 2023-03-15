@@ -12,6 +12,7 @@
  */
 package co.paralleluniverse.io.serialization.kryo;
 
+import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -25,13 +26,15 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.objenesis.strategy.SerializingInstantiatorStrategy;
 
+import static java.util.Collections.emptyMap;
+
 /**
  *
  * @author pron
  */
 public final class KryoUtil {
-    public static Kryo newKryo() {
-        Kryo kryo = new ReplaceableObjectKryo();
+    public static Kryo newKryo(ClassResolver classResolver) {
+        Kryo kryo = new ReplaceableObjectKryo(classResolver);
 
         kryo.setRegistrationRequired(false);
         kryo.setInstantiatorStrategy(new SerializingInstantiatorStrategy());
@@ -61,7 +64,7 @@ public final class KryoUtil {
         kryo.register(java.util.EnumSet.class);
 
         kryo.register(java.util.Arrays.asList("").getClass(), new ArraysAsListSerializer());
-        kryo.register(java.util.Collections.newSetFromMap(new java.util.HashMap()).getClass(), new CollectionsSetFromMapSerializer());
+        kryo.register(java.util.Collections.newSetFromMap(emptyMap()).getClass(), new CollectionsSetFromMapSerializer());
 //        kryo.register(java.util.Collections.EMPTY_LIST.getClass(), new CollectionsEmptyListSerializer());
 //        kryo.register(java.util.Collections.EMPTY_MAP.getClass(), new CollectionsEmptyMapSerializer());
 //        kryo.register(java.util.Collections.EMPTY_SET.getClass(), new CollectionsEmptySetSerializer());
@@ -72,7 +75,7 @@ public final class KryoUtil {
         kryo.register(java.lang.reflect.InvocationHandler.class, new JdkProxySerializer());
         UnmodifiableCollectionsSerializer.registerSerializers(kryo);
         SynchronizedCollectionsSerializer.registerSerializers(kryo);
-        kryo.addDefaultSerializer(Externalizable.class, new ExternalizableKryoSerializer());
+        kryo.addDefaultSerializer(Externalizable.class, new ExternalizableKryoSerializer<>());
         kryo.addDefaultSerializer(java.lang.ref.Reference.class, new ReferenceSerializer());
     }
 
