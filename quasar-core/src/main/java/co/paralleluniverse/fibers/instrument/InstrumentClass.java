@@ -55,7 +55,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
-import static co.paralleluniverse.fibers.instrument.Classes.DONT_INSTRUMENT_DESC;
+import static co.paralleluniverse.fibers.instrument.Classes.AnnotationDescriptors.ID.DO_NOT_INSTRUMENT;
+import static co.paralleluniverse.fibers.instrument.Classes.AnnotationDescriptors.ID.SUSPENDABLE;
 import static co.paralleluniverse.fibers.instrument.Classes.INSTRUMENTED_DESC;
 import static co.paralleluniverse.fibers.instrument.Classes.isYieldMethod;
 
@@ -136,9 +137,9 @@ class InstrumentClass extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        if (desc.equals(INSTRUMENTED_DESC) || desc.equals(DONT_INSTRUMENT_DESC))
+        if (desc.equals(INSTRUMENTED_DESC) || Classes.getTypeDescs().contains(DO_NOT_INSTRUMENT, desc))
             this.alreadyInstrumented = true;
-        else if (isInterface && Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, desc))
+        else if (isInterface && Classes.getTypeDescs().contains(SUSPENDABLE, desc))
             this.suspendableInterface = true;
 
         return super.visitAnnotation(desc, visible);
@@ -171,9 +172,9 @@ class InstrumentClass extends ClassVisitor {
                 @Override
                 public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
                     // look for @Suspendable or @DontInstrument annotation
-                    if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, adesc))
+                    if (Classes.getTypeDescs().contains(SUSPENDABLE, adesc))
                         susp = SuspendableType.SUSPENDABLE;
-                    else if (DONT_INSTRUMENT_DESC.equals(adesc))
+                    else if (Classes.getTypeDescs().contains(DO_NOT_INSTRUMENT, adesc))
                         susp = SuspendableType.NON_SUSPENDABLE;
 
                     susp = suspendableToSuperIfAbstract(access, susp);
@@ -298,7 +299,7 @@ class InstrumentClass extends ClassVisitor {
         if (ans == null)
             return false;
         for (AnnotationNode an : ans) {
-            if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, an.desc))
+            if (Classes.getTypeDescs().contains(SUSPENDABLE, an.desc))
                 return true;
         }
         return false;

@@ -7,8 +7,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.lang.reflect.Method;
+import java.lang.reflect.AnnotatedElement;
 import java.util.concurrent.Callable;
+import java.util.function.Function;
 import java.util.logging.LogManager;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -20,16 +21,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class Helpers {
     static final String QUASAR_LOG_TAG = "[quasar]";
     static final String CALL_METHOD_NAME = "call";
+    static final String APPLY_METHOD_NAME = "apply";
 
     private Helpers() {
     }
 
-    static void assertInstrumented(Method method) {
-        assertTrue(method.isAnnotationPresent(Instrumented.class), method + " should be instrumented");
+    static void assertInstrumented(AnnotatedElement element) {
+        assertTrue(element.isAnnotationPresent(Instrumented.class), element + " should be instrumented");
     }
 
-    static void assertNotInstrumented(Method method) {
-        assertFalse(method.isAnnotationPresent(Instrumented.class), method + " should not be instrumented");
+    static void assertNotInstrumented(AnnotatedElement element) {
+        assertFalse(element.isAnnotationPresent(Instrumented.class), element + " should not be instrumented");
     }
 
     static void assertCallable(Class<? extends Callable<?>> callable, String message) throws Exception {
@@ -42,6 +44,14 @@ final class Helpers {
         Class<?> callable = bundle.loadClass(className);
         assertTrue(Callable.class.isAssignableFrom(callable));
         return (Class<? extends Callable<?>>) callable;
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T, R> Class<? extends Function<T, R>> loadFunctionFrom(Bundle bundle, String className) throws ClassNotFoundException {
+        // Loading a class requires OSGi AdminPermission("class").
+        Class<?> function = bundle.loadClass(className);
+        assertTrue(Function.class.isAssignableFrom(function));
+        return (Class<? extends Function<T, R>>) function;
     }
 
     static InputStream getJar(String resourceName) {

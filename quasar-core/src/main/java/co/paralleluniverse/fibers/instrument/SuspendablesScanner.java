@@ -62,8 +62,9 @@ import java.util.function.Function;
 import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToResource;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.isClassFile;
+import static co.paralleluniverse.fibers.instrument.Classes.AnnotationDescriptors.ID.DO_NOT_INSTRUMENT;
+import static co.paralleluniverse.fibers.instrument.Classes.AnnotationDescriptors.ID.SUSPENDABLE;
 import static co.paralleluniverse.fibers.instrument.Classes.SUSPEND_EXECUTION_NAME;
-import static co.paralleluniverse.fibers.instrument.Classes.DONT_INSTRUMENT_DESC;
 
 public class SuspendablesScanner extends Task {
     private final Map<String, MethodNode> methods = new HashMap<>();
@@ -164,9 +165,10 @@ public class SuspendablesScanner extends Task {
             if (ant) {
                 final AntClassLoader acl = (AntClassLoader) getClass().getClassLoader();
                 classpathToUrls(acl.getClasspath().split(System.getProperty("path.separator")), us);
-                for (FileSet fs : filesets)
+                for (FileSet fs : filesets) {
                     us.add(fs.getDir().toURI().toURL());
-            } else {
+                }
+//            } else {
 //                final URLClassLoader ucl = (URLClassLoader) getClass().getClassLoader();
 //                us.addAll(Arrays.asList(ucl.getURLs()));
             }
@@ -319,7 +321,7 @@ public class SuspendablesScanner extends Task {
         @Override
         public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
             final AnnotationVisitor av = super.visitAnnotation(adesc, visible);
-            if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, adesc)) {
+            if (Classes.getTypeDescs().contains(SUSPENDABLE, adesc)) {
                 suspendableClass = true;
             }
             return av;
@@ -348,9 +350,9 @@ public class SuspendablesScanner extends Task {
                 public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
                     final AnnotationVisitor av = super.visitAnnotation(desc, visible);
 
-                    if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, adesc))
+                    if (Classes.getTypeDescs().contains(SUSPENDABLE, adesc))
                         susp = noImpl ? SuspendableType.SUSPENDABLE_SUPER : SuspendableType.SUSPENDABLE;
-                    else if (DONT_INSTRUMENT_DESC.equals(adesc))
+                    else if (Classes.getTypeDescs().contains(DO_NOT_INSTRUMENT, adesc))
                         susp = SuspendableType.NON_SUSPENDABLE;
 
                     return av;

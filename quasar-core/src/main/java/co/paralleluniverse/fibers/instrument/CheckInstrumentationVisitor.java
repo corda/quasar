@@ -53,7 +53,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static co.paralleluniverse.common.asm.ASMUtil.ASMAPI;
-import static co.paralleluniverse.fibers.instrument.Classes.INSTRUMENTED_DESC;
+import static co.paralleluniverse.fibers.instrument.Classes.AnnotationDescriptors.ID.DO_NOT_INSTRUMENT;
+import static co.paralleluniverse.fibers.instrument.Classes.AnnotationDescriptors.ID.SUSPENDABLE;
 
 /**
  * Check if a class contains suspendable methods.
@@ -117,9 +118,9 @@ class CheckInstrumentationVisitor extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        if (desc.equals(INSTRUMENTED_DESC))
+        if (Classes.getTypeDescs().contains(DO_NOT_INSTRUMENT, desc))
             this.alreadyInstrumented = true;
-        else if (isInterface && Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, desc))
+        else if (isInterface && Classes.getTypeDescs().contains(SUSPENDABLE, desc))
             this.suspendableInterface = true;
         return null;
     }
@@ -152,8 +153,9 @@ class CheckInstrumentationVisitor extends ClassVisitor {
 
                 @Override
                 public AnnotationVisitor visitAnnotation(String adesc, boolean visible) {
-                    if (Classes.getTypeDescs().contains(Classes.AnnotationDescriptors.ID.SUSPENDABLE, adesc))
+                    if (Classes.getTypeDescs().contains(SUSPENDABLE, adesc)) {
                         susp = true;
+                    }
                     return super.visitAnnotation(adesc, visible);
                 }
 
@@ -227,7 +229,7 @@ class CheckInstrumentationVisitor extends ClassVisitor {
                 final SuspendableType type = classEntry.check(name, buildDescriptorFromSyntheticStatic(i, p.getSecond()));
 
                 if (type != null) {
-                    // Finally if we've found a non null match that is suspendable set it on the synthetic static.
+                    // Finally if we've found a non-null match that is suspendable set it on the synthetic static.
                     if (type != SuspendableType.NON_SUSPENDABLE) {
                         classEntry.set(p.getFirst(), p.getSecond(), SuspendableType.SUSPENDABLE);
                     }
@@ -245,7 +247,7 @@ class CheckInstrumentationVisitor extends ClassVisitor {
             final SuspendableType type = classEntry.check("invoke", p.getSecond());
 
             if (type != null) {
-                // Finally if we've found a non null match that is suspendable set it on the synthetic static.
+                // Finally if we've found a non-null match that is suspendable set it on the synthetic static.
                 if (type != SuspendableType.NON_SUSPENDABLE) {
                     classEntry.set(p.getFirst(), p.getSecond(), SuspendableType.SUSPENDABLE);
                 }
