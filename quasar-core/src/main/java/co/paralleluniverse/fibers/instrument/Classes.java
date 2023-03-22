@@ -58,32 +58,29 @@ final class Classes {
 
     static final String LAMBDA_METHOD_PREFIX           = "lambda$";
 
-    static final String DONT_INSTRUMENT_DESC = Type.getDescriptor(DontInstrument.class);
     static final String INSTRUMENTED_DESC    = Type.getDescriptor(Instrumented.class);
 
     // CORE-21 : Provide getter and setter for annotation types.
-    static class AnnotationDescriptors {
+    static final class AnnotationDescriptors {
 
         enum ID {
-            SUSPENDABLE
+            SUSPENDABLE,
+            DO_NOT_INSTRUMENT
         };
 
-        // Keep as non volatile for now as should only be modified by the agent on initialisation.
+        // Keep as non-volatile for now as should only be modified by the agent on initialisation.
         private final EnumMap<ID, Set<String>> descIds = new EnumMap<>(ID.class);
 
         AnnotationDescriptors() {
             // We use string literals rather than Type.getDescriptor as we do not want
             // to create a dependency on fibers.
             set(ID.SUSPENDABLE, "Lco/paralleluniverse/fibers/Suspendable;");
+            set(ID.DO_NOT_INSTRUMENT, Type.getDescriptor(DontInstrument.class));
+            add(ID.DO_NOT_INSTRUMENT, "Lco/paralleluniverse/quasar/annotations/DoNotInstrument;");
         }
 
         boolean contains(ID id, String s) {
             return descIds.get(id).contains(s);
-        }
-
-        String get(ID id) {
-            // Just return first element from iterator, fine for singletons, which is default.
-            return descIds.get(id).iterator().next();
         }
 
         private void set(ID id, String s) { descIds.put(id, new HashSet<>(Collections.singletonList(s))); }

@@ -30,11 +30,12 @@ configurations {
 }
 
 dependencies {
-    bundles project('osgi-suspendable')
     bundles project('osgi-cacheable-one')
     bundles project('osgi-cacheable-two')
+    bundles project('osgi-do-not-instrument')
     bundles project('osgi-multi-uninstrumented')
     bundles project('osgi-super-classes')
+    bundles project('osgi-suspendable')
     bundles project('osgi-uninstrumented')
 
     osgiTestCompileOnly 'org.osgi:osgi.core'
