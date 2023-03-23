@@ -19,6 +19,7 @@ import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
@@ -27,6 +28,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.security.PrivilegedActionException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static java.security.AccessController.doPrivileged;
@@ -37,15 +41,85 @@ import static java.security.AccessController.doPrivileged;
  * @author pron
  */
 public class ReplaceableObjectKryo extends Kryo {
+    /**
+     * These classes all support {@code writeReplace}, but the class they replace
+     * with is package private and stores the elements in a transient field. This
+     * makes it highly toxic to Kryo, and so best not touched.
+     */
+    private static final Set<Class<?>> FORBIDDEN_CLASSES = Set.of(new HashSet<>(List.of(
+        List.of().getClass(),
+        List.of(0).getClass(),
+        List.of(0, 0, 0).getClass(),
+        Set.of().getClass(),
+        Set.of(0).getClass(),
+        Set.of(0, 1, 2).getClass()
+    )).toArray(new Class<?>[0]));
+
     private static final ClassValue<SerializationMethods> replaceMethodsCache = new ClassValue<>() {
         @Override
         protected SerializationMethods computeValue(Class<?> type) {
-            return new SerializationMethods(getMethodByReflection(type, WRITE_REPLACE),
-                    getMethodByReflection(type, READ_RESOLVE));
+            return new SerializationMethods(
+                FORBIDDEN_CLASSES.contains(type) ? null : getMethodByReflection(type, WRITE_REPLACE),
+                getMethodByReflection(type, READ_RESOLVE)
+            );
         }
     };
     private static final String WRITE_REPLACE = "writeReplace";
     private static final String READ_RESOLVE = "readResolve";
+
+    // These serializer classes are package private, unfortunately.
+    private final Class<? extends CollectionSerializer<?>> immutableListSerializerClass;
+    private final Class<? extends CollectionSerializer<?>> immutableSetSerializerClass;
+
+    Class<? extends CollectionSerializer<?>> getImmutableListSerializerClass() {
+        return immutableListSerializerClass;
+    }
+
+    Class<? extends CollectionSerializer<?>> getImmutableSetSerializerClass() {
+        return immutableSetSerializerClass;
+    }
+
+    @SuppressWarnings("unchecked")
+    public ReplaceableObjectKryo(ClassResolver classResolver) {
+        super(classResolver, new MapReferenceResolver());
+
+        // We need the classes of these non-public collection serializers.
+        immutableListSerializerClass = (Class<? extends CollectionSerializer<?>>) fetchDefaultSerializerType(List.of().getClass());
+        immutableSetSerializerClass = (Class<? extends CollectionSerializer<?>>) fetchDefaultSerializerType(Set.of().getClass());
+
+        // Override Kryo's own ObjectArraySerializer with one that is
+        // compatible with our support for writeReplace / readResolve.
+        addDefaultSerializer(Object[].class, ReplaceableObjectArraySerializer.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Class<? extends Serializer<?>> fetchDefaultSerializerType(Class<?> type) {
+        return (Class<? extends Serializer<?>>) super.getDefaultSerializer(type).getClass();
+    }
+
+    private Serializer<?> adapt(Serializer<?> serializer) {
+        return serializer instanceof CollectionSerializer<?> && !(serializer instanceof CollectionSerializerAdapter)
+            ? new CollectionSerializerAdapter<>(this, (CollectionSerializer<?>) serializer)
+            : serializer;
+    }
+
+    @Override
+    public Registration register(Class type, Serializer serializer) {
+        return super.register(type, adapt(serializer));
+    }
+
+    @Override
+    public Registration register(Class type, Serializer serializer, int id) {
+        return super.register(type, adapt(serializer), id);
+    }
+
+    /**
+     * Currently required by {@link ClassResolver#registerImplicit}.
+     */
+    @Override
+    public Serializer<?> getDefaultSerializer(Class type) {
+        return adapt(super.getDefaultSerializer(type));
+    }
 
     @Override
     public void writeClassAndObject(Output output, Object object) {
@@ -61,10 +135,6 @@ public class ReplaceableObjectKryo extends Kryo {
         Registration registration = super.writeClass(output, newObj.getClass());
         setAutoReset(true);
         super.writeObject(output, newObj, registration.getSerializer());
-    }
-
-    public ReplaceableObjectKryo(ClassResolver classResolver) {
-        super(classResolver, new MapReferenceResolver());
     }
 
     @Override
