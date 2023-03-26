@@ -9,6 +9,10 @@ import com.esotericsoftware.kryo.io.Output;
  * @author Christian Sailer (christian.sailer@r3.com)
  */
 public class CustomFiberWriterSerializer extends Serializer<CustomFiberWriter> {
+    public CustomFiberWriterSerializer() {
+        setImmutable(true);
+    }
+
     @Override
     public void write(Kryo kryo, Output output, CustomFiberWriter object) {
     }
