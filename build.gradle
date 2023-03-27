@@ -404,12 +404,6 @@ project (':quasar-core') {
                 srcDir 'src/main/java'
             }
         }
-        agent {
-            java {
-                srcDir 'src/main/agent'
-            }
-            compileClasspath += main.compileClasspath
-        }
         core {
             java {
                 srcDir 'src/main/core'
@@ -453,9 +447,6 @@ project (':quasar-core') {
             extendsFrom runtimeClasspath
             canBeResolved = false
         }
-        agent {
-            canBeResolved = false
-        }
         frameworkExtension {
             canBeResolved = false
         }
@@ -464,9 +455,6 @@ project (':quasar-core') {
             canBeResolved = false
         }
 
-        agentCompileOnly {
-            extendsFrom provided
-        }
         frameworkExtensionCompileOnly {
             extendsFrom provided
         }
@@ -499,24 +487,11 @@ project (':quasar-core') {
         compileOnly 'org.osgi:osgi.annotation'
         compileOnly 'org.osgi:osgi.core'
 
-        agentImplementation files(sourceSets.main.output) {
-            builtBy tasks.named('compileJava', JavaCompile)
-        }
         coreImplementation files(sourceSets.frameworkExtension.output) {
             builtBy tasks.named('compileFrameworkExtensionJava', JavaCompile)
         }
         frameworkExtensionImplementation files(sourceSets.main.output) {
             builtBy tasks.named('compileJava', JavaCompile)
-        }
-    }
-
-    tasks.named('compileAgentJava', JavaCompile) {
-        doFirst {
-            options.compilerArgs += [
-                '--patch-module', "${project.moduleName}.agent=${sourceSets.main.output.asPath}",
-                '--module-path', configurations.agentCompileClasspath.asPath,
-                '--module-version', project.version
-            ]
         }
     }
 
@@ -663,64 +638,6 @@ Import-Package: \
         it.finalizedBy validateCoreBundle
     }
 
-    def agentBundle = tasks.register('agentBundle', Bundle) {
-        dependsOn shadowJar
-        from(shadowFiles) {
-            exclude 'META-INF/suspendable*'
-            include 'co/paralleluniverse/asm/**'
-            include 'co/paralleluniverse/common/asm/**'
-            include 'co/paralleluniverse/common/resource/**'
-            include 'co/paralleluniverse/fibers/instrument/**'
-            exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTask*'
-            exclude 'co/paralleluniverse/fibers/instrument/InstrumentationTKB*'
-            exclude 'co/paralleluniverse/fibers/instrument/ModuleFilterTask*'
-            exclude 'co/paralleluniverse/fibers/instrument/OldSuspendablesScanner*'
-            exclude 'co/paralleluniverse/fibers/instrument/SuspendablesScanner*'
-            exclude 'co/paralleluniverse/fibers/instrument/QuasarActivator*'
-            exclude 'co/paralleluniverse/fibers/instrument/QuasarBundleTracker*'
-            exclude 'co/paralleluniverse/fibers/instrument/QuasarPermission*'
-            exclude 'co/paralleluniverse/fibers/instrument/QuasarWeavingHook*'
-            include 'co/paralleluniverse/fibers/suspend/**'
-        }
-        from(shadowFiles) {
-            include 'co/paralleluniverse/fibers/osgi/**'
-            into 'META-INF'
-        }
-        from(sourceSets.agent.output)
-        archiveAppendix = 'osgi'
-        archiveClassifier = 'agent'
-
-        bundle {
-            bnd classicJar.flatMap { jar ->
-                jar.archiveFile.map { file ->
-                    "-include: jar:${file.asFile.toURI()}!/META-INF/MANIFEST.MF"
-                }
-            }
-
-            bnd """\
--fixupmessages "Classes found in the wrong directory"; restrict:=error; is:=warning
-Bundle-SymbolicName: co.paralleluniverse.quasar-core.agent
-Bundle-Name: Quasar Agent
-Bundle-Version: \${project.version}
-Import-Package: !org.osgi.framework.*,*
-"""
-        }
-    }
-
-    def validateAgentBundle = tasks.register("validateAgentBundle") {
-        dependsOn agentBundle
-        doLast {
-            String importPackages = fetchManifestAttributeFrom(agentBundle, 'Import-Package')
-            if (importPackages && !containsOnly(importPackages, ['co.paralleluniverse.common.resource', 'co.paralleluniverse.fibers.suspend'])) {
-                throw new InvalidUserDataException("OSGi bundle for Java agent should only import from Java or itself: " + importPackages)
-            }
-        }
-    }
-
-    agentBundle.configure {
-        it.finalizedBy validateAgentBundle
-    }
-
     def frameworkExtensionBundle = tasks.register('frameworkExtensionBundle', Bundle) {
         dependsOn shadowJar
         from(shadowFiles) {
@@ -776,7 +693,7 @@ Implementation-Vendor: \${project.vendor}
     }
 
     tasks.named('test', Test) {
-        dependsOn = [classicJar, coreBundle, agentBundle, frameworkExtensionBundle, compileClassloadertestJava]
+        dependsOn = [classicJar, coreBundle, frameworkExtensionBundle, compileClassloadertestJava]
         testClassesDirs = sourceSets.test.output.classesDirs
         classpath = sourceSets.test.runtimeClasspath
 
@@ -790,8 +707,6 @@ Implementation-Vendor: \${project.vendor}
         archives classicJar
         core coreBundle
         archives coreBundle
-        agent agentBundle
-        archives agentBundle
         frameworkExtension frameworkExtensionBundle
         archives frameworkExtensionBundle
         testArtifacts testJar
@@ -811,9 +726,6 @@ Implementation-Vendor: \${project.vendor}
 
     components.named('osgi') {
         addVariantsFromConfiguration(configurations.core) {
-            mapToMavenScope('runtime')
-        }
-        addVariantsFromConfiguration(configurations.agent) {
             mapToMavenScope('runtime')
         }
         addVariantsFromConfiguration(configurations.frameworkExtension) {
