@@ -16,6 +16,12 @@ import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicBooleanSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicIntegerSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicLongSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.PatternSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.UUIDSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.URISerializer;
 import de.javakaffee.kryoserializers.GregorianCalendarSerializer;
 import de.javakaffee.kryoserializers.JdkProxySerializer;
 import de.javakaffee.kryoserializers.SynchronizedCollectionsSerializer;
@@ -74,6 +80,12 @@ public final class KryoUtil {
         SynchronizedCollectionsSerializer.registerSerializers(kryo);
         kryo.addDefaultSerializer(Externalizable.class, new ExternalizableKryoSerializer<>());
         kryo.addDefaultSerializer(java.lang.ref.Reference.class, new ReferenceSerializer());
+        kryo.addDefaultSerializer(java.net.URI.class, URISerializer.class);
+        kryo.addDefaultSerializer(java.util.UUID.class, UUIDSerializer.class);
+        kryo.addDefaultSerializer(java.util.concurrent.atomic.AtomicBoolean.class, AtomicBooleanSerializer.class);
+        kryo.addDefaultSerializer(java.util.concurrent.atomic.AtomicInteger.class, AtomicIntegerSerializer.class);
+        kryo.addDefaultSerializer(java.util.concurrent.atomic.AtomicLong.class, AtomicLongSerializer.class);
+        kryo.addDefaultSerializer(java.util.regex.Pattern.class, PatternSerializer.class);
     }
 
     public static ObjectOutput asObjectOutput(Output output, Kryo kryo) {
