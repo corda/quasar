@@ -14,12 +14,14 @@
 package co.paralleluniverse.fibers;
 
 import co.paralleluniverse.io.serialization.ByteArraySerializer;
+import java.io.Serializable;
 
 /**
  * A callback used by {@link Fiber#parkAndSerialize(FiberWriter) Fiber.parkAndSerialize}..
  *
  * @author pron
  */
-public interface FiberWriter {
+@FunctionalInterface
+public interface FiberWriter extends Serializable {
     void write(Fiber fiber, ByteArraySerializer ser);
 }
