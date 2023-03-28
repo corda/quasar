@@ -745,7 +745,7 @@ project (':quasar-actors') {
         provided project(path: ':quasar-core', configuration: 'classic')
         // compile 'org.mutabilitydetector:MutabilityDetector:0.9.2'
         implementation "org.slf4j:slf4j-api:$slf4jVersion"
-        implementation "net.bytebuddy:byte-buddy:1.9.2"
+        implementation "net.bytebuddy:byte-buddy:$byteBuddyVersion"
         implementation ("com.google.guava:guava:$guavaVersion") {
             exclude group: 'com.google.errorprone', module: '*'
             exclude group: 'org.checkerframework', module: 'checker-qual'
