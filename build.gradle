@@ -81,10 +81,10 @@ subprojects {
         resolutionStrategy {
             dependencySubstitution {
                 // Kryo demands Objenesis 2.5.1, but Mockito wants Objenesis 2.6
-                substitute module('org.objenesis:objenesis') with module("org.objenesis:objenesis:2.5.1")
+                substitute module('org.objenesis:objenesis') using module("org.objenesis:objenesis:2.5.1")
 
                 // Avoid problem when DropWizard and Log4J ask for different versions of SLF4J.
-                substitute module('org.slf4j:slf4j-api') with module("org.slf4j:slf4j-api:$slf4jVer")
+                substitute module('org.slf4j:slf4j-api') using module("org.slf4j:slf4j-api:$slf4jVer")
             }
         }
     }
@@ -172,6 +172,10 @@ subprojects {
         }
     }
 
+    tasks.named('sourcesJar', Jar) {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+
     tasks.named('test', Test) {
         dependsOn tasks.named('jar', Jar)
     }
@@ -220,7 +224,7 @@ subprojects {
         // jvmArgs "-XX:-UseCompressedOops"
 
         beforeTest { desc ->
-            logger.quiet("Running test: " + desc)
+            logger.quiet("Running test: {}", desc)
         }
 
         afterTest { desc, result ->
@@ -233,7 +237,7 @@ subprojects {
         }
 
         doLast() {
-            println "file://" + getReports().getHtml().getDestination() + "/index.html"
+            println "file://" + reports.html.outputLocation.file('/index.html').get()
         }
     }
 
@@ -552,7 +556,7 @@ project (':quasar-core') {
         dependencies {
             include(dependency('org.ow2.asm:.*:.*'))
         }
-        exclude 'META-INF/INDEX.LIST'
+        excludes.remove('module-info.class')
 
         relocate 'org.objectweb.asm.', 'co.paralleluniverse.asm.'
     }
@@ -954,6 +958,6 @@ artifactory {
 }
 
 wrapper {
-    gradleVersion = '6.9.2'
+    gradleVersion = '8.0.2'
     distributionType = Wrapper.DistributionType.BIN
 }

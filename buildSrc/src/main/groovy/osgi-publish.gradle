@@ -2,15 +2,15 @@ import groovy.transform.CompileStatic
 import groovy.transform.PackageScope
 import javax.inject.Inject
 
-pluginManager.apply(OsgiPublishPlugin)
+pluginManager.apply(OsgiPublishPluginImpl)
 
 @CompileStatic
 @PackageScope
-final class OsgiPublishPlugin implements Plugin<Project> {
+final class OsgiPublishPluginImpl implements Plugin<Project> {
     private final SoftwareComponentFactory factory
 
     @Inject
-    OsgiPublishPlugin(SoftwareComponentFactory factory) {
+    OsgiPublishPluginImpl(SoftwareComponentFactory factory) {
         this.factory = factory
     }
 
