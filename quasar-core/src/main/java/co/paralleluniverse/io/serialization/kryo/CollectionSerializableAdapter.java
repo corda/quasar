@@ -8,6 +8,8 @@ import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ArraysAsListSerializer;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -17,6 +19,7 @@ import static com.esotericsoftware.kryo.Kryo.NULL;
 import static java.lang.invoke.MethodHandles.lookup;
 import static java.lang.invoke.MethodHandles.privateLookupIn;
 import static java.lang.invoke.MethodType.methodType;
+import static java.security.AccessController.doPrivileged;
 
 /**
  * Modify a {@link CollectionSerializer} such that we always record the actual type
@@ -30,9 +33,14 @@ final class CollectionSerializerAdapter<T extends Collection<? super Object>> ex
 
     static {
         try {
-            final MethodHandles.Lookup lookup = privateLookupIn(CollectionSerializer.class, lookup());
+            final MethodHandles.Lookup lookup = doPrivileged((PrivilegedExceptionAction<MethodHandles.Lookup>) () ->
+                privateLookupIn(CollectionSerializer.class, lookup())
+            );
             writeHeaderMethod = lookup.findVirtual(CollectionSerializer.class, "writeHeader", methodType(void.class, Kryo.class, Output.class, Collection.class));
             createMethod = lookup.findVirtual(CollectionSerializer.class, "create", methodType(Collection.class, Kryo.class, Input.class, Class.class, int.class));
+        } catch (PrivilegedActionException ex) {
+            final Exception e = ex.getException();
+            throw new InternalError(e.getMessage(), e);
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new InternalError(e.getMessage(), e);
         }
