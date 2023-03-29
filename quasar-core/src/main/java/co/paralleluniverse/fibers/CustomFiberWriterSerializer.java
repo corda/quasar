@@ -18,7 +18,7 @@ public class CustomFiberWriterSerializer extends Serializer<CustomFiberWriter> {
     }
 
     @Override
-    public CustomFiberWriter read(Kryo kryo, Input input, Class<CustomFiberWriter> type) {
+    public CustomFiberWriter read(Kryo kryo, Input input, Class<? extends CustomFiberWriter> type) {
         return null;
     }
 }

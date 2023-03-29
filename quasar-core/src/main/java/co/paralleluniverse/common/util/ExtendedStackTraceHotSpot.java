@@ -29,7 +29,7 @@ import static java.security.AccessController.doPrivileged;
 
 /**
  * This classes uses internal HotSpot data to retrieve a more detailed stacktrace from a {@link Throwable}.
- * 
+ * <p>
  * Works only on HotSpot, versions 8 and 9.
  * 
  * @author pron
@@ -229,8 +229,12 @@ class ExtendedStackTraceHotSpot extends ExtendedStackTrace {
     static {
         try {
             final String javaVersion = doPrivileged(new GetProperty("java.version"));
-            if (!javaVersion.startsWith("1.8") && !javaVersion.startsWith("8.") && !javaVersion.startsWith("1.9") && !javaVersion.startsWith("9."))
+            if (!javaVersion.startsWith("1.8")
+                    && !javaVersion.startsWith("8.")
+                    && !javaVersion.startsWith("1.9")
+                    && !javaVersion.startsWith("9.")) {
                 throw new IllegalStateException("UnsupportedJavaVersion");
+            }
             if (!doPrivileged(new GetProperty("java.vm.name")).toLowerCase().contains("hotspot"))
                 throw new IllegalStateException("Not HotSpot");
             // the JVM blocks access to Throwable.backtrace via reflection
@@ -247,7 +251,7 @@ class ExtendedStackTraceHotSpot extends ExtendedStackTrace {
         } catch (PrivilegedActionException e) {
             throw new AssertionError(e.getCause());
         } catch (Exception e) {
-            throw new AssertionError(e);
+            throw new AssertionError(e.getMessage(), e);
         }
     }
 

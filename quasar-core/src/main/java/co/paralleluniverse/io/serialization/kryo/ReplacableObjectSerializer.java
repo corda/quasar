@@ -40,7 +40,7 @@ class ReplacableObjectSerializer extends FieldSerializer<Object> {
     }
 
     @Override
-    public Object read(Kryo kryo, Input input, Class<Object> type) {
+    public Object read(Kryo kryo, Input input, Class<?> type) {
         return getReplacement(super.read(kryo, input, type), "readResolve");
     }
 

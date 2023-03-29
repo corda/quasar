@@ -23,7 +23,7 @@ public final class Exceptions {
         if (t instanceof Error)
             throw ((Error) t);
         else
-            throw new RuntimeException(t);
+            throw new RuntimeException(t.getMessage(), t);
     }
 
     /**

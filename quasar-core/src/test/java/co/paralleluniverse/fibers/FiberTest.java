@@ -162,7 +162,7 @@ public class FiberTest implements Serializable {
 
     @Test
     public void testJoinFromFiber() throws Exception {
-        final Fiber<Integer> fiber1 = new Fiber<Integer>(scheduler, new SuspendableCallable<Integer>() {
+        final Fiber<Integer> fiber1 = new Fiber<>(scheduler, new SuspendableCallable<Integer>() {
             @Override
             public Integer run() throws SuspendExecution {
                 Fiber.park(100, TimeUnit.MILLISECONDS);
@@ -170,7 +170,7 @@ public class FiberTest implements Serializable {
             }
         }).start();
 
-        final Fiber<Integer> fiber2 = new Fiber<Integer>(scheduler, new SuspendableCallable<Integer>() {
+        final Fiber<Integer> fiber2 = new Fiber<>(scheduler, new SuspendableCallable<Integer>() {
             @Override
             public Integer run() throws SuspendExecution, InterruptedException {
                 try {
@@ -488,8 +488,8 @@ public class FiberTest implements Serializable {
 
         // Strand.printStackTrace(st, System.err);
         boolean found = false;
-        for (int i = 0; i < st.length; i++) {
-            if (st[i].getMethodName().equals("foo")) {
+        for (StackTraceElement stackTraceElement : st) {
+            if (stackTraceElement.getMethodName().equals("foo")) {
                 found = true;
                 break;
             }
@@ -619,8 +619,8 @@ public class FiberTest implements Serializable {
         // Strand.printStackTrace(st, System.err);
         assertThat(st[0].getMethodName()).isEqualTo("sleep");
         boolean found = false;
-        for (int i = 0; i < st.length; i++) {
-            if (st[i].getMethodName().equals("foo")) {
+        for (StackTraceElement stackTraceElement : st) {
+            if (stackTraceElement.getMethodName().equals("foo")) {
                 found = true;
                 break;
             }
@@ -964,7 +964,7 @@ public class FiberTest implements Serializable {
         }
 
         @Override
-        public void write(Fiber fiber) {
+        public void write(Fiber<?> fiber) {
             buf.set(Fiber.getFiberSerializer().write(fiber));
         }
     }
@@ -977,7 +977,7 @@ public class FiberTest implements Serializable {
         }
 
         @Override
-        public void write(Fiber fiber, ByteArraySerializer ser) {
+        public void write(Fiber<?> fiber, ByteArraySerializer ser) {
             buf.set(ser.write(fiber));
         }
 

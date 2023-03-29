@@ -34,7 +34,7 @@ public class ExternalizableKryoSerializer<T extends Externalizable> extends Seri
     }
 
     @Override
-    public T read(Kryo kryo, Input input, Class<T> type) {
+    public T read(Kryo kryo, Input input, Class<? extends T> type) {
         try {
             T obj = kryo.newInstance(type);
             obj.readExternal(KryoUtil.asObjectInput(input, kryo));

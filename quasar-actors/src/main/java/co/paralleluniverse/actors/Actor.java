@@ -1103,7 +1103,7 @@ public abstract class Actor<Message, V> extends ActorImpl<Message> implements Su
         Fiber.parkAndSerialize(new FiberWriter() {
 
             @Override
-            public void write(Fiber fiber, ByteArraySerializer ser) {
+            public void write(Fiber<?> fiber, ByteArraySerializer ser) {
                 final byte[] buf = ser.write(Actor.this);
                 new Fiber<Void>() {
                     @Override

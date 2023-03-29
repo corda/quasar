@@ -16,7 +16,12 @@ import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import de.javakaffee.kryoserializers.ArraysAsListSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicBooleanSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicIntegerSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicLongSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.PatternSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.UUIDSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.URISerializer;
 import de.javakaffee.kryoserializers.GregorianCalendarSerializer;
 import de.javakaffee.kryoserializers.JdkProxySerializer;
 import de.javakaffee.kryoserializers.SynchronizedCollectionsSerializer;
@@ -35,6 +40,10 @@ import static java.util.Collections.emptyMap;
 public final class KryoUtil {
     public static Kryo newKryo(ClassResolver classResolver) {
         Kryo kryo = new ReplaceableObjectKryo(classResolver);
+
+        // This Kryo 5 optimisation is buggy for Kotlin classes - disable it!
+        // See https://github.com/EsotericSoftware/kryo/issues/864
+        kryo.setOptimizedGenerics(false);
 
         kryo.setRegistrationRequired(false);
         kryo.setInstantiatorStrategy(new SerializingInstantiatorStrategy());
@@ -60,23 +69,23 @@ public final class KryoUtil {
         kryo.register(java.util.TreeMap.class);
         kryo.register(java.util.EnumMap.class);
         kryo.register(java.util.HashSet.class);
+        kryo.register(java.util.LinkedHashSet.class);
         kryo.register(java.util.TreeSet.class);
         kryo.register(java.util.EnumSet.class);
 
-        kryo.register(java.util.Arrays.asList("").getClass(), new ArraysAsListSerializer());
         kryo.register(java.util.Collections.newSetFromMap(emptyMap()).getClass(), new CollectionsSetFromMapSerializer());
-//        kryo.register(java.util.Collections.EMPTY_LIST.getClass(), new CollectionsEmptyListSerializer());
-//        kryo.register(java.util.Collections.EMPTY_MAP.getClass(), new CollectionsEmptyMapSerializer());
-//        kryo.register(java.util.Collections.EMPTY_SET.getClass(), new CollectionsEmptySetSerializer());
-//        kryo.register(java.util.Collections.singletonList("").getClass(), new CollectionsSingletonListSerializer());
-//        kryo.register(java.util.Collections.singleton("").getClass(), new CollectionsSingletonSetSerializer());
-//        kryo.register(java.util.Collections.singletonMap("", "").getClass(), new CollectionsSingletonMapSerializer());
         kryo.register(java.util.GregorianCalendar.class, new GregorianCalendarSerializer());
         kryo.register(java.lang.reflect.InvocationHandler.class, new JdkProxySerializer());
         UnmodifiableCollectionsSerializer.registerSerializers(kryo);
         SynchronizedCollectionsSerializer.registerSerializers(kryo);
         kryo.addDefaultSerializer(Externalizable.class, new ExternalizableKryoSerializer<>());
         kryo.addDefaultSerializer(java.lang.ref.Reference.class, new ReferenceSerializer());
+        kryo.addDefaultSerializer(java.net.URI.class, URISerializer.class);
+        kryo.addDefaultSerializer(java.util.UUID.class, UUIDSerializer.class);
+        kryo.addDefaultSerializer(java.util.concurrent.atomic.AtomicBoolean.class, AtomicBooleanSerializer.class);
+        kryo.addDefaultSerializer(java.util.concurrent.atomic.AtomicInteger.class, AtomicIntegerSerializer.class);
+        kryo.addDefaultSerializer(java.util.concurrent.atomic.AtomicLong.class, AtomicLongSerializer.class);
+        kryo.addDefaultSerializer(java.util.regex.Pattern.class, PatternSerializer.class);
     }
 
     public static ObjectOutput asObjectOutput(Output output, Kryo kryo) {

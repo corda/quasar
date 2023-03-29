@@ -21,9 +21,9 @@ module co.paralleluniverse.quasar.core {
     requires static org.objectweb.asm.util;
     requires static org.objectweb.asm.commons;
     requires static transitive org.objectweb.asm.tree.analysis;
-    requires static kryo;
-    requires static kryo.serializers;
-    requires static objenesis;
+    requires static com.esotericsoftware.kryo;
+    requires static de.javakaffee.kryoserializers;
+    requires static org.objenesis;
     requires static ant;
     requires static HdrHistogram;
     requires static LatencyUtils;

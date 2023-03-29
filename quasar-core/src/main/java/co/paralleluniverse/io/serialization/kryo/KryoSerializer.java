@@ -47,8 +47,9 @@ public class KryoSerializer implements ByteArraySerializer, IOStreamSerializer {
 
         KryoUtil.registerCommonClasses(kryo);
 
-        for (Registration r : registrations)
+        for (Registration r : registrations) {
             register(r);
+        }
     }
 
     public Kryo getKryo() {
@@ -89,7 +90,7 @@ public class KryoSerializer implements ByteArraySerializer, IOStreamSerializer {
         }
 
         @Override
-        public Object read(Kryo kryo, Input input, Class<Object> type) {
+        public Object read(Kryo kryo, Input input, Class<?> type) {
             throw new UnsupportedOperationException();
         }
     };
@@ -108,7 +109,7 @@ public class KryoSerializer implements ByteArraySerializer, IOStreamSerializer {
     @Override
     public byte[] write(Object object) {
         final Output out = getOutput();
-        out.clear();
+        out.reset();
         kryo.writeClassAndObject(out, object);
         out.flush();
         return out.toBytes();
@@ -137,7 +138,7 @@ public class KryoSerializer implements ByteArraySerializer, IOStreamSerializer {
     @Override
     public void write(OutputStream os, Object object) {
         final Output out = getOutput();
-        out.clear();
+        out.reset();
         out.setOutputStream(os);
         kryo.writeClassAndObject(out, object);
         out.flush();

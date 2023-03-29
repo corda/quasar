@@ -55,6 +55,7 @@ def annotationTest = tasks.register('annotationTest', Test) {
     doFirst {
         jvmArgs = jvmArgs.findAll {!it.contains("javaagent")}
         jvmArgs "-javaagent:${quasarJar}=a(SUSPENDABLE=co.paralleluniverse.kotlin.fibers.MySuspendable,co.paralleluniverse.kotlin.fibers.DennisSuspendable)"
+        jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
     }
 }
 
