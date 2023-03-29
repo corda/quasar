@@ -106,7 +106,7 @@ def osgiTestResources = tasks.named('processOsgiTestResources', ProcessResources
 
 def testOSGi = tasks.register('testOSGi', TestOSGi) { task ->
     javaLauncher = javaToolchains.launcherFor {
-        languageVersion = of(11)
+        languageVersion = of(testJavaVersion)
     }
     dependsOn osgiTestResources
     resultsDirectory = file("$testResultsDir/test")

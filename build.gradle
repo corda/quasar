@@ -18,7 +18,7 @@ subprojects {
 
     java {
         toolchain {
-            languageVersion = of(11)
+            languageVersion = of(testJavaVersion)
 
             // Configure Gradle to use IBM J9 JDK toolchain.
             // (You will need to install J9 manually first.)
@@ -31,6 +31,7 @@ subprojects {
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
+        options.release = targetJavaVersion.toInteger()
     }
 
     tasks.withType(GenerateModuleMetadata).configureEach {
