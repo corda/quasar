@@ -1,4 +1,5 @@
 import aQute.bnd.gradle.Bundle
+import aQute.bnd.version.MavenVersion
 import aQute.bnd.header.OSGiHeader
 import java.util.jar.JarFile
 import java.util.jar.Manifest
@@ -388,6 +389,20 @@ static String fetchManifestAttributeFrom(TaskProvider<? extends Jar> task, Strin
     return fetchManifestAttributeFrom(task.flatMap { it.archiveFile }.get().asFile, attributeName)
 }
 
+static String fetchVersionOf(Configuration configuration, String groupName, String artifactName) {
+    def versions = new HashSet<String>()
+    configuration.resolvedConfiguration.resolvedArtifacts.forEach {
+        def id = it.moduleVersion.id
+        if (id.group == groupName && id.name == artifactName) {
+            versions += id.version
+        }
+    }
+    if (versions.size() != 1) {
+        throw new IllegalStateException("Multiple versions of $groupName:$artifactName found in ${configuration.name}")
+    }
+    return versions.first()
+}
+
 project (':quasar-core') {
     /*
      * see:
@@ -418,6 +433,9 @@ project (':quasar-core') {
         frameworkExtension {
             java {
                 srcDir 'src/main/frameworkExtension'
+            }
+            resources {
+                srcDir 'src/main/frameworkExtensionResources'
             }
             compileClasspath += main.compileClasspath
         }
@@ -641,6 +659,18 @@ Import-Package: \
 
     coreBundle.configure {
         it.finalizedBy validateCoreBundle
+    }
+
+    tasks.named('processFrameworkExtensionResources', ProcessResources) {
+        filesMatching('**/framework-extension.properties') {
+            expand([
+                'reflectAsmVersion': """${ ->
+                    MavenVersion.parseMavenString(
+                        fetchVersionOf(configurations.runtimeClasspath, 'com.esotericsoftware', 'reflectasm')
+                    ).getOSGiVersion().toString()
+                }"""
+            ])
+        }
     }
 
     def frameworkExtensionBundle = tasks.register('frameworkExtensionBundle', Bundle) {

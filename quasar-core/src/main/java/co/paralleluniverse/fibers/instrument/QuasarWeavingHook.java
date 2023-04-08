@@ -8,15 +8,12 @@ import java.util.Set;
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToSlashed;
 
 final class QuasarWeavingHook implements WeavingHook {
-    private static final Set<String> INSTRUMENTATION_PACKAGES = Set.of(
-        "co.paralleluniverse.fibers.suspend",
-        "com.esotericsoftware.reflectasm"
-    );
-
     private final QuasarInstrumentor instrumentor;
+    private final Set<String> dynamicImportPackages;
 
-    QuasarWeavingHook(QuasarInstrumentor instrumentor) {
+    QuasarWeavingHook(QuasarInstrumentor instrumentor, Set<String> dynamicImportPackages) {
         this.instrumentor = instrumentor;
+        this.dynamicImportPackages = Set.copyOf(dynamicImportPackages);
     }
 
     @Override
@@ -28,7 +25,7 @@ final class QuasarWeavingHook implements WeavingHook {
                 final ByteCodeTransformer transformer = instrumentor.adapt(this::transformByteCode, classLoader);
                 wovenClass.setBytes(transformer.transform(classLoader, className, null, wovenClass.getBytes()));
                 if (isInstrumented(classLoader, className)) {
-                    wovenClass.getDynamicImports().addAll(INSTRUMENTATION_PACKAGES);
+                    wovenClass.getDynamicImports().addAll(dynamicImportPackages);
                 }
             }
         }
