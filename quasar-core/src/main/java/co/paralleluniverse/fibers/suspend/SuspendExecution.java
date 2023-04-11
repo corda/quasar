@@ -28,7 +28,7 @@ package co.paralleluniverse.fibers.suspend;
  * This class is for internal Quasar use. 
  * Throwing an instance of this class or a subclass of it will break things in strange ways.</p>
  */
-public final class SuspendExecution extends Exception { // InterruptedException {
+public final class SuspendExecution extends Exception {
     static final SuspendExecution PARK = new SuspendExecution();
     static final SuspendExecution YIELD = new SuspendExecution();
 
@@ -40,7 +40,7 @@ public final class SuspendExecution extends Exception { // InterruptedException 
         return ex == YIELD;
     }
 
-    protected SuspendExecution() {
+    private SuspendExecution() {
         super("Oops. Forgot to instrument a method. Run your program with -Dco.paralleluniverse.fibers.verifyInstrumentation=true to catch the culprit!");
     }
 

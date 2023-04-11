@@ -7,8 +7,7 @@
 -runvm: \
     -Dco.paralleluniverse.fibers.verifyInstrumentation,\
     -Djava.security.policy=all.policy,\
-    -Djava.util.logging.config.file=${.}/logging.properties,\
-    --add-opens, 'java.base/java.net=ALL-UNNAMED'
+    -Djava.util.logging.config.file=${.}/logging.properties
 
 -runproperties: \
     co.paralleluniverse.quasar.suspendableAnnotation='org.testing.osgi.annotation.Suspendable',\
