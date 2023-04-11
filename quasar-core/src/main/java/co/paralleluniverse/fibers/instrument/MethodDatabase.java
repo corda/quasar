@@ -256,15 +256,15 @@ public final class MethodDatabase {
         }
     }
 
-    Pair<MethodDatabase, ClassEntry> getOrLoadClassEntry(String className) {
+    Pair<MethodDatabase, ClassView> getOrLoadClassView(String className) {
         if (className.startsWith("[")) {
             // Don't try looking for an "array" class.
             return null;
         }
 
-        ClassEntry entry = getClassEntry(className);
-        if (entry != null) {
-            return new Pair<>(this, entry);
+        ClassView view = getClassEntry(className);
+        if (view != null) {
+            return new Pair<>(this, view);
         } else {
             final ClassLookup lookup = getLookupFor(className);
             if (lookup == null || lookup.getResource() == null) {
@@ -273,12 +273,12 @@ public final class MethodDatabase {
             } else {
                 final MethodDatabase ownerDB = lookup.toOwnerDB(this);
                 if (ownerDB != this) {
-                    entry = ownerDB.getClassEntry(className);
+                    view = ownerDB.getClassEntry(className);
                 }
-                if (entry == null) {
-                    entry = ownerDB.loadClassEntry(className, lookup.getResource());
+                if (view == null) {
+                    view = ownerDB.loadClassEntry(className, lookup.getResource());
                 }
-                return new Pair<>(ownerDB, entry);
+                return new Pair<>(ownerDB, view);
             }
         }
     }
@@ -292,17 +292,17 @@ public final class MethodDatabase {
             return SUSPENDABLE;
         }
 
-        final Pair<MethodDatabase, ClassEntry> dbEntry = getOrLoadClassEntry(className);
-        if (dbEntry == null) {
+        final Pair<MethodDatabase, ClassView> dbView = getOrLoadClassView(className);
+        if (dbView == null) {
             if (isJDK(className)) {
                 return JDK;
             }
             return UNKNOWN;
         }
 
-        final MethodDatabase ownerDB = dbEntry.getFirst();
-        final ClassEntry entry = dbEntry.getSecond();
-        final SuspendableType susp1 = entry.check(methodName, methodDesc);
+        final MethodDatabase ownerDB = dbView.getFirst();
+        final ClassView view = dbView.getSecond();
+        final SuspendableType susp1 = view.check(methodName, methodDesc);
 
         int suspendable = UNKNOWN;
         if (susp1 == SuspendableType.SUSPENDABLE) {
@@ -315,12 +315,12 @@ public final class MethodDatabase {
 
         if (suspendable == UNKNOWN) {
             if (opcode == Opcodes.INVOKEVIRTUAL || opcode == Opcodes.INVOKESTATIC || opcode == Opcodes.INVOKESPECIAL) {
-                if (entry.getSuperName() != null) {
-                    suspendable = ownerDB.isMethodSuspendable0(entry.getSuperName(), methodName, methodDesc, opcode);
+                if (view.getSuperName() != null) {
+                    suspendable = ownerDB.isMethodSuspendable0(view.getSuperName(), methodName, methodDesc, opcode);
                 }
             }
             if (opcode == Opcodes.INVOKEINTERFACE || opcode == Opcodes.INVOKEVIRTUAL) { // can be INVOKEVIRTUAL on an abstract class implementing the interface
-                for (final String iface : entry.getInterfaces()) {
+                for (final String iface : view.getInterfaces()) {
                     int s = ownerDB.isMethodSuspendable0(iface, methodName, methodDesc, opcode);
                     if (s > suspendable) {
                         suspendable = s;
@@ -369,7 +369,7 @@ public final class MethodDatabase {
     void recordSuspendableMethods(String className, ClassEntry entry) {
         final ClassEntry oldEntry;
         synchronized(classes) {
-            oldEntry = classes.put(className, entry);
+            oldEntry = classes.putIfAbsent(className, entry);
         }
         if (oldEntry != null && oldEntry != entry) {
             if (!oldEntry.equals(entry)) {
@@ -620,7 +620,7 @@ public final class MethodDatabase {
         NON_SUSPENDABLE, SUSPENDABLE_SUPER, SUSPENDABLE
     }
 
-    public static final class ClassEntry {
+    public static final class ClassEntry implements ClassView {
         private final Map<String, SuspendableType> methods;
         private String sourceName;
         private String sourceDebugInfo;
@@ -640,6 +640,7 @@ public final class MethodDatabase {
             methods.put(nameAndDesc, suspendable);
         }
 
+        @Override
         public String getSourceName() {
             return sourceName;
         }
@@ -648,6 +649,7 @@ public final class MethodDatabase {
             this.sourceName = sourceName;
         }
 
+        @Override
         public String getSourceDebugInfo() {
             return sourceDebugInfo;
         }
@@ -656,6 +658,7 @@ public final class MethodDatabase {
             this.sourceDebugInfo = sourceDebugInfo;
         }
 
+        @Override
         public boolean isInterface() {
             return isInterface;
         }
@@ -664,6 +667,7 @@ public final class MethodDatabase {
             this.isInterface = isInterface;
         }
 
+        @Override
         public String getSuperName() {
             return superName;
         }
@@ -673,6 +677,7 @@ public final class MethodDatabase {
                 entry.setValue(suspendable);
         }
 
+        @Override
         public String[] getInterfaces() {
             return interfaces;
         }
@@ -681,6 +686,7 @@ public final class MethodDatabase {
             this.interfaces = interfaces;
         }
 
+        @Override
         public SuspendableType check(String name, String desc) {
             return methods.get(key(name, desc));
         }
@@ -716,6 +722,11 @@ public final class MethodDatabase {
             final ClassEntry other = (ClassEntry) obj;
             // CORDA-3756 names can be null.
             return Objects.equals(superName, other.superName) && methods.equals(other.methods);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("MethodDatabase$ClassEntry@%8x", System.identityHashCode(this));
         }
 
         private static String key(String methodName, String methodDesc) {

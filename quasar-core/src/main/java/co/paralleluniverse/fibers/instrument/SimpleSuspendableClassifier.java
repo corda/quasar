@@ -13,7 +13,6 @@
  */
 package co.paralleluniverse.fibers.instrument;
 
-import co.paralleluniverse.fibers.instrument.MethodDatabase.ClassEntry;
 import co.paralleluniverse.fibers.instrument.MethodDatabase.SuspendableType;
 import java.io.BufferedReader;
 import java.io.File;
@@ -154,11 +153,11 @@ final class SimpleSuspendableClassifier implements SuspendableClassifier {
             return SuspendableType.SUSPENDABLE_SUPER;
 
         if (superClassName != null) {
-            final Pair<MethodDatabase, ClassEntry> dbEntry = db.getOrLoadClassEntry(superClassName);
-            if (dbEntry != null) {
-                final MethodDatabase ownerDB = dbEntry.getFirst();
-                final ClassEntry ce = dbEntry.getSecond();
-                if (isSuspendable(ownerDB, sourceName, sourceDebugInfo, isInterface, superClassName, ce.getSuperName(), ce.getInterfaces(), methodName, methodDesc, methodSignature, methodExceptions) == SuspendableType.SUSPENDABLE) {
+            final Pair<MethodDatabase, ClassView> dbView = db.getOrLoadClassView(superClassName);
+            if (dbView != null) {
+                final MethodDatabase ownerDB = dbView.getFirst();
+                final ClassView cv = dbView.getSecond();
+                if (isSuspendable(ownerDB, sourceName, sourceDebugInfo, isInterface, superClassName, cv.getSuperName(), cv.getInterfaces(), methodName, methodDesc, methodSignature, methodExceptions) == SuspendableType.SUSPENDABLE) {
                     return SuspendableType.SUSPENDABLE;
                 }
             }
@@ -166,11 +165,11 @@ final class SimpleSuspendableClassifier implements SuspendableClassifier {
 
         if (interfaces != null) {
             for (final String iface : interfaces) {
-                final Pair<MethodDatabase, ClassEntry> dbEntry = db.getOrLoadClassEntry(iface);
-                if (dbEntry != null) {
-                    final MethodDatabase ownerDB = dbEntry.getFirst();
-                    final ClassEntry ce = dbEntry.getSecond();
-                    if (isSuspendable(ownerDB, ce.getSourceName(), ce.getSourceDebugInfo(), ce.isInterface(), iface, ce.getSuperName(), ce.getInterfaces(), methodName, methodDesc, methodSignature, methodExceptions) == SuspendableType.SUSPENDABLE) {
+                final Pair<MethodDatabase, ClassView> dbView = db.getOrLoadClassView(iface);
+                if (dbView != null) {
+                    final MethodDatabase ownerDB = dbView.getFirst();
+                    final ClassView cv = dbView.getSecond();
+                    if (isSuspendable(ownerDB, cv.getSourceName(), cv.getSourceDebugInfo(), cv.isInterface(), iface, cv.getSuperName(), cv.getInterfaces(), methodName, methodDesc, methodSignature, methodExceptions) == SuspendableType.SUSPENDABLE) {
                         return SuspendableType.SUSPENDABLE;
                     }
                 }
@@ -204,23 +203,23 @@ final class SimpleSuspendableClassifier implements SuspendableClassifier {
         if (className == null)
             return false;
 
-        final Pair<MethodDatabase, ClassEntry> dbEntry = db.getOrLoadClassEntry(className);
-        if (dbEntry != null) {
-            final MethodDatabase ownerDB = dbEntry.getFirst();
-            final ClassEntry ce = dbEntry.getSecond();
-            if (Objects.equals(superOrIface, ce.getSuperName())) {
+        final Pair<MethodDatabase, ClassView> dbView = db.getOrLoadClassView(className);
+        if (dbView != null) {
+            final MethodDatabase ownerDB = dbView.getFirst();
+            final ClassView cv = dbView.getSecond();
+            if (Objects.equals(superOrIface, cv.getSuperName())) {
                 return true;
             }
-            for (final String iface : ce.getInterfaces()) {
+            for (final String iface : cv.getInterfaces()) {
                 if (Objects.equals(superOrIface, iface)) {
                     return true;
                 }
             }
 
-            if (extendsOrImplements(superOrIface, ownerDB, ce.getSuperName())) {
+            if (extendsOrImplements(superOrIface, ownerDB, cv.getSuperName())) {
                 return true;
             }
-            for (final String iface : ce.getInterfaces()) {
+            for (final String iface : cv.getInterfaces()) {
                 if (extendsOrImplements(superOrIface, ownerDB, iface)) {
                     return true;
                 }
