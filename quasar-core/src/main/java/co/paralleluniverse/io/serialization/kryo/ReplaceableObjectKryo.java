@@ -28,7 +28,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.security.PrivilegedActionException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -46,14 +45,14 @@ public class ReplaceableObjectKryo extends Kryo {
      * with is package private and stores the elements in a transient field. This
      * makes it highly toxic to Kryo, and so best not touched.
      */
-    private static final Set<Class<?>> FORBIDDEN_CLASSES = Set.of(new HashSet<>(List.of(
+    private static final Set<Class<?>> FORBIDDEN_CLASSES = Set.copyOf(List.of(
         List.of().getClass(),
         List.of(0).getClass(),
         List.of(0, 0, 0).getClass(),
         Set.of().getClass(),
         Set.of(0).getClass(),
         Set.of(0, 1, 2).getClass()
-    )).toArray(new Class<?>[0]));
+    ));
 
     private static final ClassValue<SerializationMethods> replaceMethodsCache = new ClassValue<>() {
         @Override
@@ -67,39 +66,17 @@ public class ReplaceableObjectKryo extends Kryo {
     private static final String WRITE_REPLACE = "writeReplace";
     private static final String READ_RESOLVE = "readResolve";
 
-    // These serializer classes are package private, unfortunately.
-    private final Class<? extends CollectionSerializer<?>> immutableListSerializerClass;
-    private final Class<? extends CollectionSerializer<?>> immutableSetSerializerClass;
-
-    Class<? extends CollectionSerializer<?>> getImmutableListSerializerClass() {
-        return immutableListSerializerClass;
-    }
-
-    Class<? extends CollectionSerializer<?>> getImmutableSetSerializerClass() {
-        return immutableSetSerializerClass;
-    }
-
-    @SuppressWarnings("unchecked")
     public ReplaceableObjectKryo(ClassResolver classResolver) {
         super(classResolver, new MapReferenceResolver());
-
-        // We need the classes of these non-public collection serializers.
-        immutableListSerializerClass = (Class<? extends CollectionSerializer<?>>) fetchDefaultSerializerType(List.of().getClass());
-        immutableSetSerializerClass = (Class<? extends CollectionSerializer<?>>) fetchDefaultSerializerType(Set.of().getClass());
 
         // Override Kryo's own ObjectArraySerializer with one that is
         // compatible with our support for writeReplace / readResolve.
         addDefaultSerializer(Object[].class, ReplaceableObjectArraySerializer.class);
     }
 
-    @SuppressWarnings("unchecked")
-    private Class<? extends Serializer<?>> fetchDefaultSerializerType(Class<?> type) {
-        return (Class<? extends Serializer<?>>) super.getDefaultSerializer(type).getClass();
-    }
-
     private Serializer<?> adapt(Serializer<?> serializer) {
         return serializer instanceof CollectionSerializer<?> && !(serializer instanceof CollectionSerializerAdapter)
-            ? new CollectionSerializerAdapter<>(this, (CollectionSerializer<?>) serializer)
+            ? new CollectionSerializerAdapter<>((CollectionSerializer<?>) serializer)
             : serializer;
     }
 

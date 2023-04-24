@@ -6,6 +6,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ArraysAsListSerializer;
+import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.security.PrivilegedActionException;
@@ -47,11 +48,9 @@ final class CollectionSerializerAdapter<T extends Collection<? super Object>> ex
     }
 
     private final CollectionSerializer<T> underlying;
-    private final ReplaceableObjectKryo roKryo;
 
-    CollectionSerializerAdapter(ReplaceableObjectKryo roKryo, CollectionSerializer<T> underlying) {
+    CollectionSerializerAdapter(CollectionSerializer<T> underlying) {
         this.underlying = underlying;
-        this.roKryo = roKryo;
     }
 
     @Override
@@ -161,12 +160,11 @@ final class CollectionSerializerAdapter<T extends Collection<? super Object>> ex
 
     @SuppressWarnings("unchecked")
     private T adapt(T collection) {
-        final Class<?> underlyingClass = underlying.getClass();
-        if (underlyingClass == ArraysAsListSerializer.class) {
+        if (underlying.getClass() == ArraysAsListSerializer.class) {
             return (T) Arrays.asList(collection.toArray());
-        } else if (underlyingClass == roKryo.getImmutableListSerializerClass()) {
+        } else if (underlying instanceof ImmutableCollectionsSerializers.JdkImmutableListSerializer) {
             return (T) List.of(collection.toArray());
-        } else if (underlyingClass == roKryo.getImmutableSetSerializerClass()) {
+        } else if (underlying instanceof ImmutableCollectionsSerializers.JdkImmutableSetSerializer) {
             return (T) Set.of(collection.toArray());
         } else {
             return collection;
