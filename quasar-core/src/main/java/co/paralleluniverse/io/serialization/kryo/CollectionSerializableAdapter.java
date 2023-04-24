@@ -141,7 +141,7 @@ final class CollectionSerializerAdapter<T extends Collection<? super Object>> ex
     @Override
     public T read(Kryo kryo, Input input, Class<? extends T> type) {
         try {
-            int length = input.readVarIntFlag(true);
+            int length = input.readVarInt(true);
             if (length == 0) {
                 return null;
             }
