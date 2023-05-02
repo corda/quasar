@@ -238,7 +238,7 @@ public final class ClassLoaderUtil {
      * Worker class for {@link #getBestClassLoader(ClassLoader, String, URL)}.
      * We need to search from the bootstrap classloader upwards in order to
      * mirror how {@link ClassLoader#getResource(String)} works.
-     *
+     * <p>
      * We are expected already to be running with the correct security context.
      */
     private static final class BestLookup {

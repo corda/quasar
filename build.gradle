@@ -176,6 +176,7 @@ subprojects {
 
         // Quasar needs reflective access to these packages.
         jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+                '--add-opens', 'java.base/java.time=ALL-UNNAMED',
                 '--add-opens', 'java.base/java.util=ALL-UNNAMED'
                 '--illegal-access=warn'
     }
@@ -247,7 +248,7 @@ subprojects {
         project.task(name, type: JavaExec, dependsOn:[testClasses]) {
             classpath = sourceSets.main.runtimeClasspath
             if(project.hasProperty('mainClass')){
-                main = project.mainClass
+                mainClass = project.mainClass
             }
             if(project.hasProperty('args')){
                 args project.args.split('\\s+')
@@ -989,6 +990,6 @@ artifactory {
 }
 
 wrapper {
-    gradleVersion = '8.1'
+    gradleVersion = '8.1.1'
     distributionType = Wrapper.DistributionType.BIN
 }
