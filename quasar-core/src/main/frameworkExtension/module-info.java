@@ -1,5 +1,6 @@
 module co.paralleluniverse.quasar.core.framework.extension {
     requires static org.objectweb.asm;
+    requires static osgi.core;
     requires java.logging;
 
     exports co.paralleluniverse.common.asm;

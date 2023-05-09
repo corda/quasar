@@ -67,8 +67,8 @@ subprojects {
         repositories {
             mavenLocal()
             mavenCentral()
-            maven { url "https://oss.sonatype.org/content/repositories/releases" }
-            maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+            maven { url 'https://repository.ow2.org/nexus/content/repositories/snapshots' }
+            maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
         }
     }
 
@@ -480,7 +480,7 @@ project (':quasar-core') {
         }
 
         frameworkExtensionCompileOnly {
-            extendsFrom provided
+            extendsFrom compileOnly
         }
         coreImplementation {
             extendsFrom implementation
@@ -586,7 +586,6 @@ project (':quasar-core') {
         dependsOn shadowJar
         archiveClassifier = ''
         from(shadowFiles) {
-            exclude 'co/paralleluniverse/fibers/osgi/**'
             exclude 'co/paralleluniverse/fibers/instrument/QuasarActivator*'
             exclude 'co/paralleluniverse/fibers/instrument/QuasarBundleTracker*'
             exclude 'co/paralleluniverse/fibers/instrument/QuasarPermission*'
@@ -689,10 +688,6 @@ Import-Package: \
             exclude 'co/paralleluniverse/fibers/instrument/OldSuspendablesScanner*'
             exclude 'co/paralleluniverse/fibers/instrument/SuspendablesScanner*'
             include 'co/paralleluniverse/fibers/suspend/**'
-        }
-        from(shadowFiles) {
-            include 'co/paralleluniverse/fibers/osgi/**'
-            into 'META-INF'
         }
         from(sourceSets.frameworkExtension.output)
         archiveAppendix = 'osgi'

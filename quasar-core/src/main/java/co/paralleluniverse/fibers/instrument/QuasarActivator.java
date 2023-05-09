@@ -73,6 +73,10 @@ public final class QuasarActivator implements BundleActivator {
         levels.put(LogLevel.INFO, Level.INFO);
         levels.put(LogLevel.WARNING, Level.WARNING);
         LEVELS = unmodifiableMap(levels);
+
+        // The JVM can only load QuasarActivator if the OSGi
+        // framework classes already exist on the classpath.
+        QuasarConfiguration.enableOSGi();
     }
 
     private ServiceRegistration<WeavingHook> weaver;

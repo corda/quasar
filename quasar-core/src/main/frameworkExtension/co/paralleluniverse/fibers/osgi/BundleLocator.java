@@ -17,9 +17,7 @@ import static org.osgi.framework.wiring.BundleRevision.PACKAGE_NAMESPACE;
 
 /**
  * This class is not used directly because {@link ClassLoader#getSystemClassLoader()}
- * might not contain the OSGi Framework classes. We will create this class on demand
- * inside a dynamic classloader, if/when we discover which {@link ClassLoader} the OSGi
- * framework does exist inside.
+ * might not contain the OSGi Framework classes.
  */
 @SuppressWarnings("unused")
 public final class BundleLocator {
