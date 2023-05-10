@@ -551,7 +551,7 @@ public final class MethodDatabase {
             // Identify which classloader actually contains the byte-code for this class,
             // because its ClassEntry should belong to that classloader's MethodDatabase.
             final ClassLoader ownerCl = doPrivileged((PrivilegedAction<? extends ClassLoader>)() ->
-                OSGiClassLoader.findResourceOwner(classloader).locate(classloader, resourceName, resource)
+                QuasarConfiguration.findResourceOwner().locate(classloader, resourceName, resource)
             );
             return (ownerCl == classloader) ? db : db.instrumentor.getMethodDatabase(ownerCl);
         }

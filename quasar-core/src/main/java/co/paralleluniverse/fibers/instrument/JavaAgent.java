@@ -93,8 +93,8 @@ import static java.security.AccessController.doPrivileged;
  * @author Matthias Mann
  */
 public class JavaAgent {
-    private static final String USAGE = "Usage: vdmcb0x(exclusion;...)l(exclusion;...)o(exclusion;...)C(cached;...)"
-        + "(verbose, debug, allow monitors, check class, allow blocking, disable OSGi support)";
+    private static final String USAGE = "Usage: vdmcbx(exclusion;...)l(exclusion;...)o(exclusion;...)C(cached;...)"
+        + "(verbose, debug, allow monitors, check class, allow blocking)";
     private static final String CACHE_DIRECTORY_PROPERTY_NAME = "co.paralleluniverse.quasar.cacheDirectory";
     private static volatile boolean ACTIVE;
 
@@ -194,9 +194,6 @@ public class JavaAgent {
                         for (String x : cachedBundleLocations) {
                             instrumentor.addCachedBundleLocation(x);
                         }
-                        break;
-                    case '0':
-                        OSGiClassLoader.disable();
                         break;
                     default:
                         throw new IllegalStateException(USAGE);

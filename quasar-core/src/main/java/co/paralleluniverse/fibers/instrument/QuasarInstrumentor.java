@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
 import static co.paralleluniverse.common.resource.ClassLoaderUtil.classToSlashed;
@@ -345,8 +344,7 @@ public final class QuasarInstrumentor {
         if (excludedBundleLocations.isEmpty()) {
             return false;
         }
-        final BiPredicate<ClassLoader, Collection<Pattern>> bundleMatcher = OSGiClassLoader.fetchBundleLocationMatcher(loader);
-        return bundleMatcher.test(loader, excludedBundleLocations);
+        return QuasarConfiguration.bundleLocationMatcher().test(loader, excludedBundleLocations);
     }
 
     boolean isExcludedBundleLocation(String bundleLocation) {
@@ -375,8 +373,7 @@ public final class QuasarInstrumentor {
         if (cachedBundleLocations.isEmpty()) {
             return false;
         }
-        final BiPredicate<ClassLoader, Collection<Pattern>> bundleMatcher = OSGiClassLoader.fetchBundleLocationMatcher(loader);
-        return bundleMatcher.test(loader, cachedBundleLocations);
+        return QuasarConfiguration.bundleLocationMatcher().test(loader, cachedBundleLocations);
     }
 
     void addCachedBundleLocation(String glob) {
