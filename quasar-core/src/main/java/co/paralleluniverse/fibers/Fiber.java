@@ -2186,11 +2186,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         private final Map<Class<? extends Fiber>, FieldSerializer<Fiber<?>>> fieldSerializers = new HashMap<>();
 
         private FieldSerializer<Fiber<?>> getFieldSerializer(Kryo kryo, Class<? extends Fiber> fiberClass) {
-            FieldSerializer<Fiber<?>> serializer = fieldSerializers.get(fiberClass);
-            if(serializer != null) return serializer;
-            serializer = new FieldSerializer<>(kryo, fiberClass);
-            fieldSerializers.putIfAbsent(fiberClass, serializer);
-            return serializer;
+            return fieldSerializers.computeIfAbsent(fiberClass, (fc) -> new FieldSerializer<>(kryo, fc));
         }
 
         public FiberSerializer(boolean includeThreadLocals) {
