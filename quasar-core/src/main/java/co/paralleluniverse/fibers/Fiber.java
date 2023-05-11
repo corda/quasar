@@ -92,6 +92,7 @@ import static java.security.AccessController.doPrivileged;
  *
  * @author pron
  */
+@SuppressWarnings("unchecked")
 public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Future<V> {
     static final boolean USE_VAL_FOR_RESULT = true;
     private static final Object RESET = new Object();
@@ -2183,10 +2184,10 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
 
     private static final class FiberSerializer extends Serializer<Fiber<?>> {
         private final boolean includeThreadLocals;
-        private final Map<Class<? extends Fiber>, FieldSerializer<Fiber<?>>> fieldSerializers = new HashMap<>();
+        private final Map<Class<? extends Fiber<?>>, FieldSerializer<Fiber<?>>> fieldSerializers = new HashMap<>();
 
-        private FieldSerializer<Fiber<?>> getFieldSerializer(Kryo kryo, Class<? extends Fiber> fiberClass) {
-            return fieldSerializers.computeIfAbsent(fiberClass, (fc) -> new FieldSerializer<>(kryo, fc));
+        private FieldSerializer<Fiber<?>> getFieldSerializer(Kryo kryo, Class<? extends Fiber<?>> fiberClass) {
+            return fieldSerializers.computeIfAbsent(fiberClass, fc -> new FieldSerializer<>(kryo, fc));
         }
 
         public FiberSerializer(boolean includeThreadLocals) {
@@ -2209,7 +2210,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
                 try {
                     f.stack.resumeStack();
                     kryo.writeClass(output, f.getClass());
-                    getFieldSerializer(kryo, f.getClass()).write(kryo, output, f);
+                    getFieldSerializer(kryo, (Class<? extends Fiber<?>>) f.getClass()).write(kryo, output, f);
                 } finally {
                     f.fiberLocals = tmpFiberLocals;
                     f.inheritableFiberLocals = tmpInheritableFiberLocals;
@@ -2230,7 +2231,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
                     f.stack.resumeStack();
 
                     kryo.writeClass(output, f.getClass());
-                    getFieldSerializer(kryo, f.getClass()).write(kryo, output, f);
+                    getFieldSerializer(kryo, (Class<? extends Fiber<?>>) f.getClass()).write(kryo, output, f);
                 } catch (Throwable t) {
                     t.printStackTrace();
                     throw t;
