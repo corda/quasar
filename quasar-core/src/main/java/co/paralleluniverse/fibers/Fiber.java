@@ -92,7 +92,6 @@ import static java.security.AccessController.doPrivileged;
  *
  * @author pron
  */
-@SuppressWarnings("unchecked")
 public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Future<V> {
     static final boolean USE_VAL_FOR_RESULT = true;
     private static final Object RESET = new Object();
@@ -2196,7 +2195,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         }
 
         @Override
-        @SuppressWarnings("CallToPrintStackTrace")
+        @SuppressWarnings({"CallToPrintStackTrace", "unchecked"})
         public void write(Kryo kryo, Output output, Fiber<?> f) {
             final Thread currentThread = Thread.currentThread();
 
@@ -2245,7 +2244,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         }
 
         @Override
-        @SuppressWarnings("CallToPrintStackTrace")
+        @SuppressWarnings({"CallToPrintStackTrace", "unchecked"})
         public Fiber<?> read(Kryo kryo, Input input, Class<? extends Fiber<?>> type) {
             final Fiber<?> f;
             final Thread currentThread = Thread.currentThread();
