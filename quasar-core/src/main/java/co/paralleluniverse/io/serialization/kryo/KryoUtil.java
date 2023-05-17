@@ -23,7 +23,6 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.PatternSerialize
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.UUIDSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.URISerializer;
 import de.javakaffee.kryoserializers.GregorianCalendarSerializer;
-import de.javakaffee.kryoserializers.JdkProxySerializer;
 import de.javakaffee.kryoserializers.SynchronizedCollectionsSerializer;
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 import java.io.Externalizable;
