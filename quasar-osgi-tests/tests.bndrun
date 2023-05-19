@@ -8,6 +8,9 @@
     -Dco.paralleluniverse.fibers.verifyInstrumentation,\
     -Djava.security.policy=all.policy,\
     -Djava.util.logging.config.file=${.}/logging.properties,\
+    '--add-opens', 'java.base/java.io=ALL-UNNAMED',\
+    '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED',\
+    '--add-opens', 'java.base/java.util=ALL-UNNAMED',\
     --illegal-access=deny
 
 -runproperties: \
