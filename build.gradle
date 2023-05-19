@@ -176,6 +176,7 @@ subprojects {
 
         // Quasar needs reflective access to these packages.
         jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+                '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED',
                 '--add-opens', 'java.base/java.time=ALL-UNNAMED',
                 '--add-opens', 'java.base/java.util=ALL-UNNAMED'
                 '--illegal-access=warn'
