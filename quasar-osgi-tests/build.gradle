@@ -43,6 +43,7 @@ dependencies {
     osgiTestImplementation project(path: ':quasar-core', configuration: 'core')
     osgiTestImplementation project('osgi-annotation')
     osgiTestImplementation project('osgi-exception')
+    osgiTestImplementation project('osgi-proxies')
     osgiTestImplementation project('osgi-security-config')
     osgiTestImplementation project('osgi-unprivileged')
     osgiTestImplementation "org.assertj:assertj-core:$assertjVersion"
