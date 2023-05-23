@@ -41,6 +41,7 @@ dependencies {
     bundles project('osgi-cacheable-one')
     bundles project('osgi-cacheable-two')
     bundles project('osgi-do-not-instrument')
+    bundles project('osgi-kotlin-lambda')
     bundles project('osgi-multi-uninstrumented')
     bundles project('osgi-super-classes')
     bundles project('osgi-suspendable')
@@ -60,6 +61,7 @@ dependencies {
     osgiTestImplementation "org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion"
     osgiTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
     osgiTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
+    osgiTestRuntimeOnly "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
     osgiTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     osgiTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     osgiTestRuntimeOnly "org.apache.felix:org.apache.felix.log:$felixLogVersion"

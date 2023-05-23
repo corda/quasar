@@ -5,6 +5,5 @@ plugins {
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly project(':quasar-osgi-annotations')
     compileOnly project(':quasar-osgi-tests:osgi-annotation')
 }

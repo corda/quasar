@@ -48,6 +48,7 @@ import static org.osgi.framework.wiring.BundleRevision.PACKAGE_NAMESPACE;
     effective = EFFECTIVE_ACTIVE
 )
 public final class QuasarActivator implements BundleActivator {
+    private static final String DO_NOT_INSTRUMENT_ANNOTATION_PROPERTY_NAME = "co.paralleluniverse.quasar.doNotInstrumentAnnotation";
     private static final String SUSPENDABLE_ANNOTATION_PROPERTY_NAME = "co.paralleluniverse.quasar.suspendableAnnotation";
     private static final String EXCLUDE_LOCATIONS_PROPERTY_NAME = "co.paralleluniverse.quasar.excludeLocations";
     private static final String EXCLUDE_PACKAGES_PROPERTY_NAME = "co.paralleluniverse.quasar.excludePackages";
@@ -154,6 +155,7 @@ public final class QuasarActivator implements BundleActivator {
 
         final String cacheDirectoryName = context.getProperty(CACHE_DIRECTORY_PROPERTY_NAME);
         final QuasarInstrumentor instrumentor = new QuasarInstrumentorBuilder(cacheDirectoryName, log)
+            .setDoNotInstrumentAnnotations(context.getProperty(DO_NOT_INSTRUMENT_ANNOTATION_PROPERTY_NAME))
             .setSuspendableAnnotations(context.getProperty(SUSPENDABLE_ANNOTATION_PROPERTY_NAME))
             .setAllowMonitors(context.getProperty(ALLOW_MONITORS_PROPERTY_NAME))
             .setAllowBlocking(context.getProperty(ALLOW_BLOCKING_PROPERTY_NAME))
