@@ -34,8 +34,8 @@ dependencies {
 
 sourceSets {
     AnnotationTest {
-        compileClasspath += main.compileClasspath + main.output + test.compileClasspath + test.output
-        runtimeClasspath += main.runtimeClasspath + test.runtimeClasspath
+        compileClasspath += files(main.compileClasspath, main.output, test.compileClasspath, test.output)
+        runtimeClasspath += files(main.runtimeClasspath, test.runtimeClasspath)
     }
 }
 

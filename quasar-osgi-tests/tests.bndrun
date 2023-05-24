@@ -14,11 +14,12 @@
     --illegal-access=deny
 
 -runproperties: \
+    co.paralleluniverse.quasar.doNotInstrumentAnnotation='org.testing.osgi.annotation.DoNotInstrument',\
     co.paralleluniverse.quasar.suspendableAnnotation='org.testing.osgi.annotation.Suspendable',\
     co.paralleluniverse.quasar.cacheDirectory='${task.cacheDirectory}',\
     co.paralleluniverse.quasar.cacheLocations='CACHED/*',\
     co.paralleluniverse.quasar.excludeLocations='IGNORE/*,VERIFY/*',\
-    co.paralleluniverse.quasar.excludePackages='aQute.**,org.osgi.**,org.apache.felix.**,org.junit.**,org.assertj.**,org.opentest4j**',\
+    co.paralleluniverse.quasar.excludePackages='aQute.**,kotlin**,org.osgi.**,org.apache.felix.**,org.junit.**,org.assertj.**,org.opentest4j**',\
     co.paralleluniverse.quasar.service,\
     co.paralleluniverse.quasar.verbose,\
     org.osgi.framework.bundle.parent=framework,\
@@ -30,6 +31,7 @@
     bnd.identity;id='org.apache.felix.configadmin',\
     bnd.identity;id='org.apache.felix.framework.security',\
     bnd.identity;id='org.apache.felix.log',\
+    bnd.identity;id='org.jetbrains.kotlin.osgi-bundle',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple'

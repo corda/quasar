@@ -25,6 +25,13 @@ final class QuasarInstrumentorBuilder {
         instrumentor = new QuasarInstrumentor(createByteCodeCache(cacheDirectoryName, log), log);
     }
 
+    QuasarInstrumentorBuilder setDoNotInstrumentAnnotations(String annotationNames) {
+        if (annotationNames != null) {
+            instrumentor.addTypeNames("DO_NOT_INSTRUMENT", annotationNames.split(",", 0));
+        }
+        return this;
+    }
+
     QuasarInstrumentorBuilder setSuspendableAnnotations(String annotationNames) {
         if (annotationNames != null) {
             instrumentor.addTypeNames("SUSPENDABLE", annotationNames.split(",", 0));
