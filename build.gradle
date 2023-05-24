@@ -102,8 +102,8 @@ subprojects {
             output.dir "$buildDir/generated-resources/main", builtBy: 'compileJava'
         }
         jmh {
-            compileClasspath += main.compileClasspath + main.output + test.compileClasspath + test.output
-            runtimeClasspath += compileClasspath + main.runtimeClasspath + test.runtimeClasspath
+            compileClasspath += files(main.compileClasspath, main.output, test.compileClasspath, test.output)
+            runtimeClasspath += files(compileClasspath, main.runtimeClasspath, test.runtimeClasspath)
         }
     }
 
@@ -152,11 +152,6 @@ subprojects {
         // annotationProcessor 'com.google.auto.service:auto-service:1.0-rc1' // same as metainf-services
         // markdownDoclet "ch.raffael.pegdown-doclet:pegdown-doclet:1.1.1"
     }
-
-    //    tasks.withType(JavaCompile) {
-    //        // options.compilerArgs << "-Xlint:unchecked"
-    //        // options.compilerArgs << "-Xlint:deprecation"
-    //    }
 
     tasks.named('compileJava', JavaCompile) {
         dependsOn tasks.named('processResources')
@@ -212,7 +207,7 @@ subprojects {
             jvmArgs "-javaagent:${quasarJar}" // =vdmc (verbose, debug, allow monitors, check class)
         }
 
-        if (project.name != 'quasar-kotlin') { // TODO investigate why kotlin-plugin 1.1.2+ doesn't like it
+        if (!project.name.contains('kotlin')) { // TODO investigate why kotlin-plugin 1.1.2+ doesn't like it
             jvmArgs "-Xbootclasspath/a:${configurations.timewarp.singleFile}"
             if (System.getenv("TRAVIS") == 'true') {
                 jvmArgs "-javaagent:${configurations.timewarp.singleFile}=3" // slow clock down x3
@@ -453,8 +448,8 @@ project (':quasar-core') {
                 srcDir 'src/jmh/java'
             }
 
-            compileClasspath += main.output + test.compileClasspath + test.output
-            runtimeClasspath += compileClasspath + test.runtimeClasspath
+            compileClasspath += files(main.output, test.compileClasspath, test.output)
+            runtimeClasspath += files(compileClasspath, test.runtimeClasspath)
         }
 
         classloadertest {
@@ -462,8 +457,8 @@ project (':quasar-core') {
                 srcDir 'src/classloadertest/java'
             }
 
-            compileClasspath += main.output + test.output + test.compileClasspath
-            runtimeClasspath += compileClasspath + test.runtimeClasspath
+            compileClasspath += files(main.output, test.output, test.compileClasspath)
+            runtimeClasspath += files(compileClasspath, test.runtimeClasspath)
         }
     }
 
