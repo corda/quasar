@@ -1,6 +1,6 @@
 package org.testing.donotinstrument;
 
-import co.paralleluniverse.quasar.annotations.DoNotInstrument;
+import org.testing.osgi.annotation.DoNotInstrument;
 import org.testing.osgi.annotation.Suspendable;
 
 import java.lang.invoke.MethodHandle;

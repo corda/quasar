@@ -37,6 +37,7 @@ public final class ProxyFactory {
 
                     default:
                         System.out.println("Unknown method: " + method);
+                        break;
                 }
                 return null;
             }
