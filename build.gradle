@@ -513,6 +513,9 @@ project (':quasar-core') {
         frameworkExtensionImplementation files(sourceSets.main.output) {
             builtBy tasks.named('compileJava', JavaCompile)
         }
+
+        testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
+        testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     }
 
     tasks.named('compileFrameworkExtensionJava', JavaCompile) {
