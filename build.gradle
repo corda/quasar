@@ -57,7 +57,6 @@ subprojects {
 
     ext.drpWizVer = '4.1.0'
     ext.guavaVer  = '30.1.1-jre'
-    ext.slf4jVer  = '1.7.36'
     ext.osgiAnnotationVer = '8.1.0'
     ext.osgiCoreVer       = '8.0.0'
     ext.osgiComponentVer  = '1.5.0'
@@ -85,7 +84,7 @@ subprojects {
                 substitute module('org.objenesis:objenesis') using module("org.objenesis:objenesis:2.5.1")
 
                 // Avoid problem when DropWizard and Log4J ask for different versions of SLF4J.
-                substitute module('org.slf4j:slf4j-api') using module("org.slf4j:slf4j-api:$slf4jVer")
+                substitute module('org.slf4j:slf4j-api') using module("org.slf4j:slf4j-api:$slf4jVersion")
             }
         }
     }
@@ -532,6 +531,9 @@ project (':quasar-core') {
         frameworkExtensionImplementation files(sourceSets.main.output) {
             builtBy tasks.named('compileJava', JavaCompile)
         }
+
+        testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
+        testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     }
 
     tasks.named('compileAgentJava', JavaCompile) {
@@ -864,7 +866,7 @@ project (':quasar-actors') {
     dependencies {
         provided project(path: ':quasar-core', configuration: 'classic')
         // compile 'org.mutabilitydetector:MutabilityDetector:0.9.2'
-        implementation "org.slf4j:slf4j-api:$slf4jVer"
+        implementation "org.slf4j:slf4j-api:$slf4jVersion"
         implementation "net.bytebuddy:byte-buddy:1.9.2"
         implementation ("com.google.guava:guava:$guavaVer") {
             exclude group: 'com.google.errorprone', module: '*'

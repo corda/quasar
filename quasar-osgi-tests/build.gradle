@@ -64,7 +64,7 @@ dependencies {
     osgiTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.osgi'
     }
-    osgiTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVer"
+    osgiTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }
 
 def testingBundle = tasks.register('testingBundle', Bundle) {

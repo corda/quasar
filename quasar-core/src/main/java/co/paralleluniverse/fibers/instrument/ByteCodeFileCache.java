@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
@@ -43,7 +44,7 @@ final class ByteCodeFileCache implements ByteCodeCache {
     }
 
     private boolean exists(Path file) {
-        return doPrivileged((PrivilegedAction<Boolean>)() -> Files.exists(file));
+        return doPrivileged((PrivilegedAction<Boolean>)() -> Files.isRegularFile(file));
     }
 
     private Path createCacheFile(CacheKey key) {
@@ -59,16 +60,23 @@ final class ByteCodeFileCache implements ByteCodeCache {
             .resolve(builder.toString());
     }
 
+    private static FileAttribute<?>[] posixOptional(Path path, FileAttribute<?> attr) {
+        return Files.getFileAttributeView(path, PosixFileAttributeView.class) != null
+            ? new FileAttribute<?>[] { attr } : new FileAttribute<?>[0];
+    }
+
     private Path writeToCache(Path cacheFile, byte[] byteCode) throws IOException {
         final Path tempFile = Files.createTempFile(
-            Files.createDirectories(cacheFile.getParent(), RWX_RX_RX_ATTR),
+            Files.createDirectories(cacheFile.getParent(), posixOptional(cacheFile, RWX_RX_RX_ATTR)),
             ".quasar",
             ".class",
-            RW_ATTR
+            posixOptional(cacheFile, RW_ATTR)
         );
         try {
-            Files.write(tempFile, byteCode);
-            Files.setPosixFilePermissions(tempFile, READ_ONLY);
+            final PosixFileAttributeView posix = Files.getFileAttributeView(Files.write(tempFile, byteCode), PosixFileAttributeView.class);
+            if (posix != null) {
+                posix.setPermissions(READ_ONLY);
+            }
             return Files.move(tempFile, cacheFile, ATOMIC_MOVE);
         } catch(IOException e) {
             Files.delete(tempFile);
