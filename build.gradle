@@ -14,6 +14,28 @@ plugins {
 }
 
 subprojects {
+    buildscript {
+        dependencies {
+            constraints {
+                classpath('biz.aQute.bnd:biz.aQute.bndlib') {
+                    version {
+                        require bndlibVersion
+                    }
+                }
+                classpath('biz.aQute.bnd:biz.aQute.bnd.embedded-repo') {
+                    version {
+                        require bndlibVersion
+                    }
+                }
+                classpath('biz.aQute.bnd:biz.aQute.resolve') {
+                    version {
+                        require bndlibVersion
+                    }
+                }
+            }
+        }
+    }
+
     apply plugin: 'java-library'
     apply plugin: 'org.javamodularity.moduleplugin'
 
