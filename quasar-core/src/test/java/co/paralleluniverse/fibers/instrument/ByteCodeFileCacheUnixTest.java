@@ -88,7 +88,7 @@ public class ByteCodeFileCacheUnixTest {
     @Before
     public void setup() throws IOException, NoSuchAlgorithmException {
         Configuration posix = Configuration.unix().toBuilder()
-            .setAttributeViews("basic", "posix")
+            .setAttributeViews("basic", "posix", "dos")
             .build();
         fileSystem = Jimfs.newFileSystem("posix", posix);
 

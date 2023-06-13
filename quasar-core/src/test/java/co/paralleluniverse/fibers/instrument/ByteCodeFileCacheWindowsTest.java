@@ -2,16 +2,19 @@ package co.paralleluniverse.fibers.instrument;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
+import java.nio.file.attribute.DosFileAttributeView;
+import java.nio.file.attribute.DosFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -47,6 +50,20 @@ public class ByteCodeFileCacheWindowsTest {
         return MessageDigest.getInstance(ALGORITHM_NAME).digest(bytes);
     }
 
+    private static DosFileAttributes getDosFileAttributes(DosFileAttributeView view) {
+        assertThat(view).isNotNull();
+        try {
+            return view.readAttributes();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private static Condition<DosFileAttributes> readOnly(boolean expected) {
+        return new Condition<>(actual -> actual.isReadOnly() == expected, "read-only=%b", expected);
+    }
+
     private static String absoluteWindowsPathOf(byte[] source) throws NoSuchAlgorithmException {
         assertThat(source).hasSizeGreaterThanOrEqualTo(2);
         final byte[] bytes = hashOf(source);
@@ -59,8 +76,10 @@ public class ByteCodeFileCacheWindowsTest {
 
     @Before
     public void setup() throws NoSuchAlgorithmException, IOException {
-        fileSystem = Jimfs.newFileSystem(Configuration.windows());
-
+        Configuration dos = Configuration.windows().toBuilder()
+            .setAttributeViews("basic", "dos")
+            .build();
+        fileSystem = Jimfs.newFileSystem("dos", dos);
         cacheDirectory = Files.createDirectory(fileSystem.getPath(CACHE_ROOT));
         cache = new ByteCodeFileCache(ByteCodeCache.createKeyFactory(ALGORITHM_NAME), cacheDirectory, LOG);
     }
@@ -85,6 +104,9 @@ public class ByteCodeFileCacheWindowsTest {
         // This file has the correct contents and properties.
         final Path cacheFile = classes.get(0);
         assertArrayEquals(target, Files.readAllBytes(cacheFile));
+        assertThat(Files.getFileAttributeView(cacheFile, DosFileAttributeView.class))
+            .extracting(ByteCodeFileCacheWindowsTest::getDosFileAttributes)
+            .has(readOnly(true));
         assertEquals(absoluteWindowsPathOf(source), cacheFile.toString());
 
         // And we can retrieve this entry from the cache.
