@@ -42,6 +42,7 @@ import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.SerializerFactory.BaseSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
@@ -2168,11 +2169,10 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
     public static ByteArraySerializer getFiberSerializer(ClassResolver classResolver, boolean includeThreadLocals) {
         final KryoSerializer s = new KryoSerializer(classResolver);
         final Kryo kryo = s.getKryo();
-        kryo.addDefaultSerializer(Fiber.class, new FiberSerializer(includeThreadLocals));
+        kryo.addDefaultSerializer(Fiber.class, new FiberSerializerFactory(includeThreadLocals));
         kryo.addDefaultSerializer(ThreadLocal.class, new ThreadLocalSerializer());
         kryo.addDefaultSerializer(FiberWriter.class, new FiberWriterSerializer());
         kryo.addDefaultSerializer(CustomFiberWriter.class, new CustomFiberWriterSerializer());
-        kryo.register(Fiber.class);
         kryo.register(ThreadLocal.class);
         kryo.register(InheritableThreadLocal.class);
         kryo.register(ThreadLocalSerializer.DEFAULT.class);
@@ -2180,10 +2180,25 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         return s;
     }
 
-    private static final class FiberSerializer extends Serializer<Fiber<?>> {
+    private static final class FiberSerializerFactory extends BaseSerializerFactory<FiberSerializer> {
         private final boolean includeThreadLocals;
 
-        public FiberSerializer(boolean includeThreadLocals) {
+        FiberSerializerFactory(boolean includeThreadLocals) {
+            this.includeThreadLocals = includeThreadLocals;
+        }
+
+        @Override
+        public FiberSerializer newSerializer(Kryo kryo, Class type) {
+            return new FiberSerializer(new FieldSerializer<>(kryo, type), includeThreadLocals);
+        }
+    }
+
+    private static final class FiberSerializer extends Serializer<Fiber<?>> {
+        private final FieldSerializer<Fiber<?>> fieldSerializer;
+        private final boolean includeThreadLocals;
+
+        FiberSerializer(FieldSerializer<Fiber<?>> fieldSerializer, boolean includeThreadLocals) {
+            this.fieldSerializer = fieldSerializer;
             this.includeThreadLocals = includeThreadLocals;
             setImmutable(true);
         }
@@ -2203,7 +2218,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
                 try {
                     f.stack.resumeStack();
                     kryo.writeClass(output, f.getClass());
-                    new FieldSerializer<>(kryo, f.getClass()).write(kryo, output, f);
+                    fieldSerializer.write(kryo, output, f);
                 } finally {
                     f.fiberLocals = tmpFiberLocals;
                     f.inheritableFiberLocals = tmpInheritableFiberLocals;
@@ -2224,7 +2239,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
                     f.stack.resumeStack();
 
                     kryo.writeClass(output, f.getClass());
-                    new FieldSerializer<>(kryo, f.getClass()).write(kryo, output, f);
+                    fieldSerializer.write(kryo, output, f);
                 } catch (Throwable t) {
                     t.printStackTrace();
                     throw t;
@@ -2238,7 +2253,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         }
 
         @Override
-        @SuppressWarnings("CallToPrintStackTrace")
+        @SuppressWarnings({ "CallToPrintStackTrace", "unchecked" })
         public Fiber<?> read(Kryo kryo, Input input, Class<? extends Fiber<?>> type) {
             final Fiber<?> f;
             final Thread currentThread = Thread.currentThread();
@@ -2251,7 +2266,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
                 if (reg == null) {
                     return null;
                 }
-                f = (Fiber<?>) new FieldSerializer<>(kryo, reg.getType()).read(kryo, input, reg.getType());
+                f = fieldSerializer.read(kryo, input, (Class<? extends Fiber<?>>) reg.getType());
 
                 if (!f.noLocals) {
                     f.fiberLocals = ThreadAccess.getThreadLocals(currentThread);
