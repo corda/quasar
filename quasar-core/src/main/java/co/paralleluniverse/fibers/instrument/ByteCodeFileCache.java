@@ -3,6 +3,7 @@ package co.paralleluniverse.fibers.instrument;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.DosFileAttributeView;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
@@ -24,6 +25,7 @@ import static java.nio.file.attribute.PosixFilePermissions.asFileAttribute;
 import static java.security.AccessController.doPrivileged;
 import static java.util.Collections.singleton;
 
+@SuppressWarnings("removal")
 final class ByteCodeFileCache implements ByteCodeCache {
     private static final FileAttribute<?> RWX_RX_RX_ATTR = asFileAttribute(Set.of(
         OWNER_READ, OWNER_WRITE, OWNER_EXECUTE,
@@ -76,6 +78,11 @@ final class ByteCodeFileCache implements ByteCodeCache {
             final PosixFileAttributeView posix = Files.getFileAttributeView(Files.write(tempFile, byteCode), PosixFileAttributeView.class);
             if (posix != null) {
                 posix.setPermissions(READ_ONLY);
+            } else {
+                final DosFileAttributeView dos = Files.getFileAttributeView(tempFile, DosFileAttributeView.class);
+                if (dos != null) {
+                    dos.setReadOnly(true);
+                }
             }
             return Files.move(tempFile, cacheFile, ATOMIC_MOVE);
         } catch(IOException e) {
