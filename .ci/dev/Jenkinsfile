@@ -63,12 +63,12 @@ pipeline {
         AWS_CREDENTIALS=credentials("s3-prod-uploader")
       }
       steps {
-        sh './gradlew publish artifactoryPublish \
+        sh '''./gradlew publish artifactoryPublish \
           --no-daemon \
           -Pcompilation.allWarningsAsErrors=true \
           -Ptests.failFast=false \
           -Ptests.ignoreFailures=true \
-          -Pmaven.repo.s3="${S3_PATH}"'
+          -Pmaven.repo.s3="${S3_PATH}"'''
       }
     }
   }
