@@ -34,13 +34,20 @@ pipeline {
   stages {
     stage('Compile') {
       steps {
-        sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true clean assemble"
+        sh '''./gradlew clean assemble --no-daemon \
+          -Pcompilation.allWarningsAsErrors=true \
+          -Ptests.failFast=false \
+          -Ptests.ignoreFailures=true'''
       }
     }
 
     stage('Test') {
       steps {
-        sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true testClasses test"
+        sh '''./gradlew testClasses test \
+          --no-daemon \
+          -Pcompilation.allWarningsAsErrors=true \
+          -Ptests.failFast=false \
+          -Ptests.ignoreFailures=true'''
       }
     }
 
@@ -49,8 +56,19 @@ pipeline {
         expression { params.DO_PUBLISH }
         beforeAgent true
       }
+      environment {
+        S3_BUCKET=credentials("maven-s3-prod-bucket")
+        PUBLIC_URL=credentials('maven-s3-bucket-https-path')
+        S3_PATH="s3://${env.S3_BUCKET}/maven/${env.CORDA_ARTIFACTORY_REPOKEY}"
+        AWS_CREDENTIALS=credentials("s3-prod-uploader")
+      }
       steps {
-        sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true artifactoryPublish"
+        sh './gradlew publish artifactoryPublish \
+          --no-daemon \
+          -Pcompilation.allWarningsAsErrors=true \
+          -Ptests.failFast=false \
+          -Ptests.ignoreFailures=true \
+          -Pmaven.repo.s3="${S3_PATH}"'
       }
     }
   }
