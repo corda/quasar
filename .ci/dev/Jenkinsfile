@@ -58,7 +58,6 @@ pipeline {
       }
       environment {
         S3_BUCKET=credentials("maven-s3-prod-bucket")
-        PUBLIC_URL=credentials('maven-s3-bucket-https-path')
         S3_PATH="s3://${env.S3_BUCKET}/maven/${env.CORDA_ARTIFACTORY_REPOKEY}"
         AWS_CREDENTIALS=credentials("s3-prod-uploader")
       }
