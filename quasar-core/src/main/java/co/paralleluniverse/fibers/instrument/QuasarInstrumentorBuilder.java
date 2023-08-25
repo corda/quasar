@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.DosFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
@@ -94,8 +96,7 @@ final class QuasarInstrumentorBuilder {
         if (cacheDirectoryName != null) {
             final Path cacheDirectory = Paths.get(cacheDirectoryName).toAbsolutePath();
             try {
-                final Set<PosixFilePermission> requiredPermissions = Set.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE);
-                if (Files.isDirectory(cacheDirectory) && Files.getPosixFilePermissions(cacheDirectory).containsAll(requiredPermissions)) {
+                if (Files.isDirectory(cacheDirectory) && hasRequiredPermissions(cacheDirectory)) {
                     log.log(INFO, "Cache directory: %s", cacheDirectory.toAbsolutePath());
                     return cacheDirectory;
                 } else {
@@ -106,5 +107,15 @@ final class QuasarInstrumentorBuilder {
             }
         }
         return null;
+    }
+
+    private static boolean hasRequiredPermissions(Path cacheDirectory) throws IOException {
+        final PosixFileAttributeView posixView = Files.getFileAttributeView(cacheDirectory, PosixFileAttributeView.class);
+        if (posixView != null) {
+            final Set<PosixFilePermission> requiredPermissions = Set.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE);
+            return posixView.readAttributes().permissions().containsAll(requiredPermissions);
+        }
+        final DosFileAttributeView dosView = Files.getFileAttributeView(cacheDirectory, DosFileAttributeView.class);
+        return (dosView != null) && !dosView.readAttributes().isReadOnly();
     }
 }
