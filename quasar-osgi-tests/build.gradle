@@ -107,7 +107,7 @@ def osgiTestResources = tasks.named('processOsgiTestResources', ProcessResources
     }
 }
 
-def testOSGi = tasks.register('testOSGi', TestOSGi) { task ->
+tasks.withType(TestOSGi).configureEach { task ->
     javaLauncher = javaToolchains.launcherFor {
         languageVersion = of(testJavaVersion)
     }
@@ -126,15 +126,30 @@ def testOSGi = tasks.register('testOSGi', TestOSGi) { task ->
     }
 }
 
+def testOSGi = tasks.register('testOSGi', TestOSGi) {
+    ext {
+        // Felix enables implicit boot delegation by default.
+        bootDelegation = true
+    }
+}
+
+def testOSGiWithoutBootDelegation = tasks.register('testOSGiWithoutBootDelegation', TestOSGi) {
+    mustRunAfter testOSGi
+
+    ext {
+        bootDelegation = false
+    }
+}
+
 tasks.named('jar', Jar) {
     enabled = false
 }
 
 tasks.named('test', Test) {
-    dependsOn testOSGi
+    dependsOn testOSGi, testOSGiWithoutBootDelegation
     enabled = false
 }
 
 tasks.named('check') {
-    dependsOn testOSGi
+    dependsOn testOSGi, testOSGiWithoutBootDelegation
 }
