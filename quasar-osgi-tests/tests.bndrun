@@ -4,6 +4,9 @@
 -runee: JavaSE-17
 -runtrace: true
 
+# Enable debugging.
+# -runjdb: 1044
+
 -runvm: \
     -Dco.paralleluniverse.fibers.verifyInstrumentation,\
     -Djava.security.policy=all.policy,\
@@ -20,6 +23,7 @@
     co.paralleluniverse.quasar.excludePackages='aQute.**,kotlin**,org.osgi.**,org.apache.felix.**,org.junit.**,org.assertj.**,org.opentest4j**',\
     co.paralleluniverse.quasar.service,\
     co.paralleluniverse.quasar.verbose,\
+    felix.bootdelegation.implicit=${task.bootDelegation},\
     org.osgi.framework.bundle.parent=framework,\
     org.osgi.framework.security=osgi
 

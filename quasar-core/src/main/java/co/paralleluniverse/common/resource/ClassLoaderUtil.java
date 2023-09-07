@@ -264,7 +264,7 @@ public final class ClassLoaderUtil {
                 // Support jars added via -Xbootclasspath/a:<jar>. This probably
                 // KILLS performance, but I cannot find any other way to search
                 // the JVM's entire boot classpath.
-                if (target.equals(platformClassLoader.getResource(resourceName))) {
+                if (isEqual(target, platformClassLoader.getResource(resourceName))) {
                     return platformClassLoader;
                 }
             } else {
@@ -278,11 +278,18 @@ public final class ClassLoaderUtil {
                     if (isTargetFrom(((URLClassLoader) current).getURLs())) {
                         return current;
                     }
-                } else if (target.equals(current.getResource(resourceName))) {
+                } else if (isEqual(target, current.getResource(resourceName))) {
                     return current;
                 }
             }
             return null;
+        }
+
+        // This is safer than URL.equals(Object) for file, jar and bundle URLs.
+        private static boolean isEqual(URL a, URL b) {
+            return (a == b) || (
+                (a != null) && (b != null) && a.getProtocol().equals(b.getProtocol()) && a.getPath().equals(b.getPath())
+            );
         }
 
         private boolean isTargetFrom(URL[] urls) {
@@ -309,7 +316,7 @@ public final class ClassLoaderUtil {
         String classpathAttribute = manifest.getMainAttributes().getValue(Attributes.Name.CLASS_PATH.toString());
         if (classpathAttribute != null) {
             for (String path : classpathAttribute.split("\\s")) {
-                if (path != null && path.trim().length() > 0) {
+                if (path != null && !path.trim().isEmpty()) {
                     URI uri;
                     try {
                         uri = getClassPathEntry(jarFile, path.trim());

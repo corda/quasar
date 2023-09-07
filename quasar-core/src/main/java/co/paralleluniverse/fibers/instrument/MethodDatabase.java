@@ -500,7 +500,20 @@ public final class MethodDatabase {
 
     private ClassLookup getLookupFor(String className) {
         final ClassLoader cl = clRef.get();
-        return (cl == null) ? null : new ClassLookup(cl, className);
+        if (cl == null) {
+            return null;
+        }
+        return doPrivileged((PrivilegedAction<ClassLookup>)() -> {
+            final String resourceName = className + ".class";
+            URL res = cl.getResource(resourceName);
+            if (res == null) {
+                res = ClassLoader.getSystemResource(resourceName);
+                if (res == null) {
+                    res = getClass().getClassLoader().getResource(resourceName);
+                }
+            }
+            return new ClassLookup(cl, resourceName, res);
+        });
     }
 
     private String getDirectSuperClass(String className, URL resource) {
@@ -537,10 +550,10 @@ public final class MethodDatabase {
         private final String resourceName;
         private final URL resource;
 
-        ClassLookup(ClassLoader cl, String internalClassName) {
-            classloader = cl;
-            resourceName = internalClassName + ".class";
-            resource = doPrivileged((PrivilegedAction<URL>)() -> cl.getResource(resourceName));
+        ClassLookup(ClassLoader cl, String resourceName, URL resource) {
+            this.classloader = cl;
+            this.resourceName = resourceName;
+            this.resource = resource;
         }
 
         URL getResource() {
