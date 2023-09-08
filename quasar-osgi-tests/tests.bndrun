@@ -24,7 +24,7 @@
     co.paralleluniverse.quasar.service,\
     co.paralleluniverse.quasar.verbose,\
     felix.bootdelegation.implicit=${task.bootDelegation},\
-    org.osgi.framework.bundle.parent=framework,\
+    org.osgi.framework.bundle.parent=boot,\
     org.osgi.framework.security=osgi
 
 -runrequires: \

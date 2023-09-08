@@ -507,9 +507,11 @@ public final class MethodDatabase {
             final String resourceName = className + ".class";
             URL res = cl.getResource(resourceName);
             if (res == null) {
-                res = ClassLoader.getSystemResource(resourceName);
+                res = getClass().getClassLoader().getResource(resourceName);
                 if (res == null) {
-                    res = getClass().getClassLoader().getResource(resourceName);
+                    // We will probably never reach here, unless
+                    // our own classloader has no parent.
+                    res = ClassLoader.getSystemResource(resourceName);
                 }
             }
             return new ClassLookup(cl, resourceName, res);
