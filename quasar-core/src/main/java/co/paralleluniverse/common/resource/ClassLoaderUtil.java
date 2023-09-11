@@ -240,13 +240,21 @@ public final class ClassLoaderUtil {
      * mirror how {@link ClassLoader#getResource(String)} works.
      * <p>
      * We are expected already to be running with the correct security context.
+     * <p>
+     * This is more complicated when running within an OSGi framework because a
+     * {@link org.osgi.framework.Bundle}'s parent classloader can be configured
+     * via the {@code org.osgi.framework.bundle.parent} property to be either
+     * {@code boot}, {@code ext}, {@code app} or {@code framework}. This means
+     * we may need to add the framework classloader into our search explicitly.
      */
     private static final class BestLookup {
+        private static final int SEARCH_CAPACITY = 10;
         private final String resourceName;
         private final URL target;
         private final Predicate<String> underlyingMatcher;
         private final ClassLoader platformClassLoader;
         private final ClassLoader bootstrapClassLoader;
+        private final Set<ClassLoader> searched;
 
         BestLookup(String resourceName, URL resource) {
             this.resourceName = resourceName;
@@ -257,32 +265,50 @@ public final class ClassLoaderUtil {
                 : underlyingURL::equals;
             this.platformClassLoader = ClassLoader.getPlatformClassLoader();
             this.bootstrapClassLoader = platformClassLoader.getParent();
+            this.searched = new HashSet<>(SEARCH_CAPACITY);
         }
 
         ClassLoader lookup(ClassLoader current) {
-            if (current == platformClassLoader || current == bootstrapClassLoader) {
-                // Support jars added via -Xbootclasspath/a:<jar>. This probably
-                // KILLS performance, but I cannot find any other way to search
-                // the JVM's entire boot classpath.
-                if (isEqual(target, platformClassLoader.getResource(resourceName))) {
-                    return platformClassLoader;
-                }
-            } else {
-                final ClassLoader candidate = lookup(current.getParent());
-                if (candidate != null) {
-                    return candidate;
-                }
+            if (searched.add(current)) {
+                if (current == platformClassLoader || current == bootstrapClassLoader) {
+                    // Support jars added via -Xbootclasspath/a:<jar>. This probably
+                    // KILLS performance, but I cannot find any other way to search
+                    // the JVM's entire boot classpath.
+                    if (isEqual(target, platformClassLoader.getResource(resourceName))) {
+                        return platformClassLoader;
+                    }
 
-                if (current instanceof URLClassLoader) {
-                    // Important optimisation, because invoking getResource() is not cheap!
-                    if (isTargetFrom(((URLClassLoader) current).getURLs())) {
+                    // Ensure neither of these classloaders is searched again.
+                    if (!searched.add(platformClassLoader)) {
+                        searched.add(bootstrapClassLoader);
+                    }
+
+                    // We haven't found target's "host" classloader yet, although we know
+                    // it doesn't belong to the Java platform. Check whether it belongs
+                    // to our own classloader, which will either be the system classloader
+                    // or the OSGi framework's classloader (or both).
+                    return lookup(getClass().getClassLoader());
+                } else {
+                    final ClassLoader candidate = lookup(current.getParent());
+                    if (candidate != null) {
+                        return candidate;
+                    }
+
+                    if (hasTargetResource(current)) {
                         return current;
                     }
-                } else if (isEqual(target, current.getResource(resourceName))) {
-                    return current;
                 }
             }
             return null;
+        }
+
+        private boolean hasTargetResource(ClassLoader classLoader) {
+            if (classLoader instanceof URLClassLoader) {
+                // Important optimisation, because invoking getResource() is not cheap!
+                return isTargetFrom(((URLClassLoader) classLoader).getURLs());
+            } else {
+                return isEqual(target, classLoader.getResource(resourceName));
+            }
         }
 
         // This is safer than URL.equals(Object) for file, jar and bundle URLs.

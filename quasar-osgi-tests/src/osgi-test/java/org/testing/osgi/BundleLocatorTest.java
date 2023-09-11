@@ -117,8 +117,6 @@ class BundleLocatorTest {
 
         assertAll("Superclass mapping allocations",
             () -> assertSuperClassesForClassLoader(getClassLoaderFor(testClass)),
-            // Locating classes inside the framework classloader requires:
-            //     org.osgi.framework.bundle.parent=framework
             () -> assertSuperClassesForClassLoader(getClassLoaderFor(Bundle.class)),
             () -> assertSuperClassesForClassLoader(ClassLoader.getPlatformClassLoader())
         );
