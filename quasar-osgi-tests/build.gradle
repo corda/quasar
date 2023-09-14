@@ -57,10 +57,9 @@ dependencies {
     osgiTestImplementation project('osgi-unprivileged')
     osgiTestImplementation "org.assertj:assertj-core:$assertjVersion"
     osgiTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
-    osgiTestImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
-    osgiTestImplementation "org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion"
+    osgiTestImplementation "org.junit.jupiter:junit-jupiter:$junitJupiterVersion"
     osgiTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
-    osgiTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
+    osgiTestRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     osgiTestRuntimeOnly "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
     osgiTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     osgiTestRuntimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"

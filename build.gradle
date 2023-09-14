@@ -336,8 +336,6 @@ subprojects {
 
 logger.lifecycle("Gradle version: {}", gradle.gradleVersion)
 logger.lifecycle("Java version: {}", JavaVersion.current())
-logger.lifecycle("Java source compatibility: {}", sourceCompatibility)
-logger.lifecycle("Java target compatibility: {}", targetCompatibility)
 logger.lifecycle("Kotlin version: {}", kotlinVersion)
 logger.lifecycle("Building quasar version: {}", quasarVersion)
 
@@ -1019,6 +1017,6 @@ artifactory {
 }
 
 wrapper {
-    gradleVersion = '8.1.1'
+    gradleVersion = '8.3'
     distributionType = Wrapper.DistributionType.BIN
 }
