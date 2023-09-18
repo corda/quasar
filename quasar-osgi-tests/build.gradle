@@ -77,8 +77,9 @@ dependencies {
 def testingBundle = tasks.register('testingBundle', Bundle) {
     archiveBaseName = 'quasar-osgi-tests'
     from sourceSets.osgiTest.output
-    sourceSet = sourceSets.osgiTest
     bundle {
+        sourceSet = sourceSets.osgiTest
+        classpath = sourceSets.osgiTest.compileClasspath
         bnd """\
 Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
 """
