@@ -516,7 +516,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      * @throws IllegalArgumentException when stackSize is &lt;= 0
      */
     public Fiber(String name, FiberScheduler scheduler, int stackSize) {
-        this(name, scheduler, stackSize, (SuspendableCallable) null);
+        this(name, scheduler, stackSize, (SuspendableCallable<V>) null);
     }
 
     /**
@@ -529,7 +529,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      * @throws IllegalArgumentException when stackSize is &lt;= 0
      */
     public Fiber(String name, FiberScheduler scheduler) {
-        this(name, scheduler, -1, (SuspendableCallable) null);
+        this(name, scheduler, -1, (SuspendableCallable<V>) null);
     }
 
     /**
@@ -541,7 +541,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      * @throws IllegalArgumentException when stackSize is &lt;= 0
      */
     public Fiber(FiberScheduler scheduler) {
-        this(null, scheduler, -1, (SuspendableCallable) null);
+        this(null, scheduler, -1, (SuspendableCallable<V>) null);
     }
 
     /**
@@ -620,7 +620,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      * @throws IllegalArgumentException when stackSize is &lt;= 0
      */
     public Fiber(String name, int stackSize) {
-        this(name, stackSize, (SuspendableCallable) null);
+        this(name, stackSize, (SuspendableCallable<V>) null);
     }
 
     /**
@@ -633,7 +633,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      * @throws IllegalArgumentException when stackSize is &lt;= 0
      */
     public Fiber(String name) {
-        this(name, -1, (SuspendableCallable) null);
+        this(name, -1, (SuspendableCallable<V>) null);
     }
 
     /**
@@ -645,7 +645,7 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      * @throws IllegalArgumentException when stackSize is &lt;= 0
      */
     public Fiber() {
-        this(null, -1, (SuspendableCallable) null);
+        this(null, -1, (SuspendableCallable<V>) null);
     }
 
     public Fiber(Fiber<?> fiber, SuspendableCallable<V> target) {
