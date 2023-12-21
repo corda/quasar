@@ -23,7 +23,9 @@ import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
+
 import java.io.Serializable;
+import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -54,17 +56,13 @@ public class ReplaceableObjectKryo extends Kryo {
         Set.of(0, 1, 2).getClass()
     ));
 
-    private static final ClassValue<SerializationMethods> replaceMethodsCache = new ClassValue<>() {
-        @Override
-        protected SerializationMethods computeValue(Class<?> type) {
-            return new SerializationMethods(
-                FORBIDDEN_CLASSES.contains(type) ? null : getMethodByReflection(type, WRITE_REPLACE),
-                getMethodByReflection(type, READ_RESOLVE)
-            );
-        }
-    };
+    private static final SerializationMethodsCache replaceMethodsCache = new SerializationMethodsCache(false);
+    private static final SerializationMethodsCache replaceMethodsIgnoreInaccessibleCache = new SerializationMethodsCache(true);
+
     private static final String WRITE_REPLACE = "writeReplace";
     private static final String READ_RESOLVE = "readResolve";
+
+    private boolean ignoreInaccessibleClasses = false;
 
     public ReplaceableObjectKryo(ClassResolver classResolver) {
         super(classResolver, new MapReferenceResolver());
@@ -182,6 +180,22 @@ public class ReplaceableObjectKryo extends Kryo {
         return readReplace(super.readClassAndObject(input));
     }
 
+    /**
+     * Ignore classes which are inaccessible to the current module.
+     *
+     * @see InaccessibleObjectException
+     */
+    public void setIgnoreInaccessibleClasses(boolean ignoreInaccessibleClasses) {
+        this.ignoreInaccessibleClasses = ignoreInaccessibleClasses;
+    }
+
+    /**
+     * Returns true if inaccessible classes are ignored. Defaults to false.
+     */
+    public boolean isIgnoreInaccessibleClasses() {
+        return ignoreInaccessibleClasses;
+    }
+
     @SuppressWarnings("unchecked")
     private <T> T readReplace(Object obj) {
         return obj == null ? null : (T) getReplacement(getMethods(obj.getClass()).readResolve, obj);
@@ -200,38 +214,44 @@ public class ReplaceableObjectKryo extends Kryo {
         }
     }
 
-    private static SerializationMethods getMethods(Class<?> clazz) {
-        return replaceMethodsCache.get(clazz);
+    private SerializationMethods getMethods(Class<?> clazz) {
+        return (ignoreInaccessibleClasses ? replaceMethodsIgnoreInaccessibleCache : replaceMethodsCache).get(clazz);
     }
 
-    private static Method getDeclaredMethod(Class<?> clazz, String methodName, Class<?>... args) throws NoSuchMethodException {
+    private static Method getDeclaredMethod(Class<?> clazz, String methodName, boolean ignoreInaccessibleClasses) throws NoSuchMethodException {
         try {
-            return doPrivileged(new GetAccessDeclaredMethod(clazz, methodName, args));
+            return doPrivileged(new GetAccessDeclaredMethod(clazz, methodName));
         } catch (PrivilegedActionException e) {
             Throwable t = e.getCause();
             if (t instanceof NoSuchMethodException) {
                 throw (NoSuchMethodException) t;
             }
             throw new RuntimeException(t);
+        } catch (InaccessibleObjectException e) {
+            if (ignoreInaccessibleClasses) {
+                return null;
+            } else {
+                throw e;
+            }
         }
     }
 
-    private static Method getMethodByReflection(Class<?> clazz, final String methodName, Class<?>... paramTypes) throws SecurityException {
+    private static Method getMethodByReflection(Class<?> clazz, final String methodName, boolean ignoreInaccessibleClasses) throws SecurityException {
         if (!Serializable.class.isAssignableFrom(clazz)) {
             return null;
         }
 
         Method m = null;
         try {
-            m = getDeclaredMethod(clazz, methodName, paramTypes);
+            m = getDeclaredMethod(clazz, methodName, ignoreInaccessibleClasses);
         } catch (NoSuchMethodException ex) {
             Class<?> ancestor = clazz.getSuperclass();
             while (ancestor != null) {
                 if (!Serializable.class.isAssignableFrom(ancestor))
                     return null;
                 try {
-                    m = getDeclaredMethod(ancestor, methodName, paramTypes);
-                    if (!Modifier.isPublic(m.getModifiers()) && !Modifier.isProtected(m.getModifiers()))
+                    m = getDeclaredMethod(ancestor, methodName, ignoreInaccessibleClasses);
+                    if (m == null || (!Modifier.isPublic(m.getModifiers()) && !Modifier.isProtected(m.getModifiers())))
                         return null;
                     break;
                 } catch (NoSuchMethodException ex1) {
@@ -249,6 +269,22 @@ public class ReplaceableObjectKryo extends Kryo {
         SerializationMethods(Method writeReplace, Method readResolve) {
             this.writeReplace = writeReplace;
             this.readResolve = readResolve;
+        }
+    }
+
+    private static class SerializationMethodsCache extends ClassValue<SerializationMethods> {
+        private final boolean ignoreInaccessibleClasses;
+
+        private SerializationMethodsCache(boolean ignoreInaccessibleClasses) {
+            this.ignoreInaccessibleClasses = ignoreInaccessibleClasses;
+        }
+
+        @Override
+        protected SerializationMethods computeValue(Class<?> type) {
+            return new SerializationMethods(
+                    FORBIDDEN_CLASSES.contains(type) ? null : getMethodByReflection(type, WRITE_REPLACE, ignoreInaccessibleClasses),
+                    getMethodByReflection(type, READ_RESOLVE, ignoreInaccessibleClasses)
+            );
         }
     }
 }
