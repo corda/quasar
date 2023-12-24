@@ -26,7 +26,7 @@ import java.lang.ref.WeakReference;
  *
  * @author pron
  */
-class ReferenceSerializer extends Serializer<Reference<?>> {
+public class ReferenceSerializer extends Serializer<Reference<?>> {
     public ReferenceSerializer() {
         setImmutable(true);
     }

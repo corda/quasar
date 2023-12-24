@@ -30,7 +30,7 @@ import static java.util.Collections.emptyMap;
  *
  * @author pron
  */
-class CollectionsSetFromMapSerializer extends Serializer<Set<?>> {
+public class CollectionsSetFromMapSerializer extends Serializer<Set<?>> {
     private static final Field mf;
     private static final Field sf;
 

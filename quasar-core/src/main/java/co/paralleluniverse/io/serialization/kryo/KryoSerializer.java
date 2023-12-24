@@ -21,6 +21,7 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -43,10 +44,12 @@ public class KryoSerializer implements ByteArraySerializer, IOStreamSerializer {
     }
 
     public KryoSerializer(ClassResolver classResolver) {
-        this.kryo = KryoUtil.newKryo(classResolver);
-
+        this(KryoUtil.newKryo(classResolver));
         KryoUtil.registerCommonClasses(kryo);
+    }
 
+    public KryoSerializer(Kryo kryo) {
+        this.kryo = kryo;
         for (Registration r : registrations) {
             register(r);
         }

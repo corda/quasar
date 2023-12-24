@@ -2157,6 +2157,12 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         return getFiberSerializer(new DefaultClassResolver(), includeThreadLocals);
     }
 
+    public static ByteArraySerializer getFiberSerializer(Kryo kryo, boolean includeThreadLocals) {
+        final KryoSerializer s = new KryoSerializer(kryo);
+        registerKyro(kryo, includeThreadLocals);
+        return s;
+    }
+
     /**
      * Returns a {@link ByteArraySerializer} capable of serializing an object graph containing fibers.
      *
@@ -2168,7 +2174,11 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
      */
     public static ByteArraySerializer getFiberSerializer(ClassResolver classResolver, boolean includeThreadLocals) {
         final KryoSerializer s = new KryoSerializer(classResolver);
-        final Kryo kryo = s.getKryo();
+        registerKyro(s.getKryo(), includeThreadLocals);
+        return s;
+    }
+
+    private static void registerKyro(Kryo kryo, boolean includeThreadLocals) {
         kryo.addDefaultSerializer(Fiber.class, new FiberSerializer(includeThreadLocals));
         kryo.addDefaultSerializer(ThreadLocal.class, new ThreadLocalSerializer());
         kryo.addDefaultSerializer(FiberWriter.class, new FiberWriterSerializer());
@@ -2178,8 +2188,8 @@ public class Fiber<V> extends Strand implements Joinable<V>, Serializable, Futur
         kryo.register(InheritableThreadLocal.class);
         kryo.register(ThreadLocalSerializer.DEFAULT.class);
         kryo.register(FiberWriter.class);
-        return s;
     }
+
 
     private static final class FiberSerializer extends Serializer<Fiber<?>> {
         private final boolean includeThreadLocals;
