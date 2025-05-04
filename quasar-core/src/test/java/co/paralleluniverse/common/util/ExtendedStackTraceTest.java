@@ -12,44 +12,18 @@
  */
 package co.paralleluniverse.common.util;
 
-// import java.lang.reflect.Executable;
-import java.lang.reflect.Member;
 import org.junit.Test;
-import static org.junit.Assert.*;
-import org.junit.Assume;
+
+import java.lang.reflect.Member;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  *
  * @author pron
  */
 public class ExtendedStackTraceTest {
-
-    public ExtendedStackTraceTest() {
-    }
-
-    private static boolean isHotSpotSupported() {
-        try {
-            new ExtendedStackTraceHotSpot(new Throwable());
-            return true;
-        } catch (Throwable e) {
-            return false;
-        }
-    }
-
-    @Test
-    public void testHotSpot1() {
-        Assume.assumeTrue(isHotSpotSupported());
-        try {
-            new A().foo();
-        } catch (Exception e) {
-            ExtendedStackTrace st = new ExtendedStackTraceHotSpot(e);
-
-            for (ExtendedStackTraceElement este : st) {
-                Member m = este.getMethod();
-                assertNotNull(este.getClassName() + "." + este.getMethodName(), m);
-            }
-        }
-    }
 
     @Test
     public void testPlain() {
@@ -80,26 +54,19 @@ public class ExtendedStackTraceTest {
     @Test
     public void testAll() {
         ExtendedStackTraceElement[] plain = new ExtendedStackTrace(new Throwable()).get();
-        ExtendedStackTraceElement[] hotspot = isHotSpotSupported() ? new ExtendedStackTraceHotSpot(new Throwable()).get() : null;
         ExtendedStackTraceElement[] security = new ExtendedStackTraceClassContext().get();
 
         int length = plain.length;
-        if (hotspot != null)
-            assertEquals(length, hotspot.length);
         assertEquals(length, security.length);
 
         for (int i = 0; i < plain.length; i++) {
-            if (hotspot != null)
-                assertNotNull(hotspot[i].getMethodName(), hotspot[i].getMethodName());
             if (!ExtendedStackTraceClassContext.skipSTE(security[i].getStackTraceElement()))
                 assertNotNull(security[i].getMethodName(), security[i].getMethodName());
             if (!skipJunit(plain[i]))
                 assertNotNull(plain[i].getMethodName(), plain[i].getMethodName());
 
             Member m = null;
-            if (hotspot != null)
-                m = hotspot[i].getMethod();
-            else if (!ExtendedStackTraceClassContext.skipSTE(security[i].getStackTraceElement()))
+            if (!ExtendedStackTraceClassContext.skipSTE(security[i].getStackTraceElement()))
                 m = security[i].getMethod();
             else if (!skipJunit(plain[i]))
                 m = plain[i].getMethod();
