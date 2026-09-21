@@ -53,6 +53,7 @@ public final class Stack extends StackOps implements Serializable {
     private static final long serialVersionUID = 12786283751253L;
     private final Fiber<?> fiber;
     private int sp;
+    private int maxFrame;
     private transient boolean pushed;
     private long[] dataLong;        // holds primitives on stack as well as each method's entry point and the stack pointer
     private Object[] dataObject;    // holds refs on stack
@@ -121,7 +122,7 @@ public final class Stack extends StackOps implements Serializable {
             idx = sp + slots;
         }
         sp = idx + FRAME_RECORD_SIZE;
-        long record = dataLong[idx];
+        long record = idx <= maxFrame ? dataLong[idx] : 0L;
         int entry = getEntry(record);
         dataLong[idx] = setPrevNumSlots(record, slots);
         if (fiber.isRecordingLevel(2))
@@ -157,14 +158,15 @@ public final class Stack extends StackOps implements Serializable {
     public final void pushMethod(int entry, int numSlots) {
         pushed = true;
 
-        int idx = sp - FRAME_RECORD_SIZE;
+        final int idx = sp - FRAME_RECORD_SIZE;
+        maxFrame = idx;
         long record = dataLong[idx];
         record = setEntry(record, entry);
         record = setNumSlots(record, numSlots);
         dataLong[idx] = record;
 
-        int nextMethodIdx = sp + numSlots;
-        int nextMethodSP = nextMethodIdx + FRAME_RECORD_SIZE;
+        final int nextMethodIdx = sp + numSlots;
+        final int nextMethodSP = nextMethodIdx + FRAME_RECORD_SIZE;
         if (nextMethodSP >= dataObject.length) {
             growStack(nextMethodSP);
         }
@@ -188,8 +190,8 @@ public final class Stack extends StackOps implements Serializable {
         // final int slots = getNumSlots(record);
         final int newSP = idx - getPrevNumSlots(record);
         
-        // clear frame record (probably unnecessary)
-        dataLong[idx] = 0L;
+        // clear frame record (unnecessary because of maxFrame)
+        //dataLong[idx] = 0L;
 //        for (int i = 0; i < FRAME_RECORD_SIZE; i++)
 //            dataLong[idx + i] = 0L;
         // help GC
@@ -197,6 +199,7 @@ public final class Stack extends StackOps implements Serializable {
             dataObject[i] = null;
 
         sp = newSP;
+        maxFrame = newSP - FRAME_RECORD_SIZE;
 
         if (fiber.isRecordingLevel(2))
             fiber.record(2, "Stack", "popMethod      ", "%s %d", Thread.currentThread().getStackTrace()[2], sp /*Arrays.toString(fiber.getStackTrace())*/);        
