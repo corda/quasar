@@ -83,7 +83,6 @@ public class SerializeResumeTest {
             System.out.println("restored fiber did not complete: " + t + ", inner() entered " + innerEntered + " time(s) in total");
             fail("RESUME BROKEN (" + t.getClass().getSimpleName() + ")");
         }
-
     }
 }
 
