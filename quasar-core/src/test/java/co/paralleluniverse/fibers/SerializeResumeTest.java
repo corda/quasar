@@ -4,6 +4,7 @@ import co.paralleluniverse.fibers.suspend.SuspendExecution;
 import co.paralleluniverse.strands.SuspendableCallable;
 import org.junit.Test;
 
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
@@ -79,7 +80,7 @@ public class SerializeResumeTest {
             scheduler.shutdown();
             assertTrue("RESUME BROKEN (frames re-executed or wrong locals)", result == expected && innerEntered == 1);
             System.out.println("RESUME OK");
-        } catch (Throwable t) {
+        } catch (Exception t) {
             System.out.println("restored fiber did not complete: " + t + ", inner() entered " + innerEntered + " time(s) in total");
             fail("RESUME BROKEN (" + t.getClass().getSimpleName() + ")");
         }
