@@ -31,6 +31,7 @@ pipeline {
 
   environment {
     ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
+    ARTIFACTORY_CREDENTIALS_2 = credentials('artifactory-credentials-2')
     CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
     CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
     CORDA_ARTIFACTORY_REPOKEY = "${isRelease ? 'corda-dependencies' : 'corda-dependencies-dev'}"
@@ -65,6 +66,11 @@ pipeline {
       steps {
         authenticateGradleWrapper()
         sh "./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true artifactoryPublish"
+        sh '''./gradlew --no-daemon -Pcompilation.allWarningsAsErrors=true -Ptests.failFast=false -Ptests.ignoreFailures=true \\
+            -PartifactoryContextUrl=https://software2.r3.com/artifactory \\
+            -PcordaArtifactoryUsername=${ARTIFACTORY_CREDENTIALS_2_USR} \\
+            -PcordaArtifactoryPassword=${ARTIFACTORY_CREDENTIALS_2_PSW} \\
+            artifactoryPublish'''
       }
     }
   }
