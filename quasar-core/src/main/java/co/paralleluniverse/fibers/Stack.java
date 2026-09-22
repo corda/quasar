@@ -122,6 +122,9 @@ public final class Stack extends StackOps implements Serializable {
             idx = sp + slots;
         }
         sp = idx + FRAME_RECORD_SIZE;
+        // maxFrame persisted in checkpoints and prevents reading dirty/poisoned dataLong entries from prior pushes that have already been popped
+        // resumeStack() must not reset it, because pushMethod is not re-executed on resume, so the persisted watermark is what lets
+        // already-pushed frames read their records during replay.
         long record = idx <= maxFrame ? dataLong[idx] : 0L;
         int entry = getEntry(record);
         dataLong[idx] = setPrevNumSlots(record, slots);
@@ -199,6 +202,7 @@ public final class Stack extends StackOps implements Serializable {
             dataObject[i] = null;
 
         sp = newSP;
+        // okay for this to be -1 when newSP == 0
         maxFrame = newSP - FRAME_RECORD_SIZE;
 
         if (fiber.isRecordingLevel(2))

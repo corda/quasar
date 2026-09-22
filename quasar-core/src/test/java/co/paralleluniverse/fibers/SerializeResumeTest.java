@@ -4,9 +4,10 @@ import co.paralleluniverse.fibers.suspend.SuspendExecution;
 import co.paralleluniverse.strands.SuspendableCallable;
 import org.junit.Test;
 
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Park a fiber three frames deep, serialise it with Quasar's own fiber serializer (what Corda checkpoints use),
@@ -65,30 +66,24 @@ public class SerializeResumeTest {
         Fiber<Long> original = new Fiber<>(scheduler, new Task()).start();
         long deadline = System.currentTimeMillis() + 10_000;
         while (BYTES.get() == null && System.currentTimeMillis() < deadline) Thread.sleep(20);
-        if (BYTES.get() == null) {
-            System.out.println("FAILED: fiber never serialised");
-            System.exit(1);
-        }
+        assertNotNull("FAILED: fiber never serialised", BYTES.get());
         System.out.println("serialised fiber: " + BYTES.get().length + " bytes, inner() entered " + innerEntered + " time(s)");
 
         @SuppressWarnings("unchecked")
         Fiber<Long> restored = (Fiber<Long>) Fiber.getFiberSerializer().read(BYTES.get());
         System.out.println("after deserialization: " + describeStack(restored));
         Fiber.unparkDeserialized(restored, scheduler);
-        long result;
         try {
-            result = restored.get(20, java.util.concurrent.TimeUnit.SECONDS);
-        } catch (Throwable t) {
+            long result = restored.get(20, java.util.concurrent.TimeUnit.SECONDS);
+            long expected = (5 * 10 + 1) * 2 + 50 + 3 + 100;   // 255
+            System.out.println("restored fiber result=" + result + " expected=" + expected + ", inner() entered " + innerEntered + " time(s) in total");
+            scheduler.shutdown();
+            assertTrue("RESUME BROKEN (frames re-executed or wrong locals)", result == expected && innerEntered == 1);
+            System.out.println("RESUME OK");
+        } catch (Exception t) {
             System.out.println("restored fiber did not complete: " + t + ", inner() entered " + innerEntered + " time(s) in total");
-            System.out.println("RESUME BROKEN (" + t.getClass().getSimpleName() + ")");
-            System.exit(1);
-            return;
+            fail("RESUME BROKEN (" + t.getClass().getSimpleName() + ")");
         }
-        long expected = (5 * 10 + 1) * 2 + 50 + 3 + 100;   // 255
-        System.out.println("restored fiber result=" + result + " expected=" + expected + ", inner() entered " + innerEntered + " time(s) in total");
-        System.out.println(result == expected && innerEntered == 1 ? "RESUME OK" : "RESUME BROKEN (frames re-executed or wrong locals)");
-        scheduler.shutdown();
-        assertTrue(result == expected && innerEntered == 1);
     }
 }
 
