@@ -32,6 +32,9 @@ import static java.security.AccessController.doPrivileged;
  */
 public class ThreadAccess {
     private static final VarHandle TARGET;
+    // Java 19+: the thread's target is the final field Thread.holder.task
+    private static final VarHandle HOLDER;
+    private static final VarHandle HOLDER_TASK;
     private static final VarHandle THREAD_LOCALS;
     private static final VarHandle INHERITABLE_THREAD_LOCALS;
     private static final VarHandle CONTEXT_CLASS_LOADER;
@@ -48,15 +51,28 @@ public class ThreadAccess {
 
     static {
         try {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            l = MethodHandles.privateLookupIn(Thread.class, l);
+            final MethodHandles.Lookup lookup = MethodHandles.lookup();
+            MethodHandles.Lookup l = MethodHandles.privateLookupIn(Thread.class, lookup);
 
             // ENT-5489, For openj9 vm name is runnable.
-            if (System.getProperty("java.vm.name").toLowerCase().contains("openj9")) {
-                TARGET = l.findVarHandle(Thread.class, "runnable", Runnable.class);
-            } else {
-                TARGET = l.findVarHandle(Thread.class, "target", Runnable.class);
+            VarHandle _target = null;
+            VarHandle _holder = null;
+            VarHandle _holderTask = null;
+            try {
+                if (System.getProperty("java.vm.name").toLowerCase().contains("openj9")) {
+                    _target = l.findVarHandle(Thread.class, "runnable", Runnable.class);
+                } else {
+                    _target = l.findVarHandle(Thread.class, "target", Runnable.class);
+                }
+            } catch (NoSuchFieldException e) {
+                // ENT-17055: Java 19+ moved the target into Thread.holder.task, which is final, so the targets Quasar sets are kept in TARGETS.
+                Class<?> holderClass = Class.forName("java.lang.Thread$FieldHolder");
+                _holder = l.findVarHandle(Thread.class, "holder", holderClass);
+                _holderTask = MethodHandles.privateLookupIn(holderClass, lookup).findVarHandle(holderClass, "task", Runnable.class);
             }
+            TARGET = _target;
+            HOLDER = _holder;
+            HOLDER_TASK = _holderTask;
 
             THREAD_LOCALS = l.unreflectVarHandle(doPrivileged(new GetDeclaredField(Thread.class, "threadLocals")));
             INHERITABLE_THREAD_LOCALS = l.unreflectVarHandle(doPrivileged(new GetDeclaredField(Thread.class, "inheritableThreadLocals")));
@@ -90,12 +106,30 @@ public class ThreadAccess {
         }
     }
 
+    /**
+     * The targets set by {@link #setTarget} on Java 19+, where a thread's own target can't be changed.
+     */
+    private static final Map<Thread, Runnable> TARGETS = Collections.synchronizedMap(new WeakHashMap<>());
+
     public static Runnable getTarget(Thread thread) {
-        return (Runnable) TARGET.get(thread);
+        if (TARGET != null)
+            return (Runnable) TARGET.get(thread);
+        final Runnable target = TARGETS.get(thread);
+        return target != null ? target : getOriginalTarget(thread);
     }
 
     public static void setTarget(Thread thread, Runnable target) {
-        TARGET.set(thread, target);
+        if (TARGET != null)
+            TARGET.set(thread, target);
+        else if (target == null || target == getOriginalTarget(thread))
+            TARGETS.remove(thread);
+        else
+            TARGETS.put(thread, target);
+    }
+
+    private static Runnable getOriginalTarget(Thread thread) {
+        final Object holder = HOLDER.get(thread);
+        return holder != null ? (Runnable) HOLDER_TASK.get(holder) : null; // virtual threads have no holder
     }
 
     public static Object getThreadLocals(Thread thread) {

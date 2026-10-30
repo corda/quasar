@@ -91,6 +91,17 @@ class TypeAnalyzer extends Analyzer<BasicValue> {
         @Override
         public void execute(AbstractInsnNode insn, Interpreter<BasicValue> interpreter) throws AnalyzerException {
             switch (insn.getOpcode()) {
+                case Opcodes.DUP: {
+                    // ASM 9.6+ calls copyOperation for both copies of the DUPed value, so the original NEW value would be replaced by a
+                    // second "dupped" NewValue and NEW/DUP rewriting (see InstrumentMethod.emitNewAndDup) would break. Do what ASM 9.5 did,
+                    // which is what TypeInterpreter.copyOperation expects: keep the original value and only copy the top one.
+                    BasicValue value = pop();
+                    if (value.getSize() != 1)
+                        throw new AnalyzerException(insn, "Illegal use of DUP");
+                    push(value);
+                    push(interpreter.copyOperation(insn, value));
+                    break;
+                }
                 case Opcodes.INVOKEVIRTUAL:
                 case Opcodes.INVOKESPECIAL:
                 case Opcodes.INVOKESTATIC:
